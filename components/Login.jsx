@@ -7,229 +7,327 @@ import {
   Mail,
   Lock,
   ArrowRight,
-  Droplet,
-  Sun,
-  TrendingUp,
-  Sparkles,
-  ShieldCheck
+  Terminal,
+  Activity,
+  Database,
+  Zap,
+  Shield,
 } from "lucide-react";
+import { Space_Grotesk, Inter } from "next/font/google";
 import { useTheme } from "@/context/ThemeContext";
+import Image from "next/image";
+
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "700"] });
+const inter = Inter({ subsets: ["latin"], weight: ["400", "600"] });
 
 const Login = () => {
   const { isDark } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
 
-  // Brand Color Constant
-  const brandGreen = "#1F5224";
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
+    console.log("AUTHENTICATION_REQUEST:", formData);
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const features = [
-    { icon: TrendingUp, text: "Analytics Node" },
-    { icon: Droplet, text: "Inventory Protocol" },
-    { icon: Sun, text: "Climate Metrics" },
-    { icon: Sparkles, text: "Health Monitoring" },
+  const systemMetrics = [
+    { icon: Activity, value: "99.98%", label: "UPTIME" },
+    { icon: Database, value: "52K+", label: "NODES" },
+    { icon: Zap, value: "<15ms", label: "LATENCY" },
+    { icon: Shield, value: "AES-256", label: "SECURITY" },
   ];
 
   return (
-    <div
-      className={`min-h-screen flex items-center justify-center p-6 transition-colors duration-500 ${
-        isDark ? "bg-[#0a0a0a]" : "bg-[#fafafa]"
-      }`}
-    >
-      <div
-        className={`w-full max-w-6xl grid lg:grid-cols-2 gap-0 transition-all duration-300 ${
-          isDark ? "bg-black" : "bg-white"
-        } rounded-3xl shadow-2xl border ${
-          isDark ? "border-white/10" : "border-black/10"
-        } overflow-hidden`}
-      >
-        {/* Left Side - Industrial Hero Section */}
-        <div
-          className={`relative p-10 lg:p-16 flex flex-col justify-between min-h-[600px] overflow-hidden transition-colors duration-500 ${
-            isDark ? "bg-zinc-950" : "bg-zinc-50"
-          }`}
-        >
-          {/* Brand Grid & Glow Background */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div
-              className={`absolute inset-0 opacity-20`}
-              style={{
-                backgroundImage: `linear-gradient(${isDark ? 'rgba(31, 82, 36, 0.3)' : 'rgba(31, 82, 36, 0.1)'} 1px, transparent 1px), 
-                                  linear-gradient(90deg, ${isDark ? 'rgba(31, 82, 36, 0.3)' : 'rgba(31, 82, 36, 0.1)'} 1px, transparent 1px)`,
-                backgroundSize: "30px 30px",
-              }}
-            />
-            <div className={`absolute -top-24 -left-24 w-96 h-96 rounded-full blur-[100px] ${isDark ? "bg-[#1F5224]/20" : "bg-[#1F5224]/10"}`} />
-          </div>
+    <div className={`min-h-screen relative overflow-hidden pt-9 ${inter.className} ${
+      isDark ? "bg-neutral-950" : "bg-white"
+    }`}>
+      
+      {/* BACKGROUND GRID */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className={`absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] ${
+          isDark ? "opacity-[0.05]" : "opacity-[0.15]"
+        }`} />
+        <div className={`absolute top-0 left-0 w-[500px] h-[500px] blur-[120px] rounded-full ${
+          isDark ? "bg-green-900/10" : "bg-green-900/5"
+        }`} />
+      </div>
 
-          <div className="relative z-10 space-y-8">
-            {/* System Status Tag */}
-            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-[10px] font-bold tracking-[0.2em] uppercase ${
-              isDark ? "bg-white/5 border-white/10 text-green-400" : "bg-[#1F5224]/5 border-[#1F5224]/20 text-[#1F5224]"
-            }`}>
-              <ShieldCheck className="w-3 h-3" />
-              Secure_Access_Protocol_v4
-            </div>
+      <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4">
+        <div className={`w-full max-w-7xl grid lg:grid-cols-2 gap-0 border overflow-hidden ${
+          isDark 
+            ? "bg-neutral-900/50 border-white/10 shadow-[0_0_50px_-15px_rgba(34,197,94,0.3)]"
+            : "bg-white border-neutral-200 shadow-2xl"
+        }`}>
+          
+          {/* LEFT SIDE - SYSTEM STATUS */}
+          <div className={`relative p-12 lg:p-16 flex flex-col justify-between min-h-[700px] border-r ${
+            isDark ? "bg-neutral-950/80 border-white/5" : "bg-neutral-50 border-neutral-200"
+          }`}>
+            
+            {/* Corner Accents */}
+            <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-green-500/50" />
+            <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-green-500/50" />
 
-            <h1 className={`text-4xl lg:text-6xl font-black leading-none tracking-tighter uppercase transition-colors duration-500 ${
-                isDark ? "text-white" : "text-black"
-              }`}>
-              Command <br />
-              <span style={{ color: brandGreen }}>Efficiency.</span>
-            </h1>
-
-            <p className={`text-sm max-w-sm leading-relaxed uppercase tracking-wide opacity-60 font-medium ${
-                isDark ? "text-white" : "text-black"
-              }`}>
-              Initialize your farm management terminal to oversee modular operating nodes and autonomous data.
-            </p>
-
-            {/* Features Grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {features.map((feature, index) => (
-                <div
-                  key={index}
-                  className={`flex items-center gap-3 p-4 border transition-all duration-300 ${
-                    isDark
-                      ? "bg-black/40 border-white/10 hover:border-green-500/50"
-                      : "bg-white/80 border-black/5 hover:border-[#1F5224]/30"
-                  }`}
-                >
-                  <feature.icon className="w-4 h-4 opacity-70" style={{ color: isDark ? '#4ade80' : brandGreen }} />
-                  <span className={`text-[10px] font-bold uppercase tracking-widest ${
-                      isDark ? "text-gray-400" : "text-gray-600"
-                    }`}>
-                    {feature.text}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom Stats */}
-          <div className="relative z-10 flex gap-8 pt-8 border-t border-black/5 dark:border-white/5">
-            {[
-              { value: "500+", label: "UNITS" },
-              { value: "98%", label: "UPTIME" },
-            ].map((stat, i) => (
-              <div key={i}>
-                <div className="text-xl font-black tracking-tighter" style={{ color: isDark ? '#fff' : '#000' }}>{stat.value}</div>
-                <div className="text-[9px] font-bold opacity-40 tracking-[0.2em]">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Side - Login Form */}
-        <div className="p-8 lg:p-16 flex flex-col justify-center bg-transparent">
-          <div className="mb-10">
-            <h2 className={`text-2xl font-black uppercase tracking-tighter mb-2 ${isDark ? "text-white" : "text-black"}`}>
-              User Authentication
-            </h2>
-            <p className={`text-xs font-bold uppercase tracking-widest opacity-40 ${isDark ? "text-gray-400" : "text-gray-500"}`}>
-              Accessing encrypted management layer
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                Access Identifier (Email)
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40" />
+              {/* Logo */}
+              <Link href="/" className="mb-12 block">
+                <Image 
+                  src="/erp-logo.png" 
+                  alt="AgriHerd Logo" 
+                  width={200} 
+                  height={100} 
+                  className="h-16 w-auto object-contain" 
+                />
+              </Link>
+
+              {/* System Status Badge */}
+              <div className={`inline-flex items-center gap-2 px-3 py-1 border mb-8 ${
+                isDark 
+                  ? "bg-green-500/5 border-green-500/20" 
+                  : "bg-green-50 border-green-200"
+              }`}>
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-green-500/80">
+                  System_Active
+                </span>
+              </div>
+
+              {/* Main Heading */}
+              <h1 className={`${spaceGrotesk.className} text-5xl md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] mb-6 ${
+                isDark ? "text-white" : "text-black"
+              }`}>
+                Secure <br/>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-700">
+                  Terminal
+                </span>
+              </h1>
+
+              <p className={`text-sm leading-relaxed mb-10 max-w-md ${
+                isDark ? "text-neutral-400" : "text-neutral-600"
+              }`}>
+                Access your operational command center. Real-time monitoring, predictive analytics, and autonomous control systems at your fingertips.
+              </p>
+
+              {/* System Metrics Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                {systemMetrics.map((metric, i) => {
+                  const Icon = metric.icon;
+                  return (
+                    <div
+                      key={i}
+                      className={`p-4 border transition-all duration-300 group ${
+                        isDark
+                          ? "bg-neutral-900/40 border-white/5 hover:border-green-500/20"
+                          : "bg-white border-neutral-200 hover:border-green-500/30"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 text-green-500 mb-3" />
+                      <div className={`text-xl font-bold ${spaceGrotesk.className} ${
+                        isDark ? "text-white" : "text-black"
+                      }`}>
+                        {metric.value}
+                      </div>
+                      <div className={`text-[9px] font-mono uppercase tracking-widest ${
+                        isDark ? "text-neutral-500" : "text-neutral-400"
+                      }`}>
+                        {metric.label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bottom Info */}
+            <div className={`pt-6 border-t ${
+              isDark ? "border-white/5" : "border-neutral-200"
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <Terminal className="w-4 h-4 text-green-500" />
+                <span className={`font-mono text-[10px] uppercase tracking-widest ${
+                  isDark ? "text-neutral-500" : "text-neutral-400"
+                }`}>
+                  Authentication Protocol v4.0
+                </span>
+              </div>
+              <p className={`text-xs ${
+                isDark ? "text-neutral-600" : "text-neutral-500"
+              }`}>
+                End-to-end encrypted connection established
+              </p>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE - LOGIN FORM */}
+          <div className={`p-12 lg:p-16 flex flex-col justify-center ${
+            isDark ? "bg-neutral-900/80" : "bg-white"
+          }`}>
+            
+            <div className="mb-10">
+              <h2 className={`${spaceGrotesk.className} text-3xl font-bold uppercase tracking-tight mb-2 ${
+                isDark ? "text-white" : "text-black"
+              }`}>
+                Access Node
+              </h2>
+              <p className={`text-sm ${
+                isDark ? "text-neutral-400" : "text-neutral-600"
+              }`}>
+                Enter credentials to authenticate terminal session
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              
+              {/* Email */}
+              <div>
+                <label className={`flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-2 ${
+                  isDark ? "text-neutral-400" : "text-neutral-600"
+                }`}>
+                  <Mail className="w-3 h-3" />
+                  Access_Terminal
+                </label>
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  required
-                  placeholder="name@domain.sh"
-                  className={`w-full pl-12 pr-4 py-4 text-xs font-bold uppercase tracking-widest rounded-none border transition-all outline-none ${
+                  placeholder="operator@agriherd.sys"
+                  className={`w-full px-4 py-3 border font-mono text-sm lowercase tracking-wide outline-none transition-all ${
                     isDark
-                      ? "bg-white/5 border-white/10 text-white focus:border-green-500"
-                      : "bg-black/5 border-black/10 text-black focus:border-[#1F5224]"
+                      ? "bg-neutral-950 border-white/10 text-white placeholder-neutral-600 focus:border-green-500"
+                      : "bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-green-500"
                   }`}
+                  required
                 />
               </div>
-            </div>
 
-            <div>
-              <label className={`block text-[10px] font-black uppercase tracking-[0.2em] mb-2 ${isDark ? "text-gray-400" : "text-gray-600"}`}>
-                Security Key (Password)
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40" />
-                <input
-                  type={showPassword ? "text" : "password"}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className={`w-full pl-12 pr-12 py-4 text-xs font-bold rounded-none border transition-all outline-none ${
-                    isDark
-                      ? "bg-white/5 border-white/10 text-white focus:border-green-500"
-                      : "bg-black/5 border-black/10 text-black focus:border-[#1F5224]"
-                  }`}
-                />
-                <button
+              {/* Password */}
+              <div>
+                <label className={`flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-2 ${
+                  isDark ? "text-neutral-400" : "text-neutral-600"
+                }`}>
+                  <Lock className="w-3 h-3" />
+                  Security_Key
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="••••••••••••"
+                    className={`w-full px-4 py-3 pr-12 border font-mono text-sm tracking-wide outline-none transition-all ${
+                      isDark
+                        ? "bg-neutral-950 border-white/10 text-white placeholder-neutral-600 focus:border-green-500"
+                        : "bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-green-500"
+                    }`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
+                      isDark
+                        ? "text-neutral-600 hover:text-neutral-400"
+                        : "text-neutral-400 hover:text-neutral-600"
+                    }`}
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Remember & Forgot */}
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 accent-green-500"
+                  />
+                  <span className={`text-xs font-mono uppercase tracking-wide ${
+                    isDark ? "text-neutral-500" : "text-neutral-600"
+                  }`}>
+                    Remember
+                  </span>
+                </label>
+                
+                <button 
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 opacity-40 hover:opacity-100"
+                  className="text-xs font-mono uppercase tracking-wide text-green-500 hover:text-green-400 transition-colors"
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  Reset_Key?
                 </button>
               </div>
-            </div>
 
-            <div className="flex justify-end">
-              <button type="button" className={`text-[10px] font-bold uppercase tracking-widest opacity-60 hover:opacity-100 transition-all ${
-                isDark ? "text-green-400" : "text-[#1F5224]"
-              }`}>
-                Reset Credentials?
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="group w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)] mt-8"
+              >
+                <Shield className="w-4 h-4" />
+                Authenticate Session
+                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
+            </form>
+
+            {/* Divider */}
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className={`w-full border-t ${
+                  isDark ? "border-white/5" : "border-neutral-200"
+                }`}></div>
+              </div>
+              <div className="relative flex justify-center">
+                <span className={`px-4 font-mono text-[10px] uppercase tracking-widest ${
+                  isDark ? "bg-neutral-900/80 text-neutral-600" : "bg-white text-neutral-400"
+                }`}>
+                  OR
+                </span>
+              </div>
             </div>
 
-            <button
-              type="submit"
-              className="w-full py-5 text-xs font-black uppercase tracking-[0.3em] transition-all flex items-center justify-center gap-3 group shadow-xl"
-              style={{ backgroundColor: brandGreen, color: '#fff' }}
-            >
-              Authorize Session
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </form>
-
-          <div className="relative my-10">
-            <div className={`absolute inset-0 flex items-center ${isDark ? "opacity-10" : "opacity-20"}`}>
-              <div className="w-full border-t border-current" />
-            </div>
-            <div className="relative flex justify-center">
-              <span className={`px-4 text-[9px] font-black uppercase tracking-widest ${isDark ? "bg-black text-gray-500" : "bg-white text-gray-400"}`}>
-                OR
-              </span>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <p className={`text-[10px] font-bold uppercase tracking-[0.1em] ${isDark ? "text-gray-500" : "text-gray-500"}`}>
+            {/* Sign Up Link */}
+            <p className={`text-center font-mono text-xs uppercase tracking-wider ${
+              isDark ? "text-neutral-500" : "text-neutral-600"
+            }`}>
               New Operator?{" "}
               <Link
                 href="/signup"
-                className={`ml-1 transition-all ${isDark ? "text-green-400 hover:text-green-300" : "text-[#1F5224] hover:opacity-70"}`}
+                className="text-green-500 hover:text-green-400 font-bold transition-colors"
               >
-                Register Module
+                Deploy Node →
               </Link>
             </p>
+
+            {/* Security Notice */}
+            <div className={`mt-8 p-4 border ${
+              isDark 
+                ? "bg-neutral-950/50 border-white/5" 
+                : "bg-neutral-50 border-neutral-200"
+            }`}>
+              <div className="flex items-start gap-3">
+                <Shield className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className={`text-xs font-mono uppercase tracking-wider mb-1 ${
+                    isDark ? "text-neutral-400" : "text-neutral-600"
+                  }`}>
+                    Secure Connection
+                  </p>
+                  <p className={`text-[10px] leading-relaxed ${
+                    isDark ? "text-neutral-600" : "text-neutral-500"
+                  }`}>
+                    All data transmitted through military-grade encryption protocols
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

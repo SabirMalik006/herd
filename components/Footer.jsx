@@ -1,50 +1,39 @@
 "use client";
 import React from "react";
 import { Space_Grotesk, Inter } from "next/font/google";
-import { Terminal, Cpu, Globe, ArrowRight, ShieldCheck, Heart, activity, Binary } from "lucide-react";
-import { useTheme } from "@/context/ThemeContext";
+import { Terminal, Cpu, Globe, ArrowRight, ShieldCheck, Heart, Binary } from "lucide-react";
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "600"] });
 
 export default function Footer() {
-  const { isDark } = useTheme();
-
-  const brandGreen = "text-green-500";
-  const borderStyle = isDark ? "border-white/5" : "border-neutral-200";
-  const textDim = isDark ? "text-neutral-500" : "text-neutral-400";
-
   return (
-    <footer className={`transition-colors duration-500 border-t ${
-      isDark ? "bg-[#050505] border-white/5" : "bg-white border-neutral-200"
-    } pt-24 ${inter.className}`}>
+    <footer className={`bg-[#050505] border-t border-white/5 pt-24 ${inter.className}`}>
       
       <div className="max-w-7xl mx-auto px-6 lg:px-8">
         
         {/* --- MAIN SYSTEM GRID --- */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border-l border-t ${borderStyle}`}>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 border-l border-t border-white/5">
           
           {/* Brand Module */}
-          <div className={`p-10 border-r border-b ${borderStyle} relative group`}>
+          <div className="p-10 border-r border-b border-white/5 relative group">
             {/* Structural Corner Decor */}
             <div className="absolute top-0 right-0 w-4 h-4 border-t border-r border-green-500/30 opacity-0 group-hover:opacity-100 transition-opacity" />
             
             <div className="mb-8">
-              <h2 className={`${spaceGrotesk.className} text-3xl font-bold uppercase tracking-tighter leading-none ${isDark ? "text-white" : "text-black"}`}>
-                AGRI<span className={brandGreen}>HERD</span>
+              <h2 className={`${spaceGrotesk.className} text-3xl font-bold uppercase tracking-tighter leading-none text-white`}>
+                AGRI<span className="text-green-500">HERD</span>
                 <span className="block text-[9px] tracking-[0.5em] text-green-500/50 mt-2 font-mono font-bold">
                   // CORE_OPERATING_SYSTEM
                 </span>
               </h2>
             </div>
-            <p className={`text-[11px] uppercase tracking-tight leading-relaxed mb-8 font-medium ${textDim}`}>
+            <p className="text-[11px] uppercase tracking-tight leading-relaxed mb-8 font-medium text-neutral-500">
               Standardizing global ranching nodes through autonomous telemetry and high-fidelity biological protocols. 
             </p>
             <div className="flex gap-3">
                 {[Globe, Terminal, ShieldCheck].map((Icon, i) => (
-                    <div key={i} className={`w-9 h-9 border flex items-center justify-center transition-all cursor-pointer ${
-                        isDark ? "border-white/10 hover:bg-green-500 hover:text-black" : "border-neutral-200 hover:bg-black hover:text-white"
-                    }`}>
+                    <div key={i} className="w-9 h-9 border border-white/10 flex items-center justify-center transition-all cursor-pointer hover:bg-green-500 hover:text-black">
                         <Icon className="w-4 h-4" />
                     </div>
                 ))}
@@ -52,16 +41,14 @@ export default function Footer() {
           </div>
 
           {/* Directory Column 1 */}
-          <div className={`p-10 border-r border-b ${borderStyle} relative`}>
+          <div className="p-10 border-r border-b border-white/5 relative">
              <h3 className="font-mono text-[9px] font-bold uppercase tracking-[0.3em] text-green-500/60 mb-10">
                01 // System_Dir
              </h3>
              <ul className="space-y-4">
                 {["Feature_Matrix", "Pricing_Nodes", "Integrations", "API_Terminal", "Node_Status"].map((link) => (
                   <li key={link}>
-                    <a href="#" className={`text-[11px] uppercase font-bold tracking-widest transition-all flex items-center gap-3 group ${
-                      isDark ? "text-white/50 hover:text-green-400" : "text-black/50 hover:text-green-700"
-                    }`}>
+                    <a href="#" className="text-[11px] uppercase font-bold tracking-widest transition-all flex items-center gap-3 group text-white/50 hover:text-green-400">
                       <span className="text-[8px] opacity-0 group-hover:opacity-100 transition-opacity text-green-500">▶</span>
                       {link}
                     </a>
@@ -71,16 +58,14 @@ export default function Footer() {
           </div>
 
           {/* Directory Column 2 */}
-          <div className={`p-10 border-r border-b ${borderStyle}`}>
+          <div className="p-10 border-r border-b border-white/5">
              <h3 className="font-mono text-[9px] font-bold uppercase tracking-[0.3em] text-green-500/60 mb-10">
                02 // Ops_Stack
              </h3>
              <ul className="space-y-4">
                 {["Livestock_OS", "Crop_Telemetry", "Milk_Chain", "Inventory_v2", "Bio_Analytics"].map((link) => (
                   <li key={link}>
-                    <a href="#" className={`text-[11px] uppercase font-bold tracking-widest transition-all flex items-center gap-3 group ${
-                      isDark ? "text-white/50 hover:text-green-400" : "text-black/50 hover:text-green-700"
-                    }`}>
+                    <a href="#" className="text-[11px] uppercase font-bold tracking-widest transition-all flex items-center gap-3 group text-white/50 hover:text-green-400">
                       <span className="text-[8px] opacity-0 group-hover:opacity-100 transition-opacity text-green-500">▶</span>
                       {link}
                     </a>
@@ -90,16 +75,14 @@ export default function Footer() {
           </div>
 
           {/* Directory Column 3 */}
-          <div className={`p-10 border-r border-b ${borderStyle}`}>
+          <div className="p-10 border-r border-b border-white/5">
              <h3 className="font-mono text-[9px] font-bold uppercase tracking-[0.3em] text-green-500/60 mb-10">
                03 // Command
              </h3>
              <ul className="space-y-4">
                 {["Support_Ticket", "Documentation", "Kernel_Updates", "Registry", "Security_Log"].map((link) => (
                   <li key={link}>
-                    <a href="#" className={`text-[11px] uppercase font-bold tracking-widest transition-all flex items-center gap-3 group ${
-                      isDark ? "text-white/50 hover:text-green-400" : "text-black/50 hover:text-green-700"
-                    }`}>
+                    <a href="#" className="text-[11px] uppercase font-bold tracking-widest transition-all flex items-center gap-3 group text-white/50 hover:text-green-400">
                       <span className="text-[8px] opacity-0 group-hover:opacity-100 transition-opacity text-green-500">▶</span>
                       {link}
                     </a>
@@ -110,13 +93,13 @@ export default function Footer() {
         </div>
 
         {/* --- SUBSCRIPTION TERMINAL --- */}
-        <div className={`grid lg:grid-cols-2 border-l border-r border-b ${borderStyle} bg-neutral-900/10`}>
-            <div className={`p-10 border-b lg:border-b-0 lg:border-r flex flex-col justify-center ${borderStyle}`}>
+        <div className="grid lg:grid-cols-2 border-l border-r border-b border-white/5 bg-neutral-900/10">
+            <div className="p-10 border-b lg:border-b-0 lg:border-r border-white/5 flex flex-col justify-center">
                 <div className="flex items-center gap-3 mb-6">
                     <Binary className="w-4 h-4 text-green-500" />
                     <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-green-500/70 font-bold">Telemetry Feed</span>
                 </div>
-                <h3 className={`${spaceGrotesk.className} text-3xl font-bold uppercase tracking-tighter ${isDark ? "text-white" : "text-black"}`}>
+                <h3 className={`${spaceGrotesk.className} text-3xl font-bold uppercase tracking-tighter text-white`}>
                     Join the Global <br/>Intelligence Network.
                 </h3>
             </div>
@@ -127,13 +110,9 @@ export default function Footer() {
                     <input 
                         type="email" 
                         placeholder="TERMINAL@AGRIHERD.SYS"
-                        className={`w-full bg-transparent border-b pl-6 p-4 font-mono text-[11px] uppercase tracking-[0.2em] focus:outline-none transition-colors ${
-                            isDark ? "border-white/10 focus:border-green-400 text-white" : "border-neutral-200 focus:border-black text-black"
-                        }`}
+                        className="w-full bg-transparent border-b border-white/10 pl-6 p-4 font-mono text-[11px] uppercase tracking-[0.2em] focus:outline-none focus:border-green-400 text-white transition-colors"
                     />
-                    <button className={`px-10 border-b transition-all flex items-center justify-center gap-3 group/btn ${
-                        isDark ? "border-white/10 hover:bg-green-500 hover:text-black" : "border-neutral-200 hover:bg-black hover:text-white"
-                    }`}>
+                    <button className="px-10 border-b border-white/10 transition-all flex items-center justify-center gap-3 group/btn hover:bg-green-500 hover:text-black">
                         <span className="font-bold uppercase text-[10px] tracking-widest">Execute</span>
                         <ArrowRight className="w-4 h-4" />
                     </button>
@@ -146,20 +125,18 @@ export default function Footer() {
             <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-10 gap-y-4 font-mono text-[9px] uppercase tracking-[0.2em] font-bold">
                 <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-                    <span className={isDark ? "text-white" : "text-black"}>System: Operational</span>
+                    <span className="text-white">System: Operational</span>
                 </div>
-                <span className={textDim}>Network_Latency: 14ms</span>
-                <span className={textDim}>Build: 4.0.1-STABLE</span>
-                <span className={`flex items-center gap-1 ${textDim}`}>
+                <span className="text-neutral-500">Network_Latency: 14ms</span>
+                <span className="text-neutral-500">Build: 4.0.1-STABLE</span>
+                <span className="flex items-center gap-1 text-neutral-500">
                     Dev by <Heart className="w-2 h-2 text-green-500 fill-current" /> Earth Scan Systems
                 </span>
             </div>
 
             <div className="flex gap-8">
                 {["Privacy", "Terms", "Compliance"].map((item) => (
-                    <a key={item} href="#" className={`text-[9px] font-bold uppercase tracking-[0.3em] transition-all ${
-                        isDark ? "text-neutral-600 hover:text-green-400" : "text-neutral-400 hover:text-black"
-                    }`}>
+                    <a key={item} href="#" className="text-[9px] font-bold uppercase tracking-[0.3em] transition-all text-neutral-600 hover:text-green-400">
                         {item}
                     </a>
                 ))}
@@ -168,7 +145,7 @@ export default function Footer() {
       </div>
 
       {/* Progress Line */}
-      <div className={`h-[2px] w-full ${isDark ? "bg-white/5" : "bg-neutral-100"} overflow-hidden`}>
+      <div className="h-[2px] w-full bg-white/5 overflow-hidden">
           <div className="h-full w-1/4 bg-green-500 animate-progress"></div>
       </div>
 

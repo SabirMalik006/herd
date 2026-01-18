@@ -1,13 +1,12 @@
 "use client";
 import React, { useState } from "react";
 import { Space_Grotesk, Inter } from "next/font/google";
-import { Quote, Terminal, Activity, CheckCircle2, ScanFace } from "lucide-react";
+import { Quote, Terminal, CheckCircle2, ScanFace } from "lucide-react";
+import { useTheme } from "@/context/ThemeContext";
 
-// 1. Consistency: Import the same fonts as your Header/Hero
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "600"] });
 
-// 2. Data: Updated to sound like "Enterprise ERP" users
 const testimonials = [
   {
     text: "Latency reduced by 40% across our northern herds. The offline-first architecture saved our data during the station outage.",
@@ -53,26 +52,35 @@ const testimonials = [
   }
 ];
 
-const TestimonialCard = ({ text, image, name, role, id }) => {
+const TestimonialCard = ({ text, image, name, role, id, isDark }) => {
   return (
-    <div className="p-8 border-b border-white/5 bg-neutral-900/20 backdrop-blur-sm transition-all duration-300 hover:bg-white/[0.03] group">
+    <div className={`p-8 border-b transition-all duration-300 group ${
+      isDark
+        ? "border-white/5 bg-neutral-900/20 hover:bg-white/[0.03]"
+        : "border-neutral-200 bg-white/50 hover:bg-neutral-50"
+    } backdrop-blur-sm`}>
       {/* Card Header: ID and Icon */}
       <div className="flex justify-between items-start mb-6">
         <span className="font-mono text-[9px] text-green-500/60 uppercase tracking-[0.2em]">
           [{id}] // VERIFIED
         </span>
-        <Quote className="w-4 h-4 text-neutral-700 group-hover:text-green-500 transition-colors" />
+        <Quote className={`w-4 h-4 transition-colors ${
+          isDark
+            ? "text-neutral-700 group-hover:text-green-500"
+            : "text-neutral-300 group-hover:text-green-500"
+        }`} />
       </div>
 
       {/* Quote Text */}
-      <p className={`${inter.className} text-sm text-neutral-300 leading-relaxed mb-8 font-light`}>
+      <p className={`${inter.className} text-sm leading-relaxed mb-8 font-light ${
+        isDark ? "text-neutral-300" : "text-neutral-600"
+      }`}>
         "{text}"
       </p>
 
       {/* User Profile */}
       <div className="flex items-center gap-4">
         <div className="relative">
-          {/* Image with specific styling to match Hero (Grayscale + Green tint) */}
           <div className="w-10 h-10 overflow-hidden relative grayscale contrast-125 group-hover:grayscale-0 transition-all duration-500">
              <img
                 src={image}
@@ -81,16 +89,19 @@ const TestimonialCard = ({ text, image, name, role, id }) => {
               />
               <div className="absolute inset-0 bg-green-500/10 mix-blend-overlay"></div>
           </div>
-          {/* Tech Corners overlay */}
           <div className="absolute -top-[1px] -left-[1px] w-2 h-2 border-t border-l border-green-500/50"></div>
           <div className="absolute -bottom-[1px] -right-[1px] w-2 h-2 border-b border-r border-green-500/50"></div>
         </div>
         
         <div>
-          <h4 className={`${spaceGrotesk.className} font-bold text-xs text-white uppercase tracking-wider`}>
+          <h4 className={`${spaceGrotesk.className} font-bold text-xs uppercase tracking-wider ${
+            isDark ? "text-white" : "text-black"
+          }`}>
             {name}
           </h4>
-          <p className="font-mono text-[9px] text-neutral-500 uppercase tracking-tight mt-0.5">
+          <p className={`font-mono text-[9px] uppercase tracking-tight mt-0.5 ${
+            isDark ? "text-neutral-500" : "text-neutral-400"
+          }`}>
             {role}
           </p>
         </div>
@@ -99,11 +110,13 @@ const TestimonialCard = ({ text, image, name, role, id }) => {
   );
 };
 
-const TestimonialsColumn = ({ testimonials, duration = 20, reverse = false }) => {
+const TestimonialsColumn = ({ testimonials, duration = 20, reverse = false, isDark }) => {
   const [isPaused, setIsPaused] = useState(false);
 
   return (
-    <div className="flex-1 min-w-[300px] border-r border-white/5 last:border-r-0">
+    <div className={`flex-1 min-w-[300px] border-r last:border-r-0 ${
+      isDark ? "border-white/5" : "border-neutral-200"
+    }`}>
       <div 
         className="overflow-hidden h-full relative"
         onMouseEnter={() => setIsPaused(true)} 
@@ -117,28 +130,40 @@ const TestimonialsColumn = ({ testimonials, duration = 20, reverse = false }) =>
             }}
         >
           {[...testimonials, ...testimonials, ...testimonials].map((testimonial, index) => (
-            <TestimonialCard key={index} {...testimonial} />
+            <TestimonialCard key={index} {...testimonial} isDark={isDark} />
           ))}
         </div>
         
-        {/* Top/Bottom Fade Gradients for smooth infinite look */}
-        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-neutral-950 to-transparent z-10 pointer-events-none" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-neutral-950 to-transparent z-10 pointer-events-none" />
+        {/* Top/Bottom Fade Gradients */}
+        <div className={`absolute inset-x-0 top-0 h-24 bg-gradient-to-b to-transparent z-10 pointer-events-none ${
+          isDark ? "from-neutral-950" : "from-white"
+        }`} />
+        <div className={`absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t to-transparent z-10 pointer-events-none ${
+          isDark ? "from-neutral-950" : "from-white"
+        }`} />
       </div>
     </div>
   );
 };
 
 export default function Testimonials() {
+  const { isDark } = useTheme();
+
   return (
-    <section className={`py-32 bg-neutral-950 border-t border-white/5 relative ${inter.className}`}>
+    <section className={`py-32 border-t relative ${inter.className} ${
+      isDark 
+        ? "bg-neutral-950 border-white/5"
+        : "bg-white border-neutral-200"
+    }`}>
       
       {/* Background Decor - Subtle Grid */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
+      <div className={`absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none ${
+        isDark ? "" : "opacity-50"
+      }`} />
 
       <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-20">
         
-        {/* --- INDUSTRIAL HEADER (Aligned with Hero) --- */}
+        {/* HEADER */}
         <div className="flex flex-col lg:flex-row items-end justify-between mb-20 gap-8">
           <div className="max-w-2xl">
             <div className="flex items-center gap-2.5 mb-6">
@@ -148,7 +173,9 @@ export default function Testimonials() {
               </span>
             </div>
             
-            <h2 className={`${spaceGrotesk.className} text-5xl md:text-7xl font-bold text-white uppercase tracking-tighter leading-[0.9]`}>
+            <h2 className={`${spaceGrotesk.className} text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-[0.9] ${
+              isDark ? "text-white" : "text-black"
+            }`}>
               Field <br /> 
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-700">
                 Validation.
@@ -157,32 +184,44 @@ export default function Testimonials() {
           </div>
           
           {/* Stats Box */}
-          <div className="hidden md:flex items-center gap-6 p-6 border border-white/5 bg-neutral-900/50 backdrop-blur-md">
+          <div className={`hidden md:flex items-center gap-6 p-6 border backdrop-blur-md ${
+            isDark
+              ? "border-white/5 bg-neutral-900/50"
+              : "border-neutral-200 bg-white/70"
+          }`}>
             <div className="flex flex-col">
                 <div className="flex items-center gap-2 text-green-400 mb-1">
                     <CheckCircle2 className="w-4 h-4" />
                     <span className="font-mono text-[10px] uppercase tracking-widest">Satisfaction</span>
                 </div>
-                <span className={`${spaceGrotesk.className} text-2xl text-white font-bold`}>98.4%</span>
+                <span className={`${spaceGrotesk.className} text-2xl font-bold ${
+                  isDark ? "text-white" : "text-black"
+                }`}>98.4%</span>
             </div>
-            <div className="w-[1px] h-8 bg-white/10" />
+            <div className={`w-[1px] h-8 ${isDark ? "bg-white/10" : "bg-neutral-200"}`} />
             <div className="flex flex-col">
                 <div className="flex items-center gap-2 text-green-400 mb-1">
                     <ScanFace className="w-4 h-4" />
                     <span className="font-mono text-[10px] uppercase tracking-widest">Retention</span>
                 </div>
-                <span className={`${spaceGrotesk.className} text-2xl text-white font-bold`}>99.1%</span>
+                <span className={`${spaceGrotesk.className} text-2xl font-bold ${
+                  isDark ? "text-white" : "text-black"
+                }`}>99.1%</span>
             </div>
           </div>
         </div>
 
-        {/* --- SCROLLING GRID --- */}
+        {/* SCROLLING GRID */}
         <div 
-          className="relative flex flex-col md:flex-row border-y border-white/5 h-[700px] overflow-hidden bg-neutral-900/10"
+          className={`relative flex flex-col md:flex-row border-y h-[700px] overflow-hidden ${
+            isDark
+              ? "border-white/5 bg-neutral-900/10"
+              : "border-neutral-200 bg-neutral-50/30"
+          }`}
         >
-          <TestimonialsColumn testimonials={testimonials.slice(0, 2)} duration={35} />
-          <TestimonialsColumn testimonials={testimonials.slice(2, 4)} duration={45} reverse={true} />
-          <TestimonialsColumn testimonials={testimonials.slice(4, 6)} duration={40} />
+          <TestimonialsColumn testimonials={testimonials.slice(0, 2)} duration={35} isDark={isDark} />
+          <TestimonialsColumn testimonials={testimonials.slice(2, 4)} duration={45} reverse={true} isDark={isDark} />
+          <TestimonialsColumn testimonials={testimonials.slice(4, 6)} duration={40} isDark={isDark} />
         </div>
       </div>
 
@@ -197,12 +236,6 @@ export default function Testimonials() {
         }
         .animate-scroll-up { animation: scroll-up linear infinite; }
         .animate-scroll-down { animation: scroll-down linear infinite; }
-        
-        /* Pause on hover for better readability */
-        .group:hover .animate-scroll-up,
-        .group:hover .animate-scroll-down {
-            animation-play-state: paused;
-        }
       `}</style>
     </section>
   );
