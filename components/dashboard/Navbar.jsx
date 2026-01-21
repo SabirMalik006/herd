@@ -3,9 +3,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  Menu, Sun, Moon, Bell, Sprout, LogOut, Upload, Trash2,
+  Sun, Moon, Bell, Sprout, LogOut, Upload, Trash2,
   Home, Milk, Package, DollarSign, Users, CreditCard,
-  Activity, ChevronRight, ChevronDown
+  Activity, ChevronRight, ChevronDown, ChevronLeft
 } from 'lucide-react';
 import { Space_Grotesk, Inter } from "next/font/google";
 
@@ -213,6 +213,23 @@ export default function Navbar({
         </div>
       </aside>
 
+      {/* Arrow Toggle Button - Fixed Position */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className={`fixed top-[4.5rem] ${sidebarOpen ? 'left-[17.5rem]' : 'left-4'} z-50 p-2 rounded-full border-2 transition-all duration-300 shadow-lg hover:scale-110 ${
+          isDark 
+            ? 'bg-neutral-900 border-green-500/30 hover:border-green-500 text-green-400' 
+            : 'bg-white border-slate-300 hover:border-green-500 text-slate-700 hover:text-green-600'
+        }`}
+        aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+      >
+        {sidebarOpen ? (
+          <ChevronLeft className="w-5 h-5" />
+        ) : (
+          <ChevronRight className="w-5 h-5" />
+        )}
+      </button>
+
       {/* TOP NAVBAR */}
       <header className={`sticky top-0 z-40 h-20 border-b ${
         isDark 
@@ -222,19 +239,11 @@ export default function Navbar({
         <div className="h-full px-6 lg:px-10 flex items-center justify-between">
           {/* LEFT SECTION */}
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setSidebarOpen(!sidebarOpen)} 
-              className={`p-2 rounded-lg transition-colors ${
-                isDark ? 'hover:bg-white/5' : 'hover:bg-slate-100'
-              }`}
-              aria-label="Toggle sidebar"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+            {/* Empty space for balance or add breadcrumbs */}
           </div>
 
           {/* RIGHT SECTION */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-6 ml-auto">
             {/* System Status */}
             <div className={`hidden xl:flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest px-3 py-1 rounded-full border ${
               isDark 
