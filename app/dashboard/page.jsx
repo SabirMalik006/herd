@@ -102,7 +102,7 @@ export default function FarmDashboard() {
           {/* STATS */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {stats.map((stat, idx) => (
-              <div key={idx} className={`relative p-6 rounded-lg border transition-all hover:-translate-y-1 ${isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'}`}>
+              <div key={idx} className={`relative p-6 rounded-lg border transition-all hover:-translate-y-1 overflow-hidden group ${isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'}`}>
                 <div className="flex justify-between items-start mb-4">
                   <div className={`p-2 rounded-md ${isDark ? 'bg-white/5' : 'bg-slate-100 text-slate-600'}`}><stat.icon className="w-4 h-4" /></div>
                   <div className={`text-[10px] py-0.5 px-1.5 rounded font-bold flex items-center gap-0.5 ${stat.change.includes('+') ? 'bg-green-500/10 text-green-600' : 'bg-neutral-500/10 text-neutral-600'}`}>
@@ -112,6 +112,7 @@ export default function FarmDashboard() {
                 <h3 className={`${spaceGrotesk.className} text-3xl font-bold mb-1`}>{stat.value}</h3>
                 <p className="text-[10px] uppercase tracking-widest font-bold opacity-50 mb-1">{stat.title}</p>
                 <p className="text-xs opacity-50">{stat.subtitle}</p>
+                <div className="absolute bottom-0 left-0 h-1 bg-green-500 w-0 group-hover:w-full transition-all duration-500 ease-out"></div>
               </div>
             ))}
           </div>

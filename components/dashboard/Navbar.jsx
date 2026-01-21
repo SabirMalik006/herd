@@ -121,7 +121,7 @@ export default function Navbar({
         <div className={`h-20 flex-shrink-0 flex items-center px-8 border-b ${isDark ? 'border-white/5' : 'border-slate-300'}`}>
           <div className="flex items-center gap-3">
             
-            <img src='erp-logo.png' className='w-[100px] h-[100px]' />
+            <img src='/erp-logo.png' alt="ERP Logo" className='w-[100px] h-[100px]' />
           </div>
         </div>
 
