@@ -95,13 +95,13 @@ export default function SignUp() {
             <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-green-500/50" />
 
             {/* Logo */}
-            <Link href="/" className="mb-12">
+            <Link href="/" className="mb-3 m-0">
               <Image 
                 src="/erp-logo.png" 
                 alt="AgriHerd Logo" 
-                width={200} 
-                height={100} 
-                className="h-16 w-auto object-contain" 
+                width={300} 
+                height={200} 
+                className="h-30 w-auto object-contain" 
               />
             </Link>
 
@@ -117,16 +117,16 @@ export default function SignUp() {
               <h1 className={`${spaceGrotesk.className} text-4xl md:text-5xl font-bold uppercase tracking-tighter leading-[0.9] mb-4 ${
                 isDark ? "text-white" : "text-black"
               }`}>
-                Initialize <br/>
+                Transform YOur <br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-700">
-                  System Access
+                  Farming Journey
                 </span>
               </h1>
               
               <p className={`text-sm leading-relaxed ${
                 isDark ? "text-neutral-400" : "text-neutral-600"
               }`}>
-                Deploy your operational node and synchronize with the global agricultural intelligence network.
+                Join thousands of progressive farmers revolutionizing agriculture through smart technology.
               </p>
             </div>
 
@@ -197,12 +197,12 @@ export default function SignUp() {
               <h2 className={`${spaceGrotesk.className} text-3xl font-bold uppercase tracking-tight mb-2 ${
                 isDark ? "text-white" : "text-black"
               }`}>
-                Deploy Node
+                Create Your Account
               </h2>
               <p className={`text-sm ${
                 isDark ? "text-neutral-400" : "text-neutral-600"
               }`}>
-                Initialize authentication sequence // All fields required
+                Sign up to get started with Agri Farm
               </p>
             </div>
 
@@ -214,7 +214,7 @@ export default function SignUp() {
                   isDark ? "text-neutral-400" : "text-neutral-600"
                 }`}>
                   <User className="w-3 h-3" />
-                  Operator_Name
+                  Full Name
                 </label>
                 <input
                   type="text"
@@ -237,7 +237,7 @@ export default function SignUp() {
                   isDark ? "text-neutral-400" : "text-neutral-600"
                 }`}>
                   <Building2 className="w-3 h-3" />
-                  Facility_ID
+                  Farm Name
                 </label>
                 <input
                   type="text"
@@ -260,7 +260,7 @@ export default function SignUp() {
                   isDark ? "text-neutral-400" : "text-neutral-600"
                 }`}>
                   <Mail className="w-3 h-3" />
-                  Access_Terminal
+                  Email
                 </label>
                 <input
                   type="email"
@@ -283,7 +283,7 @@ export default function SignUp() {
                   isDark ? "text-neutral-400" : "text-neutral-600"
                 }`}>
                   <Lock className="w-3 h-3" />
-                  Security_Key
+                  Password
                 </label>
                 <div className="relative">
                   <input
@@ -319,7 +319,7 @@ export default function SignUp() {
                   isDark ? "text-neutral-400" : "text-neutral-600"
                 }`}>
                   <Lock className="w-3 h-3" />
-                  Verify_Key
+                  Confirm Password
                 </label>
                 <div className="relative">
                   <input
@@ -355,7 +355,7 @@ export default function SignUp() {
                 className="group w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)] mt-8"
               >
                 <Zap className="w-4 h-4" />
-                Initialize System Access
+                 Submit
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
             </form>
@@ -380,12 +380,12 @@ export default function SignUp() {
             <p className={`text-center font-mono text-xs uppercase tracking-wider ${
               isDark ? "text-neutral-500" : "text-neutral-600"
             }`}>
-              Node Already Deployed?{" "}
+              Already have an account?{" "}
               <Link
                 href="/login"
                 className="text-green-500 hover:text-green-400 font-bold transition-colors"
               >
-                Access Terminal →
+                Sign In →
               </Link>
             </p>
           </div>

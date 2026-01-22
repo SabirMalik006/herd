@@ -15,19 +15,19 @@ export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
   const { isDark } = useTheme();
 
-  const plans = [
+ const plans = [
     {
       id: "UNIT_ALPHA",
       name: "Starter",
       icon: Zap,
-      description: "Baseline telemetry for independent operations.",
+      description: "Perfect for individuals and small projects",
       monthlyPrice: "29",
       annualPrice: "24",
       specs: [
-        { label: "Active Nodes", val: "05" },
-        { label: "Data Retention", val: "30_DAYS" },
-        { label: "Bandwidth", val: "10_GB" },
-        { label: "Support", val: "STD_TIER" }
+        { label: "Core Features", val: "ACCESS" },
+        { label: "Email Support", val: "INCLUDED" },
+        { label: "Team Members", val: "UP_TO_5" },
+        { label: "Storage", val: "10_GB" }
       ],
       highlight: false
     },
@@ -35,14 +35,14 @@ export default function Pricing() {
       id: "UNIT_BETA",
       name: "Professional",
       icon: Crown,
-      description: "High-fidelity monitoring for scaling sectors.",
+      description: "Most popular for growing teams",
       monthlyPrice: "79",
       annualPrice: "64",
       specs: [
-        { label: "Active Nodes", val: "UNLIMITED" },
-        { label: "Data Retention", val: "365_DAYS" },
-        { label: "Bandwidth", val: "100_GB" },
-        { label: "Support", val: "PRIORITY_LINK" }
+        { label: "All Starter", val: "PLUS" },
+        { label: "Priority Support", val: "24/7" },
+        { label: "Team Members", val: "UNLIMITED" },
+        { label: "Storage", val: "100_GB" }
       ],
       highlight: true
     },
@@ -50,14 +50,14 @@ export default function Pricing() {
       id: "UNIT_GAMMA",
       name: "Enterprise",
       icon: Sparkles,
-      description: "Full-stack infrastructure for global combines.",
+      description: "Ultimate power for large organizations",
       monthlyPrice: "149",
       annualPrice: "119",
       specs: [
-        { label: "Active Nodes", val: "GLOBAL" },
-        { label: "Data Retention", val: "PERMANENT" },
-        { label: "Bandwidth", val: "MAX_THROUGHPUT" },
-        { label: "Support", val: "DEDICATED_OPS" }
+        { label: "All Professional", val: "PLUS" },
+        { label: "Account Manager", val: "DEDICATED" },
+        { label: "Integrations", val: "CUSTOM_API" },
+        { label: "Storage", val: "UNLIMITED" }
       ],
       highlight: false
     },

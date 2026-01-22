@@ -12,48 +12,48 @@ export default function FeatureCards() {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const { isDark } = useTheme();
 
-  const features = [
+ const features = [
     {
       icon: Package,
       title: "Inventory Control",
       id: "MOD_01",
-      description: "Autonomous supply chain tracking.",
-      benefits: ["Real-time Stock", "Auto-reorder Protocols", "Barcode Scanning", "Multi-Depot Sync"],
+      description: "Complete inventory management solution for your farm operations",
+      benefits: ["Real-time stock tracking", "Automated reorder alerts", "Barcode scanning support", "Multi-location inventory"],
     },
     {
       icon: TrendingUp,
       title: "Financial Analysis",
       id: "MOD_02",
-      description: "Predictive revenue algorithms.",
-      benefits: ["P&L Visualization", "Expense Nodes", "Revenue Forecast", "Fiscal Reporting"],
+      description: "Powerful insights to maximize your farm's profitability",
+      benefits: ["Profit & loss tracking", "Expense categorization", "Revenue forecasting", "Financial reports"],
     },
     {
       icon: Heart,
-      title: "Animal Health",
+      title: "Animal Health Management",
       id: "MOD_03",
-      description: "Biometric monitoring systems.",
-      benefits: ["Vitals Tracking", "Vaccine Schedules", "Vet Logic Integration", "Pathogen Alerts"],
+      description: "Keep your livestock healthy with comprehensive health tracking",
+      benefits: ["Health record management", "Vaccination schedules", "Veterinary appointments", "Disease tracking"],
     },
     {
       icon: BarChart3,
-      title: "Production Yield",
+      title: "Production Analysis",
       id: "MOD_04",
-      description: "Output optimization metrics.",
-      benefits: ["Yield Analytics", "Efficiency Scoring", "Growth Forecasting", "Resource Mapping"],
+      description: "Data-driven insights to optimize farm productivity",
+      benefits: ["Yield tracking", "Performance metrics", "Production forecasting", "Efficiency analysis"],
     },
     {
       icon: Bell,
-      title: "Smart Alerts",
+      title: "Smart Alerts & Reminders",
       id: "MOD_05",
-      description: "Critical event notification relay.",
-      benefits: ["Threshold Triggers", "Task Reminders", "Emergency Override", "Calendar Sync"],
+      description: "Never miss important tasks with intelligent notifications",
+      benefits: ["Custom alert rules", "Task reminders", "Critical notifications", "Calendar integration"],
     },
     {
       icon: Users,
-      title: "Workforce Ops",
+      title: "Worker Management",
       id: "MOD_06",
-      description: "Personnel allocation network.",
-      benefits: ["Shift Logic", "Task Assignment", "Performance Metrics", "Payroll Bridge"],
+      description: "Streamline workforce operations and boost productivity",
+      benefits: ["Attendance tracking", "Task assignment", "Performance monitoring", "Payroll integration"],
     },
   ];
 
@@ -112,21 +112,21 @@ export default function FeatureCards() {
           }`}>
             <Activity className="w-3 h-3 text-green-500" />
             <span className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-green-500/80">
-              System_Modules
+              Comprehensive Farm Management
             </span>
           </div>
 
           <h2 className={`text-4xl md:text-6xl font-bold tracking-tighter ${spaceGrotesk.className} ${
             isDark ? "text-white" : "text-black"
           }`}>
-            OPERATIONAL <span className="text-green-500">NODES</span>
+            POWERFUL <span className="text-green-500">FEATURES</span>
           </h2>
           
           <p className={`text-sm md:text-base max-w-lg mx-auto font-mono ${
             isDark ? "text-neutral-400" : "text-neutral-600"
           }`}>
-            // Select a module to initialize detailed view. <br />
-            // All systems nominal.
+            // Transform your farm with cutting edge technology.
+          
           </p>
         </div>
 

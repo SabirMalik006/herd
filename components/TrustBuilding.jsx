@@ -1,14 +1,18 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { Users, TrendingUp, Shield, Activity, Target, Zap } from "lucide-react";
+import { Users, TrendingUp, Shield, Headphones, Target, Zap } from "lucide-react";
+import { Space_Grotesk, Inter } from "next/font/google";
 import { useTheme } from "@/context/ThemeContext";
+
+const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
+const inter = Inter({ subsets: ["latin"], weight: ["400", "600"] });
 
 export default function AgriTrustSection() {
   const { isDark } = useTheme();
   const [animatedStats, setAnimatedStats] = useState({});
 
   useEffect(() => {
-    const stats = [52000, 42.5, 100, 99.98];
+    const stats = [50000, 45, 100];
     stats.forEach((target, idx) => {
       let current = 0;
       const duration = 1500; // 1.5 seconds
@@ -30,10 +34,10 @@ export default function AgriTrustSection() {
   }, []);
 
   const trustCards = [
-    { id: "LOG-001", icon: Users, title: "Livestock Managed", stat: animatedStats[0] || 0, suffix: "+", detail: "Real-time biometric tracking" },
-    { id: "LOG-002", icon: TrendingUp, title: "Avg. Efficiency", stat: animatedStats[1] || 0, suffix: "%", detail: "Optimized resource allocation" },
-    { id: "LOG-003", icon: Shield, title: "Data Integrity", stat: animatedStats[2] || 0, suffix: "%", detail: "End-to-end node encryption" },
-    { id: "LOG-004", icon: Activity, title: "Network Uptime", stat: animatedStats[3] || 0, suffix: "%", detail: "Redundant server architecture" },
+    { id: "LOG-001", icon: Users, title: "Active Farmers", stat: animatedStats[0] || 0, suffix: "+", detail: "Farmers actively using our platform" },
+    { id: "LOG-002", icon: TrendingUp, title: "Productivity Increase", stat: animatedStats[1] || 0, suffix: "%", detail: "Average productivity boost reported" },
+    { id: "LOG-003", icon: Shield, title: "Data Secure", stat: animatedStats[2] || 0, suffix: "%", detail: "Bank-level encryption protecting data" },
+    { id: "LOG-004", icon: Headphones, title: "Customer Support", stat: "24/7", suffix: "", detail: "Round-the-clock assistance available" },
   ];
 
   const themeBorder = isDark ? "border-white/10" : "border-neutral-200";
@@ -53,13 +57,13 @@ export default function AgriTrustSection() {
             </span>
           </div>
           
-          <h2 className={`text-6xl md:text-8xl font-bold uppercase tracking-tighter leading-[0.85] mb-8 ${isDark ? "text-white" : "text-black"}`}>
-            Proven <br /> 
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600">At Scale.</span>
+          <h2 className={`text-6xl md:text-8xl font-bold uppercase tracking-tighter leading-[0.85] mb-8 ${spaceGrotesk.className} ${isDark ? "text-white" : "text-black"}`}>
+            Empowering <br /> 
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600">Agriculture.</span>
           </h2>
           
           <p className={`text-xl leading-relaxed max-w-lg font-light ${isDark ? "text-neutral-400" : "text-neutral-600"}`}>
-            Our ERP infrastructure manages complex biological assets with <span className="text-green-500 font-medium italic">military-grade precision</span> and zero-latency reporting.
+            Join thousands of farmers experiencing the <span className="text-green-500 font-medium italic">next level</span> of agricultural transformation with cutting-edge technology.
           </p>
         </div>
 
@@ -78,11 +82,11 @@ export default function AgriTrustSection() {
                 </span>
                 <div className="flex items-baseline gap-1 mb-2">
                     <span className={`text-5xl md:text-6xl font-bold tracking-tighter ${isDark ? "text-white" : "text-black"}`}>
-                        {Number(card.stat).toLocaleString()}
+                        {typeof card.stat === 'number' ? Number(card.stat).toLocaleString() : card.stat}
                     </span>
                     <span className="text-2xl text-green-500 font-bold">{card.suffix}</span>
                 </div>
-                <h3 className={`text-xs font-bold uppercase tracking-widest mb-1 ${isDark ? "text-white" : "text-black"}`}>
+                <h3 className={`text-xs font-bold uppercase tracking-widest mb-1 ${spaceGrotesk.className} ${isDark ? "text-white" : "text-black"}`}>
                   {card.title}
                 </h3>
                 <p className="text-[10px] uppercase tracking-wider text-neutral-500">

@@ -37,9 +37,9 @@ export default function HeroScroll() {
             <h2 className={`${spaceGrotesk.className} text-6xl md:text-8xl lg:text-9xl font-bold uppercase tracking-tighter leading-[0.8] ${
               isDark ? "text-white" : "text-neutral-900"
             }`}>
-              The Central <br />
+              Command Center <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-b from-green-400 via-green-600 to-emerald-900">
-                Command.
+                For Your Farm
               </span>
             </h2>
 
@@ -48,15 +48,14 @@ export default function HeroScroll() {
                 <p className={`text-sm md:text-base font-light leading-relaxed tracking-wide text-center ${
                   isDark ? "text-neutral-400" : "text-neutral-600"
                 }`}>
-                  Synchronize your entire herd operation. Track movement, 
-                  biometrics, and yield metrics within a single high-fidelity environment.
+                  Monitor your entire farm operation from one powerful dashboard. Track crops, livestock, equipment, and financials in real-time.
                 </p>
                 <div className="h-[1px] w-12 bg-green-500/50 hidden md:block" />
             </div>
 
             <div className="flex flex-wrap gap-4 justify-center items-center pt-4">
               <button className="group relative px-10 py-4 bg-green-600 text-white font-bold text-[11px] tracking-widest uppercase overflow-hidden transition-all hover:bg-green-700">
-                <span className="relative z-10">Launch Console</span>
+                <span className="relative z-10">Exploare Dashboard</span>
                 <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
               </button>
               
@@ -65,7 +64,7 @@ export default function HeroScroll() {
                   ? "border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-600"
                   : "border-neutral-300 text-neutral-600 bg-white/50 hover:text-black hover:border-neutral-900 shadow-sm"
               }`}>
-                System Documentation
+                View Features
               </button>
             </div>
           </div>

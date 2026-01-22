@@ -49,22 +49,21 @@ export default function Hero() {
 
       <motion.div className="relative z-30 text-center px-6 max-w-6xl pt-32" style={{ y: yText, opacity: opacityText }}>
         
-        <h1 className={`${spaceGrotesk.className} text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-bold uppercase tracking-tighter leading-[0.9] mb-6 ${
+          <h1 className={`${spaceGrotesk.className} text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-bold uppercase tracking-tighter leading-[0.9] mb-6 ${
           isDark ? "text-white" : "text-white drop-shadow-2xl"
         }`}>
-          Next Level <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Agriculture</span>
+          Revolutionize <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Your Farm</span>
         </h1>
-
         <p className={`text-lg md:text-xl max-w-2xl mx-auto mb-8 font-light leading-relaxed ${
           isDark ? "text-neutral-300" : "text-white/90 drop-shadow-lg"
         }`}>
-          The precision ERP for the modern herd. Control every biological data point through a unified interface.
+          Monitor livestock health, track inventory, manage finances, and boost productivity with our all-in-one farm management solution.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-40">
           <button className="group relative px-8 py-4 bg-green-600 text-white font-bold text-sm tracking-widest overflow-hidden transition-all hover:bg-green-700">
-            <span className="relative z-10 flex items-center gap-2">START DEPLOYMENT <ArrowRight className="w-4 h-4" /></span>
+            <span className="relative z-10 flex items-center gap-2">START FREE 30-DAY TRIAL<ArrowRight className="w-4 h-4" /></span>
           </button>
           <button className={`px-8 py-4 border font-bold text-sm tracking-widest transition-all backdrop-blur-md ${
             isDark
