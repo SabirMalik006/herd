@@ -70,7 +70,7 @@ export default function Hero() {
               ? "border-neutral-700 text-neutral-300 hover:border-green-500/50"
               : "border-white/40 text-white bg-white/10 hover:bg-white/20 hover:border-white/60"
           }`}>
-             SYSTEM SPECS
+             VIEW DEMO
           </button>
         </div>
       </motion.div>
