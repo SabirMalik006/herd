@@ -157,13 +157,13 @@ export default function AnimalsManagement() {
   };
 
   const CornerBrackets = () => {
-    const borderColor = isDark ? "border-green-500/30" : "border-slate-800";
+    const borderColor = isDark ? "border-green-500/20" : "border-neutral-300";
     return (
       <>
-        <div className={`absolute top-0 left-0 w-2 h-2 border-l-2 border-t-2 ${borderColor}`} />
-        <div className={`absolute top-0 right-0 w-2 h-2 border-r-2 border-t-2 ${borderColor}`} />
-        <div className={`absolute bottom-0 left-0 w-2 h-2 border-l-2 border-b-2 ${borderColor}`} />
-        <div className={`absolute bottom-0 right-0 w-2 h-2 border-r-2 border-b-2 ${borderColor}`} />
+        <div className={`absolute top-0 left-0 w-3 h-3 border-l border-t ${borderColor} transition-all duration-300`} />
+        <div className={`absolute top-0 right-0 w-3 h-3 border-r border-t ${borderColor} transition-all duration-300`} />
+        <div className={`absolute bottom-0 left-0 w-3 h-3 border-l border-b ${borderColor} transition-all duration-300`} />
+        <div className={`absolute bottom-0 right-0 w-3 h-3 border-r border-b ${borderColor} transition-all duration-300`} />
       </>
     );
   };
@@ -172,15 +172,21 @@ export default function AnimalsManagement() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${inter.className} ${
-      isDark ? 'bg-neutral-950 text-white' : 'bg-slate-50 text-slate-900'
+      isDark ? 'bg-neutral-950 text-white' : 'bg-neutral-50 text-neutral-900'
     }`}>
       
-      {/* BACKGROUND TEXTURE */}
+      {/* ENHANCED BACKGROUND TEXTURE */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {isDark ? (
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+          <>
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.05]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.03),transparent_70%)]" />
+          </>
         ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          <>
+            <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-100" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.02),transparent_70%)]" />
+          </>
         )}
       </div>
 
@@ -207,25 +213,42 @@ export default function AnimalsManagement() {
 
       {/* MAIN CONTENT */}
       <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
-        <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-10">
+        <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
-          {/* TITLE & TABS */}
+          {/* MODERNIZED TITLE & TABS */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className={`${spaceGrotesk.className} text-4xl font-bold mb-2`}>
-                Animals Management
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className="font-mono text-[10px] text-green-500/80 uppercase tracking-[0.3em]">
+                  [LIVESTOCK_SYSTEM]
+                </span>
+              </div>
+              <h1 className={`${spaceGrotesk.className} text-4xl md:text-5xl font-bold uppercase tracking-tighter leading-[0.9] mb-2`}>
+                Animals <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Management</span>
               </h1>
-              <p className="font-medium opacity-60">
+              <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Track and manage your livestock animals, their health status, and breeding information.
               </p>
             </div>
-            <div className={`flex p-1 rounded-lg border ${isDark ? 'bg-neutral-900 border-white/5' : 'bg-white border-slate-300 shadow-sm'}`}>
+            
+            {/* Enhanced Tab Navigation */}
+            <div className={`flex p-1.5 border backdrop-blur-md ${
+              isDark ? 'bg-neutral-900/50 border-white/10' : 'bg-white border-neutral-300 shadow-sm'
+            }`}>
               <Link href="/livestockmanagement/animal/dashboard">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/animal/dashboard')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Overview
@@ -233,10 +256,14 @@ export default function AnimalsManagement() {
               </Link>
               <Link href="/livestockmanagement/animal/sheds">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/animal/sheds')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Sheds
@@ -244,10 +271,14 @@ export default function AnimalsManagement() {
               </Link>
               <Link href="/livestockmanagement/animal/animals">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/animal/animals')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Animals
@@ -256,21 +287,24 @@ export default function AnimalsManagement() {
             </div>
           </div>
 
-          <hr className={isDark ? 'border-white/5' : 'border-slate-300'} />
-
-          {/* HEADER SECTION */}
+          {/* ENHANCED HEADER SECTION */}
           <section className="space-y-6">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-1 h-4 bg-green-500 rounded-full"></div>
-                <h2 className="text-xs font-black uppercase tracking-[0.2em]">Animal Records</h2>
+              <div className="flex items-center gap-3">
+                <div className={`h-[2px] w-8 ${isDark ? 'bg-green-500/50' : 'bg-green-500'}`} />
+                <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
+                  isDark ? 'text-neutral-400' : 'text-neutral-500'
+                }`}>
+                  Animal Records
+                </h2>
               </div>
-              <button className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all duration-200 font-semibold text-sm ${
-                isDark 
-                  ? 'bg-green-600 hover:bg-green-700 text-white' 
-                  : 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
-              }`}
-              onClick={() => handleOpenForm()}
+              <button 
+                className={`group flex items-center gap-2 px-5 py-3 border transition-all duration-200 font-bold text-[11px] uppercase tracking-widest ${
+                  isDark 
+                    ? 'bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700' 
+                    : 'bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm'
+                }`}
+                onClick={() => handleOpenForm()}
               >
                 <Plus className="w-4 h-4" />
                 Add Animal
@@ -278,37 +312,40 @@ export default function AnimalsManagement() {
             </div>
           </section>
 
-          {/* SEARCH AND FILTERS */}
+          {/* ENHANCED SEARCH AND FILTERS */}
           <section className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Search Card */}
-              <div className={`relative p-4 rounded-lg border lg:col-span-2 ${
-                isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+              <div className={`relative p-5 border lg:col-span-2 group/search ${
+                isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
               }`}>
                 <div className="flex items-center gap-3">
-                  <Search className="w-5 h-5 opacity-40" />
+                  <Search className={`w-5 h-5 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
                   <input
                     type="text"
                     placeholder="Search animals..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className={`flex-1 bg-transparent outline-none text-sm font-medium ${
-                      isDark ? 'placeholder:text-slate-500' : 'placeholder:text-slate-400'
+                      isDark ? 'placeholder:text-neutral-600' : 'placeholder:text-neutral-400'
                     }`}
                   />
                 </div>
+                <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover/search:w-full transition-all duration-500 ${
+                  isDark ? 'bg-green-500' : 'bg-green-600'
+                }`} />
                 <CornerBrackets />
               </div>
 
               {/* Filter by Type */}
               <div className="relative">
-                <div className={`relative p-4 rounded-lg border cursor-pointer ${
-                  isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+                <div className={`relative p-5 border cursor-pointer transition-all ${
+                  isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
                 }`} onClick={() => setFilterTypeOpen(!filterTypeOpen)}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4 opacity-40" />
-                      <span className="text-sm font-medium">Filter by type</span>
+                      <Filter className={`w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
+                      <span className="text-[11px] font-bold uppercase tracking-wider">Type</span>
                     </div>
                     <ChevronDown className={`w-4 h-4 transition-transform ${filterTypeOpen ? 'rotate-180' : ''}`} />
                   </div>
@@ -316,8 +353,8 @@ export default function AnimalsManagement() {
                 </div>
 
                 {filterTypeOpen && (
-                  <div className={`absolute top-full mt-2 right-0 w-full rounded-lg border shadow-xl overflow-hidden z-20 ${
-                    isDark ? 'bg-neutral-900 border-white/5' : 'bg-white border-slate-300'
+                  <div className={`absolute top-full mt-2 right-0 w-full border shadow-xl overflow-hidden z-20 backdrop-blur-md ${
+                    isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-neutral-200'
                   }`}>
                     {['all', 'Unknown Classification', 'Cow', 'Bull', 'Calf'].map((type) => (
                       <button
@@ -326,12 +363,14 @@ export default function AnimalsManagement() {
                           setSelectedType(type);
                           setFilterTypeOpen(false);
                         }}
-                        className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+                        className={`w-full px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
                           selectedType === type
-                            ? 'bg-green-600 text-white'
+                            ? isDark
+                              ? 'bg-green-500/10 text-green-400 border-l-2 border-green-400'
+                              : 'bg-green-50 text-green-700 border-l-2 border-green-600'
                             : isDark
                             ? 'hover:bg-white/5'
-                            : 'hover:bg-slate-50'
+                            : 'hover:bg-neutral-50'
                         }`}
                       >
                         {type === 'all' ? 'All Types' : type}
@@ -343,13 +382,13 @@ export default function AnimalsManagement() {
 
               {/* Filter by Species */}
               <div className="relative">
-                <div className={`relative p-4 rounded-lg border cursor-pointer ${
-                  isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+                <div className={`relative p-5 border cursor-pointer transition-all ${
+                  isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
                 }`} onClick={() => setFilterSpeciesOpen(!filterSpeciesOpen)}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4 opacity-40" />
-                      <span className="text-sm font-medium">Filter by species</span>
+                      <Filter className={`w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
+                      <span className="text-[11px] font-bold uppercase tracking-wider">Species</span>
                     </div>
                     <ChevronDown className={`w-4 h-4 transition-transform ${filterSpeciesOpen ? 'rotate-180' : ''}`} />
                   </div>
@@ -357,8 +396,8 @@ export default function AnimalsManagement() {
                 </div>
 
                 {filterSpeciesOpen && (
-                  <div className={`absolute top-full mt-2 right-0 w-full rounded-lg border shadow-xl overflow-hidden z-20 ${
-                    isDark ? 'bg-neutral-900 border-white/5' : 'bg-white border-slate-300'
+                  <div className={`absolute top-full mt-2 right-0 w-full border shadow-xl overflow-hidden z-20 backdrop-blur-md ${
+                    isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-neutral-200'
                   }`}>
                     {['all', 'Holstein', 'Jersey', 'Angus'].map((species) => (
                       <button
@@ -367,12 +406,14 @@ export default function AnimalsManagement() {
                           setSelectedSpecies(species);
                           setFilterSpeciesOpen(false);
                         }}
-                        className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+                        className={`w-full px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
                           selectedSpecies === species
-                            ? 'bg-green-600 text-white'
+                            ? isDark
+                              ? 'bg-green-500/10 text-green-400 border-l-2 border-green-400'
+                              : 'bg-green-50 text-green-700 border-l-2 border-green-600'
                             : isDark
                             ? 'hover:bg-white/5'
-                            : 'hover:bg-slate-50'
+                            : 'hover:bg-neutral-50'
                         }`}
                       >
                         {species === 'all' ? 'All Species' : species}
@@ -384,13 +425,13 @@ export default function AnimalsManagement() {
 
               {/* Filter by Health */}
               <div className="relative">
-                <div className={`relative p-4 rounded-lg border cursor-pointer ${
-                  isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+                <div className={`relative p-5 border cursor-pointer transition-all ${
+                  isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
                 }`} onClick={() => setFilterHealthOpen(!filterHealthOpen)}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4 opacity-40" />
-                      <span className="text-sm font-medium">Filter by Health</span>
+                      <Filter className={`w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
+                      <span className="text-[11px] font-bold uppercase tracking-wider">Health</span>
                     </div>
                     <ChevronDown className={`w-4 h-4 transition-transform ${filterHealthOpen ? 'rotate-180' : ''}`} />
                   </div>
@@ -398,8 +439,8 @@ export default function AnimalsManagement() {
                 </div>
 
                 {filterHealthOpen && (
-                  <div className={`absolute top-full mt-2 right-0 w-full rounded-lg border shadow-xl overflow-hidden z-20 ${
-                    isDark ? 'bg-neutral-900 border-white/5' : 'bg-white border-slate-300'
+                  <div className={`absolute top-full mt-2 right-0 w-full border shadow-xl overflow-hidden z-20 backdrop-blur-md ${
+                    isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-neutral-200'
                   }`}>
                     {['all', 'Healthy', 'Sick', 'Treatment'].map((health) => (
                       <button
@@ -408,15 +449,17 @@ export default function AnimalsManagement() {
                           setSelectedHealth(health);
                           setFilterHealthOpen(false);
                         }}
-                        className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+                        className={`w-full px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
                           selectedHealth === health
-                            ? 'bg-green-600 text-white'
+                            ? isDark
+                              ? 'bg-green-500/10 text-green-400 border-l-2 border-green-400'
+                              : 'bg-green-50 text-green-700 border-l-2 border-green-600'
                             : isDark
                             ? 'hover:bg-white/5'
-                            : 'hover:bg-slate-50'
+                            : 'hover:bg-neutral-50'
                         }`}
                       >
-                        {health === 'all' ? 'All Health Status' : health}
+                        {health === 'all' ? 'All Health' : health}
                       </button>
                     ))}
                   </div>
@@ -428,13 +471,13 @@ export default function AnimalsManagement() {
             <div className="flex flex-col md:flex-row gap-4">
               {/* Filter by Status */}
               <div className="relative md:w-64">
-                <div className={`relative p-4 rounded-lg border cursor-pointer ${
-                  isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+                <div className={`relative p-5 border cursor-pointer transition-all ${
+                  isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
                 }`} onClick={() => setFilterStatusOpen(!filterStatusOpen)}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Filter className="w-4 h-4 opacity-40" />
-                      <span className="text-sm font-medium">Filter by status</span>
+                      <Filter className={`w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
+                      <span className="text-[11px] font-bold uppercase tracking-wider">Status</span>
                     </div>
                     <ChevronDown className={`w-4 h-4 transition-transform ${filterStatusOpen ? 'rotate-180' : ''}`} />
                   </div>
@@ -442,8 +485,8 @@ export default function AnimalsManagement() {
                 </div>
 
                 {filterStatusOpen && (
-                  <div className={`absolute top-full mt-2 right-0 w-full rounded-lg border shadow-xl overflow-hidden z-20 ${
-                    isDark ? 'bg-neutral-900 border-white/5' : 'bg-white border-slate-300'
+                  <div className={`absolute top-full mt-2 right-0 w-full border shadow-xl overflow-hidden z-20 backdrop-blur-md ${
+                    isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-neutral-200'
                   }`}>
                     {['all', 'Active', 'Sold', 'Deceased'].map((status) => (
                       <button
@@ -452,12 +495,14 @@ export default function AnimalsManagement() {
                           setSelectedStatus(status);
                           setFilterStatusOpen(false);
                         }}
-                        className={`w-full px-4 py-2.5 text-left text-sm font-medium transition-colors ${
+                        className={`w-full px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
                           selectedStatus === status
-                            ? 'bg-green-600 text-white'
+                            ? isDark
+                              ? 'bg-green-500/10 text-green-400 border-l-2 border-green-400'
+                              : 'bg-green-50 text-green-700 border-l-2 border-green-600'
                             : isDark
                             ? 'hover:bg-white/5'
-                            : 'hover:bg-slate-50'
+                            : 'hover:bg-neutral-50'
                         }`}
                       >
                         {status === 'all' ? 'All Status' : status}
@@ -477,21 +522,21 @@ export default function AnimalsManagement() {
                     setSelectedHealth('all');
                     setSelectedStatus('all');
                   }}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-semibold text-sm ${
+                  className={`flex items-center gap-2 px-5 py-3 border transition-all font-bold text-[11px] uppercase tracking-widest ${
                     isDark 
-                      ? 'bg-neutral-800 hover:bg-neutral-700 text-white' 
-                      : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
+                      ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700' 
+                      : 'bg-white hover:bg-neutral-50 text-neutral-700 border-neutral-300 shadow-sm'
                   }`}
                 >
                   <AlertCircle className="w-4 h-4" />
-                  Clear Filters
+                  Clear
                 </button>
                 <button 
                   onClick={handleExport}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg transition-all font-semibold text-sm ${
+                  className={`flex items-center gap-2 px-5 py-3 border transition-all font-bold text-[11px] uppercase tracking-widest ${
                     isDark 
-                      ? 'bg-green-600 hover:bg-green-700 text-white' 
-                      : 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
+                      ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
+                      : 'bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm'
                   }`}
                 >
                   <Download className="w-4 h-4" />
@@ -501,78 +546,122 @@ export default function AnimalsManagement() {
             </div>
           </section>
 
-          {/* ANIMALS TABLE */}
+          {/* ENHANCED ANIMALS TABLE */}
           <section className="space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-4 bg-amber-500 rounded-full"></div>
-              <h2 className="text-xs font-black uppercase tracking-[0.2em]">All Animals</h2>
+            <div className="flex items-center gap-3">
+              <div className={`h-[2px] w-8 ${isDark ? 'bg-amber-500/50' : 'bg-amber-500'}`} />
+              <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
+                isDark ? 'text-neutral-400' : 'text-neutral-500'
+              }`}>
+                All Animals
+              </h2>
             </div>
             
             {/* Table Container */}
-            <div className={`relative rounded-lg border overflow-hidden ${
-              isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+            <div className={`relative border overflow-hidden ${
+              isDark ? 'bg-neutral-900/30 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
             }`}>
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className={`${isDark ? 'bg-neutral-800/50' : 'bg-slate-100'}`}>
+                  <thead className={`border-b ${
+                    isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-neutral-50 border-neutral-200'
+                  }`}>
                     <tr>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest opacity-60">Name</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest opacity-60">Date of Birth</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest opacity-60">Animal Type</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest opacity-60">Gender</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest opacity-60">Status</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest opacity-60">Health Status</th>
-                      <th className="px-6 py-4 text-left text-[10px] font-black uppercase tracking-widest opacity-60">Breed</th>
-                      <th className="px-6 py-4 text-right text-[10px] font-black uppercase tracking-widest opacity-60">Actions</th>
+                      <th className={`px-6 py-4 text-left text-[9px] font-black uppercase tracking-[0.25em] font-mono ${
+                        isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      }`}>Name</th>
+                      <th className={`px-6 py-4 text-left text-[9px] font-black uppercase tracking-[0.25em] font-mono ${
+                        isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      }`}>Date of Birth</th>
+                      <th className={`px-6 py-4 text-left text-[9px] font-black uppercase tracking-[0.25em] font-mono ${
+                        isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      }`}>Animal Type</th>
+                      <th className={`px-6 py-4 text-left text-[9px] font-black uppercase tracking-[0.25em] font-mono ${
+                        isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      }`}>Gender</th>
+                      <th className={`px-6 py-4 text-left text-[9px] font-black uppercase tracking-[0.25em] font-mono ${
+                        isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      }`}>Status</th>
+                      <th className={`px-6 py-4 text-left text-[9px] font-black uppercase tracking-[0.25em] font-mono ${
+                        isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      }`}>Health Status</th>
+                      <th className={`px-6 py-4 text-left text-[9px] font-black uppercase tracking-[0.25em] font-mono ${
+                        isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      }`}>Breed</th>
+                      <th className={`px-6 py-4 text-right text-[9px] font-black uppercase tracking-[0.25em] font-mono ${
+                        isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      }`}>Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200/10">
+                  <tbody className={`divide-y ${isDark ? 'divide-white/5' : 'divide-neutral-200'}`}>
                     {filteredAnimals.map((animal) => (
                       <tr key={animal.id} className={`transition-colors ${
-                        isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'
+                        isDark ? 'hover:bg-white/5' : 'hover:bg-neutral-50'
                       }`}>
                         <td className="px-6 py-4">
-                          <p className="font-bold">{animal.name}</p>
+                          <p className={`font-bold ${spaceGrotesk.className}`}>{animal.name}</p>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm opacity-70">{animal.dateOfBirth}</p>
+                          <p className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                            {animal.dateOfBirth}
+                          </p>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm opacity-70">{animal.animalType}</p>
+                          <p className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                            {animal.animalType}
+                          </p>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm opacity-70">{animal.gender}</p>
+                          <p className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                            {animal.gender}
+                          </p>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                          <span className={`inline-flex items-center px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${
                             animal.status === 'Active' 
-                              ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                              ? isDark
+                                ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                : 'bg-green-50 text-green-700 border-green-200'
                               : animal.status === 'Sold'
-                              ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
-                              : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'
+                              ? isDark
+                                ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                : 'bg-blue-50 text-blue-700 border-blue-200'
+                              : isDark
+                                ? 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20'
+                                : 'bg-neutral-100 text-neutral-600 border-neutral-200'
                           }`}>
                             {animal.status}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                          <span className={`inline-flex items-center px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${
                             animal.healthStatus === 'Healthy' 
-                              ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                              ? isDark
+                                ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                : 'bg-green-50 text-green-700 border-green-200'
                               : animal.healthStatus === 'Sick'
-                              ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                              : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                              ? isDark
+                                ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                                : 'bg-red-50 text-red-700 border-red-200'
+                              : isDark
+                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                : 'bg-amber-50 text-amber-700 border-amber-200'
                           }`}>
                             {animal.healthStatus}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <p className="text-sm opacity-70">{animal.breed}</p>
+                          <p className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                            {animal.breed}
+                          </p>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-end gap-1">
                             <button 
-                              className={`p-2 rounded transition-colors ${
-                                isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'
+                              className={`p-2.5 border transition-all ${
+                                isDark 
+                                  ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                                  : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                               }`} 
                               title="View Details"
                               onClick={() => setViewingAnimal(animal)}
@@ -580,8 +669,10 @@ export default function AnimalsManagement() {
                               <Eye className="w-4 h-4" />
                             </button>
                             <button 
-                              className={`p-2 rounded transition-colors ${
-                                isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'
+                              className={`p-2.5 border transition-all ${
+                                isDark 
+                                  ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                                  : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                               }`} 
                               title="View Records"
                               onClick={() => alert(`Records for: ${animal.name}`)}
@@ -589,8 +680,10 @@ export default function AnimalsManagement() {
                               <FileText className="w-4 h-4" />
                             </button>
                             <button 
-                              className={`p-2 rounded transition-colors ${
-                                isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'
+                              className={`p-2.5 border transition-all ${
+                                isDark 
+                                  ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                                  : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                               }`} 
                               title="Edit"
                               onClick={() => handleOpenForm(animal)}
@@ -598,8 +691,10 @@ export default function AnimalsManagement() {
                               <Edit className="w-4 h-4" />
                             </button>
                             <button 
-                              className={`p-2 rounded transition-colors ${
-                                isDark ? 'hover:bg-red-500/20 text-red-400' : 'hover:bg-red-50 text-red-600'
+                              className={`p-2.5 border transition-all ${
+                                isDark 
+                                  ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
+                                  : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
                               }`} 
                               title="Delete"
                               onClick={() => setDeleteConfirm(animal)}
@@ -616,10 +711,14 @@ export default function AnimalsManagement() {
 
               {/* Empty State */}
               {filteredAnimals.length === 0 && (
-                <div className="p-12 text-center">
-                  <Activity className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                  <h3 className={`${spaceGrotesk.className} text-xl font-bold mb-2`}>No animals found</h3>
-                  <p className="text-sm opacity-60">Try adjusting your search or filter criteria</p>
+                <div className="p-16 text-center">
+                  <Activity className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-neutral-800' : 'text-neutral-200'}`} />
+                  <h3 className={`${spaceGrotesk.className} text-2xl font-bold mb-2 uppercase tracking-tight`}>
+                    No animals found
+                  </h3>
+                  <p className={`text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Try adjusting your search or filter criteria
+                  </p>
                 </div>
               )}
 
@@ -630,25 +729,37 @@ export default function AnimalsManagement() {
         </main>
       </div>
 
-      {/* ADD/EDIT ANIMAL FORM SIDEBAR */}
-      <div className={`fixed top-0 right-0 h-full w-full md:w-[500px] z-50 transform transition-transform duration-300 ${
+      {/* ENHANCED ADD/EDIT ANIMAL FORM SIDEBAR */}
+      <div className={`fixed top-0 right-0 h-full w-full md:w-[500px] z-50 transform transition-transform duration-300 border-l ${
         showAnimalForm ? 'translate-x-0' : 'translate-x-full'
-      } ${isDark ? 'bg-neutral-900' : 'bg-white'} shadow-2xl overflow-y-auto`}>
+      } ${
+        isDark ? 'bg-neutral-950 border-white/10' : 'bg-white border-neutral-200'
+      } shadow-2xl overflow-y-auto`}>
         <div className="p-8">
           {/* Header */}
-          <div className="flex items-center justify-between mb-8">
+          <div className={`flex items-center justify-between mb-8 pb-6 border-b ${isDark ? 'border-white/10' : 'border-neutral-200'}`}>
             <div>
-              <h2 className={`${spaceGrotesk.className} text-2xl font-bold mb-1`}>
-                {editingAnimal ? 'Edit Animal' : 'Add New Animal'}
+              <div className="flex items-center gap-2 mb-2">
+                <div className={`h-[2px] w-6 ${isDark ? 'bg-green-500' : 'bg-green-600'}`} />
+                <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.3em] ${
+                  isDark ? 'text-green-400' : 'text-green-600'
+                }`}>
+                  {editingAnimal ? 'EDIT_MODE' : 'CREATE_MODE'}
+                </span>
+              </div>
+              <h2 className={`${spaceGrotesk.className} text-3xl font-bold uppercase tracking-tight mb-1`}>
+                {editingAnimal ? 'Edit Animal' : 'Add Animal'}
               </h2>
-              <p className="text-sm opacity-60">
+              <p className={`text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
                 {editingAnimal ? 'Update animal information' : 'Register a new animal'}
               </p>
             </div>
             <button
               onClick={handleCloseForm}
-              className={`p-2 rounded-lg transition-colors ${
-                isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'
+              className={`p-2.5 border transition-all ${
+                isDark 
+                  ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                  : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
               }`}
             >
               <X className="w-5 h-5" />
@@ -659,7 +770,9 @@ export default function AnimalsManagement() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Name */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-3 opacity-60">
+              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
                 Animal Name *
               </label>
               <input
@@ -668,17 +781,19 @@ export default function AnimalsManagement() {
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 placeholder="Enter animal name"
-                className={`w-full px-4 py-3 rounded-lg border outline-none transition-all ${
+                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                   isDark 
-                    ? 'bg-neutral-800 border-white/10 focus:border-green-500' 
-                    : 'bg-slate-50 border-slate-300 focus:border-green-500'
+                    ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
+                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                 }`}
               />
             </div>
 
             {/* Date of Birth */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-3 opacity-60">
+              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
                 Date of Birth *
               </label>
               <input
@@ -686,26 +801,28 @@ export default function AnimalsManagement() {
                 required
                 value={formData.dateOfBirth}
                 onChange={(e) => setFormData({...formData, dateOfBirth: e.target.value})}
-                className={`w-full px-4 py-3 rounded-lg border outline-none transition-all ${
+                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                   isDark 
-                    ? 'bg-neutral-800 border-white/10 focus:border-green-500' 
-                    : 'bg-slate-50 border-slate-300 focus:border-green-500'
+                    ? 'bg-neutral-900 border-white/10 focus:border-green-500' 
+                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500'
                 }`}
               />
             </div>
 
             {/* Animal Type */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-3 opacity-60">
+              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
                 Animal Type *
               </label>
               <select
                 value={formData.animalType}
                 onChange={(e) => setFormData({...formData, animalType: e.target.value})}
-                className={`w-full px-4 py-3 rounded-lg border outline-none transition-all ${
+                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                   isDark 
-                    ? 'bg-neutral-800 border-white/10 focus:border-green-500' 
-                    : 'bg-slate-50 border-slate-300 focus:border-green-500'
+                    ? 'bg-neutral-900 border-white/10 focus:border-green-500' 
+                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500'
                 }`}
               >
                 <option value="Unknown Classification">Unknown Classification</option>
@@ -718,16 +835,18 @@ export default function AnimalsManagement() {
 
             {/* Gender */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-3 opacity-60">
+              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
                 Gender *
               </label>
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData({...formData, gender: e.target.value})}
-                className={`w-full px-4 py-3 rounded-lg border outline-none transition-all ${
+                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                   isDark 
-                    ? 'bg-neutral-800 border-white/10 focus:border-green-500' 
-                    : 'bg-slate-50 border-slate-300 focus:border-green-500'
+                    ? 'bg-neutral-900 border-white/10 focus:border-green-500' 
+                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500'
                 }`}
               >
                 <option value="Female">Female</option>
@@ -737,7 +856,9 @@ export default function AnimalsManagement() {
 
             {/* Breed */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-3 opacity-60">
+              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
                 Breed *
               </label>
               <input
@@ -746,26 +867,28 @@ export default function AnimalsManagement() {
                 value={formData.breed}
                 onChange={(e) => setFormData({...formData, breed: e.target.value})}
                 placeholder="Enter breed"
-                className={`w-full px-4 py-3 rounded-lg border outline-none transition-all ${
+                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                   isDark 
-                    ? 'bg-neutral-800 border-white/10 focus:border-green-500' 
-                    : 'bg-slate-50 border-slate-300 focus:border-green-500'
+                    ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
+                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                 }`}
               />
             </div>
 
             {/* Status */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-3 opacity-60">
+              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
                 Status *
               </label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({...formData, status: e.target.value})}
-                className={`w-full px-4 py-3 rounded-lg border outline-none transition-all ${
+                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                   isDark 
-                    ? 'bg-neutral-800 border-white/10 focus:border-green-500' 
-                    : 'bg-slate-50 border-slate-300 focus:border-green-500'
+                    ? 'bg-neutral-900 border-white/10 focus:border-green-500' 
+                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500'
                 }`}
               >
                 <option value="Active">Active</option>
@@ -776,16 +899,18 @@ export default function AnimalsManagement() {
 
             {/* Health Status */}
             <div>
-              <label className="block text-xs font-bold uppercase tracking-widest mb-3 opacity-60">
+              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
                 Health Status *
               </label>
               <select
                 value={formData.healthStatus}
                 onChange={(e) => setFormData({...formData, healthStatus: e.target.value})}
-                className={`w-full px-4 py-3 rounded-lg border outline-none transition-all ${
+                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                   isDark 
-                    ? 'bg-neutral-800 border-white/10 focus:border-green-500' 
-                    : 'bg-slate-50 border-slate-300 focus:border-green-500'
+                    ? 'bg-neutral-900 border-white/10 focus:border-green-500' 
+                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500'
                 }`}
               >
                 <option value="Healthy">Healthy</option>
@@ -795,61 +920,61 @@ export default function AnimalsManagement() {
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-3 pt-4">
+            <div className="flex gap-3 pt-6">
               <button
                 type="button"
                 onClick={handleCloseForm}
-                className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
+                className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                   isDark 
-                    ? 'bg-neutral-800 hover:bg-neutral-700' 
-                    : 'bg-slate-200 hover:bg-slate-300'
+                    ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
+                    : 'bg-white hover:bg-neutral-50 border-neutral-300'
                 }`}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="flex-1 px-6 py-3 rounded-lg font-semibold bg-green-600 hover:bg-green-700 text-white transition-all"
+                className="flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all"
               >
-                {editingAnimal ? 'Update Animal' : 'Add Animal'}
+                {editingAnimal ? 'Update' : 'Add'}
               </button>
             </div>
           </form>
         </div>
       </div>
 
-      {/* DELETE CONFIRMATION MODAL */}
+      {/* ENHANCED DELETE CONFIRMATION MODAL */}
       {deleteConfirm && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className={`relative max-w-md w-full p-8 rounded-xl ${
-            isDark ? 'bg-neutral-900' : 'bg-white'
+          <div className={`relative max-w-md w-full p-8 border ${
+            isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-300'
           } shadow-2xl`}>
             <div className="text-center">
-              <div className={`inline-flex p-4 rounded-full mb-4 ${
-                isDark ? 'bg-red-500/10' : 'bg-red-50'
+              <div className={`inline-flex p-5 border mb-5 ${
+                isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200'
               }`}>
-                <Trash2 className="w-8 h-8 text-red-500" />
+                <Trash2 className={`w-10 h-10 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
               </div>
-              <h3 className={`${spaceGrotesk.className} text-xl font-bold mb-2`}>
+              <h3 className={`${spaceGrotesk.className} text-2xl font-bold uppercase tracking-tight mb-3`}>
                 Delete Animal?
               </h3>
-              <p className="text-sm opacity-60 mb-6">
+              <p className={`text-sm font-medium mb-8 ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
                 Are you sure you want to delete "{deleteConfirm.name}"? This action cannot be undone.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeleteConfirm(null)}
-                  className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
+                  className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                     isDark 
-                      ? 'bg-neutral-800 hover:bg-neutral-700' 
-                      : 'bg-slate-200 hover:bg-slate-300'
+                      ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
+                      : 'bg-white hover:bg-neutral-50 border-neutral-300'
                   }`}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleDelete(deleteConfirm.id)}
-                  className="flex-1 px-6 py-3 rounded-lg font-semibold bg-red-600 hover:bg-red-700 text-white transition-all"
+                  className="flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-red-600 hover:bg-red-700 text-white border-red-600 transition-all"
                 >
                   Delete
                 </button>
@@ -860,25 +985,37 @@ export default function AnimalsManagement() {
         </div>
       )}
 
-      {/* VIEW ANIMAL MODAL */}
+      {/* ENHANCED VIEW ANIMAL MODAL */}
       {viewingAnimal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className={`relative max-w-3xl w-full p-8 rounded-xl ${
-            isDark ? 'bg-neutral-900' : 'bg-white'
+          <div className={`relative max-w-3xl w-full p-8 border ${
+            isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-300'
           } shadow-2xl`}>
             <div>
               {/* Header */}
-              <div className="flex items-center justify-between mb-6">
+              <div className={`flex items-center justify-between mb-8 pb-6 border-b ${isDark ? 'border-white/10' : 'border-neutral-200'}`}>
                 <div>
-                  <h3 className={`${spaceGrotesk.className} text-2xl font-bold mb-1`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`h-[2px] w-6 ${isDark ? 'bg-green-500' : 'bg-green-600'}`} />
+                    <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.3em] ${
+                      isDark ? 'text-green-400' : 'text-green-600'
+                    }`}>
+                      ANIMAL_PROFILE
+                    </span>
+                  </div>
+                  <h3 className={`${spaceGrotesk.className} text-3xl font-bold uppercase tracking-tight mb-1`}>
                     Animal Details
                   </h3>
-                  <p className="text-sm opacity-60">Complete information about this animal</p>
+                  <p className={`text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Complete information about this animal
+                  </p>
                 </div>
                 <button
                   onClick={() => setViewingAnimal(null)}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'
+                  className={`p-2.5 border transition-all ${
+                    isDark 
+                      ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                      : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                   }`}
                 >
                   <X className="w-5 h-5" />
@@ -886,67 +1023,93 @@ export default function AnimalsManagement() {
               </div>
 
               {/* Details Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-60">
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
                     Animal Name
                   </label>
-                  <p className="text-lg font-bold">{viewingAnimal.name}</p>
+                  <p className={`text-lg font-bold ${spaceGrotesk.className}`}>{viewingAnimal.name}</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-60">
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
                     Date of Birth
                   </label>
                   <p className="text-sm font-medium">{viewingAnimal.dateOfBirth}</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-60">
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
                     Animal Type
                   </label>
                   <p className="text-sm font-medium">{viewingAnimal.animalType}</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-60">
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
                     Gender
                   </label>
                   <p className="text-sm font-medium">{viewingAnimal.gender}</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-60">
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
                     Breed
                   </label>
                   <p className="text-sm font-medium">{viewingAnimal.breed}</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-60">
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
                     Status
                   </label>
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                  <span className={`inline-flex items-center px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${
                     viewingAnimal.status === 'Active' 
-                      ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                        : 'bg-green-50 text-green-700 border-green-200'
                       : viewingAnimal.status === 'Sold'
-                      ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
-                      : 'bg-slate-500/10 text-slate-500 border border-slate-500/20'
+                      ? isDark
+                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                        : 'bg-blue-50 text-blue-700 border-blue-200'
+                      : isDark
+                        ? 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20'
+                        : 'bg-neutral-100 text-neutral-600 border-neutral-200'
                   }`}>
                     {viewingAnimal.status}
                   </span>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest mb-2 opacity-60">
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
                     Health Status
                   </label>
-                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${
+                  <span className={`inline-flex items-center px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${
                     viewingAnimal.healthStatus === 'Healthy' 
-                      ? 'bg-green-500/10 text-green-500 border border-green-500/20'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                        : 'bg-green-50 text-green-700 border-green-200'
                       : viewingAnimal.healthStatus === 'Sick'
-                      ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                      : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                      ? isDark
+                        ? 'bg-red-500/10 text-red-400 border-red-500/20'
+                        : 'bg-red-50 text-red-700 border-red-200'
+                      : isDark
+                        ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                        : 'bg-amber-50 text-amber-700 border-amber-200'
                   }`}>
                     {viewingAnimal.healthStatus}
                   </span>
@@ -954,13 +1117,13 @@ export default function AnimalsManagement() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3 pt-4">
+              <div className={`flex gap-3 pt-4 border-t ${isDark ? 'border-white/10' : 'border-neutral-200'}`}>
                 <button
                   onClick={() => setViewingAnimal(null)}
-                  className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all ${
+                  className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                     isDark 
-                      ? 'bg-neutral-800 hover:bg-neutral-700' 
-                      : 'bg-slate-200 hover:bg-slate-300'
+                      ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
+                      : 'bg-white hover:bg-neutral-50 border-neutral-300'
                   }`}
                 >
                   Close
@@ -970,7 +1133,7 @@ export default function AnimalsManagement() {
                     handleOpenForm(viewingAnimal);
                     setViewingAnimal(null);
                   }}
-                  className="flex-1 px-6 py-3 rounded-lg font-semibold bg-green-600 hover:bg-green-700 text-white transition-all"
+                  className="flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all"
                 >
                   Edit Animal
                 </button>

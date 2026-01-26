@@ -34,13 +34,13 @@ export default function LivestockOverview() {
   ];
 
   const CornerBrackets = () => {
-    const borderColor = isDark ? "border-green-500/30" : "border-slate-800";
+    const borderColor = isDark ? "border-green-500/20" : "border-neutral-300";
     return (
       <>
-        <div className={`absolute top-0 left-0 w-2 h-2 border-l-2 border-t-2 ${borderColor}`} />
-        <div className={`absolute top-0 right-0 w-2 h-2 border-r-2 border-t-2 ${borderColor}`} />
-        <div className={`absolute bottom-0 left-0 w-2 h-2 border-l-2 border-b-2 ${borderColor}`} />
-        <div className={`absolute bottom-0 right-0 w-2 h-2 border-r-2 border-b-2 ${borderColor}`} />
+        <div className={`absolute top-0 left-0 w-3 h-3 border-l border-t ${borderColor} transition-all duration-300`} />
+        <div className={`absolute top-0 right-0 w-3 h-3 border-r border-t ${borderColor} transition-all duration-300`} />
+        <div className={`absolute bottom-0 left-0 w-3 h-3 border-l border-b ${borderColor} transition-all duration-300`} />
+        <div className={`absolute bottom-0 right-0 w-3 h-3 border-r border-b ${borderColor} transition-all duration-300`} />
       </>
     );
   };
@@ -49,15 +49,21 @@ export default function LivestockOverview() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${inter.className} ${
-      isDark ? 'bg-neutral-950 text-white' : 'bg-slate-50 text-slate-900'
+      isDark ? 'bg-neutral-950 text-white' : 'bg-neutral-50 text-neutral-900'
     }`}>
       
-      {/* BACKGROUND TEXTURE */}
+      {/* ENHANCED BACKGROUND TEXTURE */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {isDark ? (
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+          <>
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.05]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.03),transparent_70%)]" />
+          </>
         ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          <>
+            <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-100" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.02),transparent_70%)]" />
+          </>
         )}
       </div>
 
@@ -74,23 +80,40 @@ export default function LivestockOverview() {
       <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-10">
           
-          {/* TITLE & TABS */}
+          {/* MODERNIZED TITLE & TABS */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className={`${spaceGrotesk.className} text-4xl font-bold mb-2`}>
-                Livestock Analytics
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className="font-mono text-[10px] text-green-500/70 uppercase tracking-[0.3em]">
+                  LIVESTOCK_SYSTEM
+                </span>
+              </div>
+              <h1 className={`${spaceGrotesk.className} text-4xl md:text-5xl font-bold uppercase tracking-tighter mb-2`}>
+                Livestock <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Analytics</span>
               </h1>
-              <p className="font-medium opacity-60">
+              <p className={`font-light ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Real-time monitoring of herd population and health metrics.
               </p>
             </div>
-            <div className={`flex p-1 rounded-lg border ${isDark ? 'bg-neutral-900 border-white/5' : 'bg-white border-slate-300 shadow-sm'}`}>
+            
+            {/* Enhanced Tab Navigation */}
+            <div className={`flex p-1.5 border backdrop-blur-md ${
+              isDark ? 'bg-neutral-900/50 border-white/10' : 'bg-white border-neutral-300 shadow-sm'
+            }`}>
               <Link href="/livestockmanagement/animal/dashboard">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/animal/dashboard')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Overview
@@ -98,10 +121,14 @@ export default function LivestockOverview() {
               </Link>
               <Link href="/livestockmanagement/animal/sheds">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/animal/sheds')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Sheds
@@ -109,10 +136,14 @@ export default function LivestockOverview() {
               </Link>
               <Link href="/livestockmanagement/animal/animals">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/animal/animals')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Animals
@@ -121,24 +152,33 @@ export default function LivestockOverview() {
             </div>
           </div>
 
-          <hr className={isDark ? 'border-white/5' : 'border-slate-300'} />
+          <hr className={isDark ? 'border-white/10' : 'border-neutral-200'} />
 
           {/* 1. POPULATION STATS */}
           <section className="space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-4 bg-green-500 rounded-full"></div>
-              <h2 className="text-xs font-black uppercase tracking-[0.2em]">Total Population</h2>
+            <div className="flex items-center gap-3">
+              <div className={`h-[2px] w-8 ${isDark ? 'bg-green-500/50' : 'bg-green-500'}`} />
+              <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
+                isDark ? 'text-neutral-400' : 'text-neutral-500'
+              }`}>
+                Total Population
+              </h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {populationStats.map((stat, idx) => (
-                <div key={idx} className={`relative p-6 rounded-lg border transition-all duration-300 hover:-translate-y-1 ${
-                  isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 hover:border-green-600 shadow-sm'
+                <div key={idx} className={`relative p-6 border transition-all duration-300 hover:-translate-y-1 group ${
+                  isDark ? 'bg-neutral-900/50 border-white/10 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
                 }`}>
                   <div className="flex justify-between items-start mb-4">
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">{stat.label}</span>
+                    <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${
+                      isDark ? 'text-neutral-500' : 'text-neutral-400'
+                    }`}>{stat.label}</span>
                     <stat.icon className={`w-4 h-4 ${stat.color} opacity-80`} />
                   </div>
                   <h3 className={`${spaceGrotesk.className} text-4xl font-bold`}>{stat.value}</h3>
+                  <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${
+                    isDark ? 'bg-green-500' : 'bg-green-600'
+                  }`} />
                   <CornerBrackets />
                 </div>
               ))}
@@ -147,34 +187,43 @@ export default function LivestockOverview() {
 
           {/* 2. HEALTH STATUS */}
           <section className="space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-4 bg-red-500 rounded-full"></div>
-              <h2 className="text-xs font-black uppercase tracking-[0.2em]">Health Status</h2>
+            <div className="flex items-center gap-3">
+              <div className={`h-[2px] w-8 ${isDark ? 'bg-red-500/50' : 'bg-red-500'}`} />
+              <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
+                isDark ? 'text-neutral-400' : 'text-neutral-500'
+              }`}>
+                Health Status
+              </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {healthStats.map((stat, idx) => (
-                <div key={idx} className={`relative p-6 rounded-lg border transition-all duration-300 ${
-                  isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+                <div key={idx} className={`relative p-6 border transition-all duration-300 group ${
+                  isDark ? 'bg-neutral-900/50 border-white/10 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
                 }`}>
                   <div className="flex justify-between items-start mb-6">
-                    <div className={`p-2 rounded-md ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}>
+                    <div className={`p-2.5 border ${isDark ? 'bg-white/5 border-white/10' : 'bg-neutral-50 border-neutral-200'}`}>
                       <stat.icon className="w-5 h-5" />
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded border ${
-                      isDark ? 'border-white/10' : 'border-slate-300'
+                    <span className={`text-[10px] font-bold font-mono uppercase tracking-wider px-2.5 py-1 border ${
+                      isDark ? 'border-white/10' : 'border-neutral-300'
                     }`}>
                       {stat.status}
                     </span>
                   </div>
                   <div className="flex items-end justify-between">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-widest block mb-1 opacity-50">
+                      <span className={`text-[10px] font-bold uppercase tracking-widest font-mono block mb-1 ${
+                        isDark ? 'text-neutral-500' : 'text-neutral-400'
+                      }`}>
                         {stat.label}
                       </span>
                       <h3 className={`${spaceGrotesk.className} text-4xl font-bold`}>{stat.value}</h3>
                     </div>
                     <div className={`h-1.5 w-12 rounded-full mb-2 ${stat.color}`}></div>
                   </div>
+                  <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${
+                    isDark ? 'bg-green-500' : 'bg-green-600'
+                  }`} />
                   <CornerBrackets />
                 </div>
               ))}
@@ -183,19 +232,27 @@ export default function LivestockOverview() {
 
           {/* 3. SALES & TRENDS */}
           <section className="space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-4 bg-yellow-500 rounded-full"></div>
-              <h2 className="text-xs font-black uppercase tracking-[0.2em]">Sales & Trends</h2>
+            <div className="flex items-center gap-3">
+              <div className={`h-[2px] w-8 ${isDark ? 'bg-yellow-500/50' : 'bg-yellow-500'}`} />
+              <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
+                isDark ? 'text-neutral-400' : 'text-neutral-500'
+              }`}>
+                Sales & Trends
+              </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className={`relative p-6 rounded-lg border ${
-                isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+              <div className={`relative p-6 border group ${
+                isDark ? 'bg-neutral-900/50 border-white/10 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
               }`}>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-emerald-500/10 rounded">
+                  <div className={`p-2.5 border ${
+                    isDark ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-emerald-50 border-emerald-200'
+                  }`}>
                     <TrendingUp size={18} className="text-emerald-500" />
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
                     Sold This Month
                   </span>
                 </div>
@@ -203,6 +260,9 @@ export default function LivestockOverview() {
                   <h3 className={`${spaceGrotesk.className} text-4xl font-bold`}>12</h3>
                   <span className="text-xs font-bold text-emerald-500">+15% vs last mo.</span>
                 </div>
+                <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${
+                  isDark ? 'bg-green-500' : 'bg-green-600'
+                }`} />
                 <CornerBrackets />
               </div>
             </div>

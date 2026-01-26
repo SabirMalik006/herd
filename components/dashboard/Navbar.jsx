@@ -3,9 +3,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  Sun, Moon, Bell, Sprout, LogOut, Upload, Trash2,
+  Sun, Moon, Bell, LogOut, Upload, Trash2,
   Home, Milk, Package, DollarSign, Users, CreditCard,
-  Activity, ChevronRight, ChevronDown, ChevronLeft
+  Activity, ChevronRight, ChevronDown, ChevronLeft, Zap
 } from 'lucide-react';
 import { Space_Grotesk, Inter } from "next/font/google";
 
@@ -113,25 +113,48 @@ export default function Navbar({
 
   return (
     <>
-      {/* SIDEBAR */}
+      {/* MODERNIZED SIDEBAR */}
       <aside className={`fixed left-0 top-0 h-full ${sidebarOpen ? 'w-72' : 'w-0'} border-r transition-all duration-300 overflow-hidden z-50 flex flex-col ${
-        isDark ? 'bg-neutral-950 border-white/5' : 'bg-slate-100 border-slate-300 border-r-2 shadow-2xl'
+        isDark 
+          ? 'bg-neutral-950 border-white/10' 
+          : 'bg-white border-neutral-200'
       }`}>
-        {/* Logo */}
-        <div className={`h-20 flex-shrink-0 flex items-center px-8 border-b ${isDark ? 'border-white/5' : 'border-slate-300'}`}>
+        
+        {/* Logo Section */}
+        <div className={`h-20 flex-shrink-0 flex items-center px-6 border-b relative ${
+          isDark ? 'border-white/10' : 'border-neutral-200'
+        }`}>
+          <Link
+           href={'/'}
+          >
           <div className="flex items-center gap-3">
-            
-            <img src='/erp-logo.png' alt="ERP Logo" className='w-[100px] h-[100px]' />
+            <img src='/erp-logo.png' alt="ERP Logo" className='h-28 w-auto object-contain' />
           </div>
+          </Link>
+          
+          {/* Animated accent line */}
+          <div className={`absolute bottom-0 left-0 h-[2px] bg-green-500 ${
+            isDark ? 'shadow-[0_0_10px_rgba(34,197,94,0.5)]' : ''
+          }`} 
+          style={{ 
+            width: '40%',
+            animation: 'slideAccent 3s ease-in-out infinite'
+          }} />
         </div>
 
         {/* Navigation Menu */}
-        <div className="flex-1 overflow-y-auto py-8 px-4 space-y-8 [&::-webkit-scrollbar]:hidden">
+        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-8 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-neutral-700 [&::-webkit-scrollbar-thumb]:rounded-full">
           {menuItems.map((section, idx) => (
             <div key={idx}>
-              <h3 className={`text-[10px] font-black ${isDark ? 'text-neutral-500' : 'text-slate-500'} uppercase tracking-[0.2em] mb-4 pl-3 font-mono`}>
-                {section.section}
-              </h3>
+              <div className="flex items-center gap-2 mb-4 pl-3">
+                <div className={`h-[1px] w-3 ${isDark ? 'bg-green-500/30' : 'bg-green-500/50'}`} />
+                <h3 className={`text-[9px] font-black uppercase tracking-[0.25em] font-mono ${
+                  isDark ? 'text-neutral-600' : 'text-neutral-400'
+                }`}>
+                  {section.section}
+                </h3>
+              </div>
+              
               <div className="space-y-1">
                 {section.items.map((item, i) => {
                   const isActive = pathname === item.route || (item.children && item.children.some(child => pathname === child.route));
@@ -141,55 +164,92 @@ export default function Navbar({
                       {item.type === 'collapsible' ? (
                         <button
                           onClick={() => setLivestockExpanded(!livestockExpanded)}
-                          className={`group w-full flex items-center justify-between px-3 py-2.5 rounded-sm transition-all border ${
+                          className={`group w-full flex items-center justify-between px-3 py-3 transition-all relative ${
                             isActive
-                              ? isDark ? 'bg-white/5 border-white/5 text-green-400' : 'bg-white border-slate-300 border-b-2 shadow-sm text-green-700' 
+                              ? isDark 
+                                ? 'bg-green-500/10 text-green-400' 
+                                : 'bg-green-50 text-green-700' 
                               : isDark 
-                                ? 'border-transparent text-neutral-400 hover:text-green-400 hover:bg-white/5' 
-                                : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white hover:border-slate-200'
+                                ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                                : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
                           }`}
                         >
+                          {/* Active indicator */}
+                          {isActive && (
+                            <div className={`absolute left-0 top-0 bottom-0 w-[2px] ${
+                              isDark ? 'bg-green-400' : 'bg-green-600'
+                            }`} />
+                          )}
+                          
                           <div className="flex items-center gap-3">
-                            <item.icon className={`w-4 h-4 ${isActive ? 'text-green-500' : 'opacity-70'}`} />
-                            <span className="text-[13px] font-bold tracking-wide">{item.name}</span>
+                            <item.icon className={`w-4 h-4 transition-transform ${
+                              isActive ? 'scale-110' : 'group-hover:scale-110'
+                            }`} />
+                            <span className="text-[12px] font-bold tracking-wide">{item.name}</span>
                           </div>
-                          {livestockExpanded ? <ChevronDown className="w-3 h-3 opacity-50" /> : <ChevronRight className="w-3 h-3 opacity-50" />}
+                          <div className="transition-transform duration-200">
+                            {livestockExpanded ? (
+                              <ChevronDown className="w-3 h-3 opacity-50" />
+                            ) : (
+                              <ChevronRight className="w-3 h-3 opacity-50" />
+                            )}
+                          </div>
                         </button>
                       ) : (
                         <Link
                           href={item.route || '#'}
-                          className={`group w-full flex items-center justify-between px-3 py-2.5 rounded-sm transition-all border ${
+                          className={`group w-full flex items-center justify-between px-3 py-3 transition-all relative ${
                             isActive
-                              ? isDark ? 'bg-white/5 border-white/5 text-green-400' : 'bg-white border-slate-300 border-b-2 shadow-sm text-green-700'
+                              ? isDark 
+                                ? 'bg-green-500/10 text-green-400' 
+                                : 'bg-green-50 text-green-700'
                               : isDark 
-                                ? 'border-transparent text-neutral-400 hover:text-green-400 hover:bg-white/5' 
-                                : 'border-transparent text-slate-500 hover:text-slate-900 hover:bg-white hover:border-slate-200'
+                                ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                                : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-50'
                           }`}
                         >
+                          {/* Active indicator */}
+                          {isActive && (
+                            <div className={`absolute left-0 top-0 bottom-0 w-[2px] ${
+                              isDark ? 'bg-green-400' : 'bg-green-600'
+                            }`} />
+                          )}
+                          
                           <div className="flex items-center gap-3">
-                            <item.icon className={`w-4 h-4 ${isActive ? 'text-green-500' : 'opacity-70'}`} />
-                            <span className="text-[13px] font-bold tracking-wide">{item.name}</span>
+                            <item.icon className={`w-4 h-4 transition-transform ${
+                              isActive ? 'scale-110' : 'group-hover:scale-110'
+                            }`} />
+                            <span className="text-[12px] font-bold tracking-wide">{item.name}</span>
                           </div>
                         </Link>
                       )}
 
                       {/* Submenu */}
                       {item.type === 'collapsible' && livestockExpanded && item.children && (
-                        <div className={`mt-1 ml-4 pl-4 border-l-2 space-y-1 ${isDark ? 'border-white/10' : 'border-slate-300'}`}>
+                        <div className={`mt-1 ml-6 pl-4 border-l space-y-1 ${
+                          isDark ? 'border-white/10' : 'border-neutral-200'
+                        }`}>
                           {item.children.map((subItem, subIdx) => {
                             const isSubActive = pathname === subItem.route;
                             return (
                               <Link
                                 key={subIdx}
                                 href={subItem.route}
-                                className={`block w-full text-left px-3 py-2 rounded-sm text-[12px] font-bold transition-all ${
+                                className={`block w-full text-left px-3 py-2.5 text-[11px] font-bold transition-all relative ${
                                   isSubActive
-                                    ? 'text-green-600 bg-green-500/5'
+                                    ? isDark
+                                      ? 'text-green-400 bg-green-500/5'
+                                      : 'text-green-600 bg-green-50'
                                     : isDark 
                                       ? 'text-neutral-500 hover:text-green-400 hover:bg-white/5' 
-                                      : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
+                                      : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                                 }`}
                               >
+                                {isSubActive && (
+                                  <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full ${
+                                    isDark ? 'bg-green-400' : 'bg-green-600'
+                                  }`} />
+                                )}
                                 {subItem.name}
                               </Link>
                             );
@@ -204,91 +264,170 @@ export default function Navbar({
           ))}
         </div>
 
-        {/* Subscription Card */}
-        <div className={`p-6 border-t flex-shrink-0 ${isDark ? 'border-white/5' : 'border-slate-300'}`}>
-          <div className={`rounded-lg p-4 border ${isDark ? 'bg-green-900/20 border-green-500/20' : 'bg-white border-slate-300 border-b-2 shadow-sm'}`}>
-            <p className={`text-xs font-bold mb-1 ${isDark ? 'text-green-400' : 'text-slate-900'}`}>Pro Plan Active</p>
-            <p className="text-[10px] opacity-70">Valid until Dec 2024</p>
+        {/* Enhanced Subscription Card */}
+        <div className={`p-6 border-t flex-shrink-0 ${
+          isDark ? 'border-white/10' : 'border-neutral-200'
+        }`}>
+          <div className={`relative overflow-hidden p-5 border group/sub ${
+            isDark 
+              ? 'bg-gradient-to-br from-green-900/20 to-green-900/5 border-green-500/20' 
+              : 'bg-gradient-to-br from-green-50 to-white border-green-200'
+          }`}>
+            {/* Corner accents */}
+            <div className={`absolute top-0 left-0 w-2 h-2 border-l border-t ${
+              isDark ? 'border-green-500/30' : 'border-green-400'
+            }`} />
+            <div className={`absolute bottom-0 right-0 w-2 h-2 border-r border-b ${
+              isDark ? 'border-green-500/30' : 'border-green-400'
+            }`} />
+            
+            <div className="flex items-start justify-between mb-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Zap className={`w-3 h-3 ${isDark ? 'text-green-400' : 'text-green-600'}`} />
+                  <p className={`text-xs font-bold uppercase tracking-wider ${
+                    isDark ? 'text-green-400' : 'text-green-700'
+                  }`}>Pro Plan</p>
+                </div>
+                <p className={`text-[10px] font-mono ${
+                  isDark ? 'text-neutral-500' : 'text-neutral-500'
+                }`}>Valid until Dec 2024</p>
+              </div>
+              <div className={`px-2 py-0.5 border text-[8px] font-mono font-bold ${
+                isDark
+                  ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                  : 'bg-green-100 border-green-300 text-green-700'
+              }`}>
+                ACTIVE
+              </div>
+            </div>
+            
+            <button className={`w-full text-[10px] font-bold uppercase tracking-widest py-2 border transition-all ${
+              isDark
+                ? 'border-green-500/30 text-green-400 hover:bg-green-500/10'
+                : 'border-green-300 text-green-700 hover:bg-green-100'
+            }`}>
+              Manage Plan
+            </button>
           </div>
         </div>
       </aside>
 
-      {/* Arrow Toggle Button - Fixed Position */}
+      {/* Enhanced Arrow Toggle Button */}
       <button
         onClick={() => setSidebarOpen(!sidebarOpen)}
-        className={`fixed top-[4.5rem] ${sidebarOpen ? 'left-[17.5rem]' : 'left-4'} z-50 p-2 rounded-full border-2 transition-all duration-300 shadow-lg hover:scale-110 ${
+        className={`fixed top-24 ${sidebarOpen ? 'left-[17.5rem]' : 'left-4'} z-50 p-2.5 border transition-all duration-300 shadow-lg hover:scale-110 backdrop-blur-md ${
           isDark 
-            ? 'bg-neutral-900 border-green-500/30 hover:border-green-500 text-green-400' 
-            : 'bg-white border-slate-300 hover:border-green-500 text-slate-700 hover:text-green-600'
+            ? 'bg-neutral-900/80 border-green-500/20 hover:border-green-500/50 text-green-400' 
+            : 'bg-white/90 border-neutral-300 hover:border-green-500 text-neutral-700 hover:text-green-600'
         }`}
         aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
       >
         {sidebarOpen ? (
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-4 h-4" />
         ) : (
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-4 h-4" />
         )}
       </button>
 
-      {/* TOP NAVBAR */}
-      <header className={`sticky top-0 z-40 h-20 border-b ${
+      {/* MODERNIZED TOP NAVBAR */}
+      <header className={`sticky top-0 z-40 h-20 border-b backdrop-blur-xl ${
         isDark 
-          ? 'bg-neutral-950/80 border-white/5 backdrop-blur-xl' 
-          : 'bg-white/90 border-slate-300 border-b-2 backdrop-blur-xl'
+          ? 'bg-neutral-950/90 border-white/10' 
+          : 'bg-white/90 border-neutral-200'
       }`}>
         <div className="h-full px-6 lg:px-10 flex items-center justify-between">
-          {/* LEFT SECTION */}
+          
+          {/* LEFT SECTION - Can add breadcrumbs here */}
           <div className="flex items-center gap-4">
-            {/* Empty space for balance or add breadcrumbs */}
+            {/* Empty for now, can add breadcrumbs */}
           </div>
 
           {/* RIGHT SECTION */}
           <div className="flex items-center gap-6 ml-auto">
-            {/* System Status */}
-            <div className={`hidden xl:flex items-center gap-2 font-mono text-[9px] uppercase tracking-widest px-3 py-1 rounded-full border ${
+            
+            {/* Enhanced System Status */}
+            <div className={`hidden xl:flex items-center gap-3 px-4 py-2 border backdrop-blur-md relative overflow-hidden group/status ${
               isDark 
-                ? 'bg-green-500/10 border-green-500/20 text-green-600' 
-                : 'bg-white border-slate-300 text-slate-700 shadow-sm font-bold'
+                ? 'bg-green-500/5 border-green-500/20' 
+                : 'bg-green-50 border-green-200'
             }`}>
-              <span className="flex h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse"></span> 
-              SYS_ONLINE
+              <div className="flex items-center gap-2">
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className={`font-mono text-[9px] uppercase tracking-[0.2em] font-bold ${
+                  isDark ? 'text-green-400' : 'text-green-700'
+                }`}>
+                  SYS_ONLINE
+                </span>
+              </div>
+              
+              {/* Hover effect line */}
+              <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover/status:w-full transition-all duration-500 ${
+                isDark ? 'bg-green-400' : 'bg-green-600'
+              }`} />
             </div>
             
-            {/* Actions */}
-            <div className={`flex items-center gap-3 border-l pl-6 ${
-              isDark ? 'border-white/10' : 'border-slate-300'
+            {/* Action Buttons */}
+            <div className={`flex items-center gap-2 border-l pl-6 ${
+              isDark ? 'border-white/10' : 'border-neutral-200'
             }`}>
+              {/* Theme Toggle */}
               <button 
                 onClick={() => setIsDark(!isDark)}
-                className={`p-2 rounded-lg transition-colors ${
-                  isDark ? 'hover:bg-white/5' : 'hover:bg-slate-100'
+                className={`p-2.5 border transition-all hover:scale-105 ${
+                  isDark 
+                    ? 'hover:bg-white/5 border-white/10 hover:border-white/20' 
+                    : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                 }`}
                 aria-label="Toggle theme"
               >
                 {isDark ? <Sun size={18} /> : <Moon size={18} />}
               </button>
+              
+              {/* Notifications */}
               <button 
-                className={`p-2 rounded-lg transition-colors relative ${
-                  isDark ? 'hover:bg-white/5' : 'hover:bg-slate-100'
+                className={`p-2.5 border transition-all relative hover:scale-105 ${
+                  isDark 
+                    ? 'hover:bg-white/5 border-white/10 hover:border-white/20' 
+                    : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                 }`}
                 aria-label="Notifications"
               >
                 <Bell size={18} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                </span>
               </button>
             </div>
             
-            {/* User Profile */}
-            <div className="flex items-center gap-3 pl-2 relative" ref={profileMenuRef}>
+            {/* Enhanced User Profile */}
+            <div className={`flex items-center gap-3 pl-4 border-l relative ${
+              isDark ? 'border-white/10' : 'border-neutral-200'
+            }`} ref={profileMenuRef}>
               <div className="text-right hidden md:block">
-                <p className="text-sm font-bold">Musa</p>
-                <p className="text-[10px] opacity-50 uppercase font-bold tracking-tighter">Manager</p>
+                <p className={`text-sm font-bold ${spaceGrotesk.className} tracking-tight`}>Musa</p>
+                <p className={`text-[9px] uppercase font-mono tracking-[0.2em] font-bold ${
+                  isDark ? 'text-neutral-600' : 'text-neutral-400'
+                }`}>
+                  Manager
+                </p>
               </div>
+              
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className={`w-9 h-9 rounded bg-gradient-to-br from-green-500 to-emerald-700 border-2 border-green-500 overflow-hidden flex items-center justify-center text-white font-bold text-sm transition-transform hover:scale-105 ${
-                  showProfileMenu ? 'ring-2 ring-green-400 ring-offset-2' : ''
-                }`}
+                className={`relative w-10 h-10 border-2 overflow-hidden flex items-center justify-center font-bold text-sm transition-all hover:scale-105 ${
+                  showProfileMenu 
+                    ? isDark
+                      ? 'border-green-400 ring-2 ring-green-400/20'
+                      : 'border-green-600 ring-2 ring-green-600/20'
+                    : isDark
+                      ? 'border-green-500/30 hover:border-green-500/50'
+                      : 'border-green-500/50 hover:border-green-600'
+                } ${isDark ? 'bg-gradient-to-br from-green-600/20 to-green-900/20 text-green-400' : 'bg-gradient-to-br from-green-50 to-green-100 text-green-700'}`}
               >
                 {profilePhoto ? (
                   <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
@@ -297,32 +436,55 @@ export default function Navbar({
                 )}
               </button>
 
-              {/* Profile Dropdown Menu */}
+              {/* Enhanced Profile Dropdown Menu */}
               {showProfileMenu && (
-                <div className={`absolute right-0 top-full mt-2 w-56 rounded-lg border shadow-xl ${
+                <div className={`absolute right-0 top-full mt-3 w-64 border backdrop-blur-xl overflow-hidden ${
                   isDark 
-                    ? 'bg-neutral-900 border-white/10' 
-                    : 'bg-white border-slate-200'
+                    ? 'bg-neutral-900/95 border-white/10 shadow-2xl' 
+                    : 'bg-white/95 border-neutral-200 shadow-xl'
                 }`}>
+                  {/* User Info Header */}
+                  <div className={`p-4 border-b ${isDark ? 'border-white/10' : 'border-neutral-200'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className={`w-12 h-12 border-2 overflow-hidden flex items-center justify-center font-bold ${
+                        isDark
+                          ? 'border-green-500/30 bg-gradient-to-br from-green-600/20 to-green-900/20 text-green-400'
+                          : 'border-green-500/50 bg-gradient-to-br from-green-50 to-green-100 text-green-700'
+                      }`}>
+                        {profilePhoto ? (
+                          <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          'M'
+                        )}
+                      </div>
+                      <div>
+                        <p className={`font-bold text-sm ${spaceGrotesk.className}`}>Musa</p>
+                        <p className={`text-[10px] font-mono uppercase tracking-wider ${
+                          isDark ? 'text-neutral-500' : 'text-neutral-400'
+                        }`}>Manager</p>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="p-2">
                     {/* Upload Photo Option */}
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
                         isDark 
                           ? 'hover:bg-white/5 text-neutral-300' 
-                          : 'hover:bg-slate-100 text-slate-700'
+                          : 'hover:bg-neutral-50 text-neutral-700'
                       }`}
                     >
                       <Upload size={16} />
                       {profilePhoto ? 'Change Photo' : 'Upload Photo'}
                     </button>
 
-                    {/* Remove Photo Option (only if photo exists) */}
+                    {/* Remove Photo Option */}
                     {profilePhoto && (
                       <button
                         onClick={handleRemovePhoto}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
                           isDark 
                             ? 'hover:bg-red-500/10 text-red-400' 
                             : 'hover:bg-red-50 text-red-600'
@@ -334,12 +496,12 @@ export default function Navbar({
                     )}
 
                     {/* Divider */}
-                    <div className={`my-2 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`} />
+                    <div className={`my-2 border-t ${isDark ? 'border-white/10' : 'border-neutral-200'}`} />
 
                     {/* Logout Option */}
                     <button
                       onClick={handleLogout}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
                         isDark 
                           ? 'hover:bg-red-500/10 text-red-400' 
                           : 'hover:bg-red-50 text-red-600'
@@ -364,6 +526,14 @@ export default function Navbar({
           </div>
         </div>
       </header>
+
+      {/* Accent line animation */}
+      <style jsx global>{`
+        @keyframes slideAccent {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(150%); }
+        }
+      `}</style>
     </>
   );
 }

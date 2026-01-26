@@ -27,13 +27,13 @@ export default function ReproductionDashboard() {
   ];
 
   const CornerBrackets = () => {
-    const borderColor = isDark ? "border-green-500/30" : "border-slate-800";
+    const borderColor = isDark ? "border-green-500/20" : "border-neutral-300";
     return (
       <>
-        <div className={`absolute top-0 left-0 w-2 h-2 border-l-2 border-t-2 ${borderColor}`} />
-        <div className={`absolute top-0 right-0 w-2 h-2 border-r-2 border-t-2 ${borderColor}`} />
-        <div className={`absolute bottom-0 left-0 w-2 h-2 border-l-2 border-b-2 ${borderColor}`} />
-        <div className={`absolute bottom-0 right-0 w-2 h-2 border-r-2 border-b-2 ${borderColor}`} />
+        <div className={`absolute top-0 left-0 w-3 h-3 border-l border-t ${borderColor} transition-all duration-300`} />
+        <div className={`absolute top-0 right-0 w-3 h-3 border-r border-t ${borderColor} transition-all duration-300`} />
+        <div className={`absolute bottom-0 left-0 w-3 h-3 border-l border-b ${borderColor} transition-all duration-300`} />
+        <div className={`absolute bottom-0 right-0 w-3 h-3 border-r border-b ${borderColor} transition-all duration-300`} />
       </>
     );
   };
@@ -42,15 +42,21 @@ export default function ReproductionDashboard() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${inter.className} ${
-      isDark ? 'bg-neutral-950 text-white' : 'bg-slate-50 text-slate-900'
+      isDark ? 'bg-neutral-950 text-white' : 'bg-neutral-50 text-neutral-900'
     }`}>
       
-      {/* BACKGROUND TEXTURE */}
+      {/* ENHANCED BACKGROUND TEXTURE */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {isDark ? (
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+          <>
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.05]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.03),transparent_70%)]" />
+          </>
         ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          <>
+            <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-100" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.02),transparent_70%)]" />
+          </>
         )}
       </div>
 
@@ -65,25 +71,42 @@ export default function ReproductionDashboard() {
 
       {/* MAIN CONTENT */}
       <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
-        <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-10">
+        <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
-          {/* TITLE & TABS */}
+          {/* MODERNIZED TITLE & TABS */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className={`${spaceGrotesk.className} text-4xl font-bold mb-2`}>
-                Reproduction Overview
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className="font-mono text-[10px] text-green-500/80 uppercase tracking-[0.3em]">
+                  [REPRODUCTION_SYSTEM]
+                </span>
+              </div>
+              <h1 className={`${spaceGrotesk.className} text-4xl md:text-5xl font-bold uppercase tracking-tighter leading-[0.9] mb-2`}>
+                Reproduction <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Overview</span>
               </h1>
-              <p className="font-medium opacity-60">
+              <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Monitor breeding, pregnancy, and delivery cycles across your herd.
               </p>
             </div>
-            <div className={`flex p-1 rounded-lg border ${isDark ? 'bg-neutral-900 border-white/5' : 'bg-white border-slate-300 shadow-sm'}`}>
+            
+            {/* Enhanced Tab Navigation */}
+            <div className={`flex p-1.5 border backdrop-blur-md ${
+              isDark ? 'bg-neutral-900/50 border-white/10' : 'bg-white border-neutral-300 shadow-sm'
+            }`}>
               <Link href="/livestockmanagement/reproduction/dashboard">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dashboard')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Dashboard
@@ -91,10 +114,14 @@ export default function ReproductionDashboard() {
               </Link>
               <Link href="/livestockmanagement/reproduction/breeding">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/breeding')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Breeding
@@ -102,10 +129,14 @@ export default function ReproductionDashboard() {
               </Link>
               <Link href="/livestockmanagement/reproduction/pregnancy">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/pregnancy')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Pregnancy
@@ -113,10 +144,14 @@ export default function ReproductionDashboard() {
               </Link>
               <Link href="/livestockmanagement/reproduction/dryoff">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dryoff')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Dry-Off
@@ -125,24 +160,34 @@ export default function ReproductionDashboard() {
             </div>
           </div>
 
-          <hr className={isDark ? 'border-white/5' : 'border-slate-300'} />
-
           {/* 1. OVERVIEW STATS */}
           <section className="space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-4 bg-green-500 rounded-full"></div>
-              <h2 className="text-xs font-black uppercase tracking-[0.2em]">Reproduction Stats</h2>
+            <div className="flex items-center gap-3">
+              <div className={`h-[2px] w-8 ${isDark ? 'bg-green-500/50' : 'bg-green-500'}`} />
+              <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
+                isDark ? 'text-neutral-400' : 'text-neutral-500'
+              }`}>
+                Reproduction Stats
+              </h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {overviewStats.map((stat, idx) => (
-                <div key={idx} className={`relative p-6 rounded-lg border transition-all duration-300 hover:-translate-y-1 ${
-                  isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 hover:border-green-600 shadow-sm'
+                <div key={idx} className={`relative p-6 border transition-all duration-300 hover:-translate-y-1 ${
+                  isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
                 }`}>
                   <div className="flex justify-between items-start mb-4">
-                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">{stat.label}</span>
-                    <stat.icon className={`w-4 h-4 ${stat.color} opacity-80`} />
+                    <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] ${
+                      isDark ? 'text-neutral-500' : 'text-neutral-400'
+                    }`}>
+                      {stat.label}
+                    </span>
+                    <div className={`p-2.5 border ${
+                      isDark ? 'bg-white/5 border-white/10' : 'bg-neutral-50 border-neutral-200'
+                    }`}>
+                      <stat.icon className={`w-4 h-4 ${stat.color}`} />
+                    </div>
                   </div>
-                  <h3 className={`${spaceGrotesk.className} text-4xl font-bold`}>{stat.value}</h3>
+                  <h3 className={`${spaceGrotesk.className} text-4xl font-bold tracking-tight`}>{stat.value}</h3>
                   <CornerBrackets />
                 </div>
               ))}
@@ -151,21 +196,27 @@ export default function ReproductionDashboard() {
 
           {/* 2. IMPORTANT ALERTS */}
           <section className="space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-4 bg-amber-500 rounded-full"></div>
-              <h2 className="text-xs font-black uppercase tracking-[0.2em]">Important Alerts</h2>
+            <div className="flex items-center gap-3">
+              <div className={`h-[2px] w-8 ${isDark ? 'bg-amber-500/50' : 'bg-amber-500'}`} />
+              <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
+                isDark ? 'text-neutral-400' : 'text-neutral-500'
+              }`}>
+                Important Alerts
+              </h2>
             </div>
-            <div className={`relative p-6 rounded-lg border ${
-              isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+            <div className={`relative p-6 border ${
+              isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
             }`}>
-              <div className={`p-4 rounded-lg border-l-4 border-amber-500 ${
+              <div className={`p-4 border-l-4 border-amber-500 ${
                 isDark ? 'bg-amber-500/10' : 'bg-amber-50'
               }`}>
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5" />
                   <div>
-                    <h4 className="font-bold text-amber-600 mb-1">Upcoming Deliveries</h4>
-                    <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                    <h4 className={`font-bold mb-1 ${isDark ? 'text-amber-400' : 'text-amber-600'}`}>
+                      Upcoming Deliveries
+                    </h4>
+                    <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}>
                       No animals expected to deliver in the next 30 days.
                     </p>
                   </div>
@@ -177,63 +228,75 @@ export default function ReproductionDashboard() {
 
           {/* 3. DETAILED SECTIONS */}
           <section className="space-y-6">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-4 bg-blue-500 rounded-full"></div>
-              <h2 className="text-xs font-black uppercase tracking-[0.2em]">Detailed Overview</h2>
+            <div className="flex items-center gap-3">
+              <div className={`h-[2px] w-8 ${isDark ? 'bg-blue-500/50' : 'bg-blue-500'}`} />
+              <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
+                isDark ? 'text-neutral-400' : 'text-neutral-500'
+              }`}>
+                Detailed Overview
+              </h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               
               {/* Upcoming Deliveries Card */}
-              <div className={`relative p-6 rounded-lg border transition-all duration-300 ${
-                isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+              <div className={`relative p-6 border transition-all duration-300 ${
+                isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
               }`}>
                 <div className="flex justify-between items-start mb-6">
-                  <div className={`p-2 rounded-md ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}>
+                  <div className={`p-2.5 border ${isDark ? 'bg-white/5 border-white/10' : 'bg-neutral-50 border-neutral-200'}`}>
                     <Calendar className="w-5 h-5 text-blue-500" />
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-1 rounded border ${
-                    isDark ? 'border-white/10' : 'border-slate-300'
+                  <span className={`text-[9px] font-mono font-bold px-3 py-1 border ${
+                    isDark 
+                      ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
+                      : 'bg-blue-50 text-blue-700 border-blue-200'
                   }`}>
                     Next 30 Days
                   </span>
                 </div>
                 <div className="mb-4">
-                  <span className="text-[10px] font-bold uppercase tracking-widest block mb-1 opacity-50">
+                  <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-2 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
                     Upcoming Deliveries
                   </span>
-                  <h3 className={`${spaceGrotesk.className} text-2xl font-bold mb-2`}>
+                  <h3 className={`${spaceGrotesk.className} text-xl font-bold tracking-tight mb-2`}>
                     Animals expected to deliver soon
                   </h3>
                 </div>
-                <div className={`text-center py-8 text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <div className={`text-center py-8 text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
                   No upcoming deliveries in the next 30 days
                 </div>
                 <CornerBrackets />
               </div>
 
               {/* Alerts & Notifications Card */}
-              <div className={`relative p-6 rounded-lg border transition-all duration-300 ${
-                isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+              <div className={`relative p-6 border transition-all duration-300 ${
+                isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
               }`}>
                 <div className="flex justify-between items-start mb-6">
-                  <div className={`p-2 rounded-md ${isDark ? 'bg-white/5' : 'bg-slate-100'}`}>
+                  <div className={`p-2.5 border ${isDark ? 'bg-white/5 border-white/10' : 'bg-neutral-50 border-neutral-200'}`}>
                     <Bell className="w-5 h-5 text-amber-500" />
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-1 rounded border ${
-                    isDark ? 'border-white/10' : 'border-slate-300'
+                  <span className={`text-[9px] font-mono font-bold px-3 py-1 border ${
+                    isDark 
+                      ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                      : 'bg-green-50 text-green-700 border-green-200'
                   }`}>
                     Active
                   </span>
                 </div>
                 <div className="mb-4">
-                  <span className="text-[10px] font-bold uppercase tracking-widest block mb-1 opacity-50">
+                  <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-2 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
                     Alerts & Notifications
                   </span>
-                  <h3 className={`${spaceGrotesk.className} text-2xl font-bold mb-2`}>
+                  <h3 className={`${spaceGrotesk.className} text-xl font-bold tracking-tight mb-2`}>
                     Important breeding and reproduction alerts
                   </h3>
                 </div>
-                <div className={`text-center py-8 text-sm ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                <div className={`text-center py-8 text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
                   No active alerts at this time
                 </div>
                 <CornerBrackets />

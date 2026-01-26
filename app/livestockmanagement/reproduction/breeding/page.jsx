@@ -125,6 +125,18 @@ export default function BreedingRecords() {
     return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
+  const CornerBrackets = () => {
+    const borderColor = isDark ? "border-green-500/20" : "border-neutral-300";
+    return (
+      <>
+        <div className={`absolute top-0 left-0 w-3 h-3 border-l border-t ${borderColor} transition-all duration-300`} />
+        <div className={`absolute top-0 right-0 w-3 h-3 border-r border-t ${borderColor} transition-all duration-300`} />
+        <div className={`absolute bottom-0 left-0 w-3 h-3 border-l border-b ${borderColor} transition-all duration-300`} />
+        <div className={`absolute bottom-0 right-0 w-3 h-3 border-r border-b ${borderColor} transition-all duration-300`} />
+      </>
+    );
+  };
+
   const isActive = (path) => pathname === path;
 
   // Pagination
@@ -140,15 +152,21 @@ export default function BreedingRecords() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${inter.className} ${
-      isDark ? 'bg-neutral-950 text-white' : 'bg-slate-50 text-slate-900'
+      isDark ? 'bg-neutral-950 text-white' : 'bg-neutral-50 text-neutral-900'
     }`}>
       
-      {/* BACKGROUND TEXTURE */}
+      {/* ENHANCED BACKGROUND TEXTURE */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {isDark ? (
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+          <>
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px] opacity-[0.05]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.03),transparent_70%)]" />
+          </>
         ) : (
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          <>
+            <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-100" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(34,197,94,0.02),transparent_70%)]" />
+          </>
         )}
       </div>
 
@@ -163,25 +181,42 @@ export default function BreedingRecords() {
 
       {/* MAIN CONTENT */}
       <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
-        <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-10">
+        <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
-          {/* TITLE & TABS */}
+          {/* MODERNIZED TITLE & TABS */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className={`${spaceGrotesk.className} text-4xl font-bold mb-2`}>
-                Breeding Records
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className="font-mono text-[10px] text-green-500/80 uppercase tracking-[0.3em]">
+                  [BREEDING_RECORDS]
+                </span>
+              </div>
+              <h1 className={`${spaceGrotesk.className} text-4xl md:text-5xl font-bold uppercase tracking-tighter leading-[0.9] mb-2`}>
+                Breeding <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Records</span>
               </h1>
-              <p className="font-medium opacity-60">
+              <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 View and manage all breeding events and their outcomes
               </p>
             </div>
-            <div className={`flex p-1 rounded-lg border ${isDark ? 'bg-neutral-900 border-white/5' : 'bg-white border-slate-300 shadow-sm'}`}>
+            
+            {/* Enhanced Tab Navigation */}
+            <div className={`flex p-1.5 border backdrop-blur-md ${
+              isDark ? 'bg-neutral-900/50 border-white/10' : 'bg-white border-neutral-300 shadow-sm'
+            }`}>
               <Link href="/livestockmanagement/reproduction/dashboard">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dashboard')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Dashboard
@@ -189,10 +224,14 @@ export default function BreedingRecords() {
               </Link>
               <Link href="/livestockmanagement/reproduction/breeding">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/breeding')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Breeding
@@ -200,10 +239,14 @@ export default function BreedingRecords() {
               </Link>
               <Link href="/livestockmanagement/reproduction/pregnancy">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/pregnancy')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Pregnancy
@@ -211,10 +254,14 @@ export default function BreedingRecords() {
               </Link>
               <Link href="/livestockmanagement/reproduction/dryoff">
                 <button 
-                  className={`px-6 py-2 text-xs font-bold rounded-md transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dryoff')
-                      ? 'bg-green-600 text-white shadow-lg' 
-                      : isDark ? 'text-slate-400 hover:bg-white/5' : 'text-slate-500 hover:bg-slate-100'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                      : isDark 
+                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
                   }`}
                 >
                   Dry-Off
@@ -223,110 +270,166 @@ export default function BreedingRecords() {
             </div>
           </div>
 
-          <hr className={isDark ? 'border-white/5' : 'border-slate-300'} />
-
           {/* HEADER CARD */}
-          <div className={`rounded-lg border p-8 ${
+          <div className={`relative border p-8 overflow-hidden ${
             isDark 
-              ? 'bg-gradient-to-r from-pink-900/30 via-neutral-900/50 to-neutral-900/50 border-white/10' 
-              : 'bg-gradient-to-r from-pink-50 via-white to-white border-pink-200 shadow-sm'
+              ? 'bg-neutral-900/30 border-white/5' 
+              : 'bg-white border-neutral-300 shadow-sm'
           }`}>
-            <div className="flex justify-between items-start">
+            {/* Background gradient */}
+            <div className={`absolute inset-0 ${
+              isDark 
+                ? 'bg-gradient-to-br from-pink-900/20 via-transparent to-transparent' 
+                : 'bg-gradient-to-br from-pink-50/50 via-transparent to-transparent'
+            }`} />
+            
+            <div className="relative z-10 flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-3 mb-3">
-                  <Heart className="w-6 h-6 text-pink-500" />
-                  <h2 className={`${spaceGrotesk.className} text-2xl font-bold text-pink-600`}>
+                  <div className={`p-2.5 border ${
+                    isDark ? 'bg-white/5 border-white/10' : 'bg-neutral-50 border-neutral-200'
+                  }`}>
+                    <Heart className="w-5 h-5 text-pink-500" />
+                  </div>
+                  <h2 className={`${spaceGrotesk.className} text-2xl font-bold uppercase tracking-tight ${
+                    isDark ? 'text-pink-400' : 'text-pink-600'
+                  }`}>
                     Breeding Records
                   </h2>
                 </div>
-                <p className={`${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                <p className={`text-sm ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}>
                   View and manage all breeding events and their outcomes
                 </p>
               </div>
               <button 
                 onClick={handleAddNew}
-                className="px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-bold text-sm flex items-center gap-2 transition-all shadow-lg hover:shadow-xl"
+                className={`px-6 py-3 border font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 transition-all ${
+                  isDark 
+                    ? 'bg-pink-600 hover:bg-pink-700 text-white border-pink-600' 
+                    : 'bg-pink-600 hover:bg-pink-700 text-white border-pink-600 shadow-sm'
+                }`}
               >
                 <Plus className="w-4 h-4" />
                 Log New Breeding
               </button>
             </div>
+            <CornerBrackets />
           </div>
 
           {/* TABLE */}
-          <div className={`rounded-lg border overflow-hidden ${
-            isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-slate-300 border-b-4 shadow-sm'
+          <div className={`relative border overflow-hidden ${
+            isDark ? 'bg-neutral-900/30 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
           }`}>
             {/* Table Header */}
-            <div className={`grid grid-cols-6 gap-4 px-6 py-4 font-bold text-xs uppercase tracking-wider ${
-              isDark ? 'bg-neutral-900 text-slate-400' : 'bg-slate-100 text-slate-600'
+            <div className={`grid grid-cols-6 gap-4 px-6 py-4 border-b ${
+              isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-neutral-50 border-neutral-200'
             }`}>
-              <div>Animal</div>
-              <div>Breeding Date</div>
-              <div>Expected Delivery</div>
-              <div>Method</div>
-              <div>Status</div>
-              <div className="text-right">Actions</div>
+              <div className={`text-[9px] font-mono font-black uppercase tracking-[0.25em] ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
+                Animal
+              </div>
+              <div className={`text-[9px] font-mono font-black uppercase tracking-[0.25em] ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
+                Breeding Date
+              </div>
+              <div className={`text-[9px] font-mono font-black uppercase tracking-[0.25em] ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
+                Expected Delivery
+              </div>
+              <div className={`text-[9px] font-mono font-black uppercase tracking-[0.25em] ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
+                Method
+              </div>
+              <div className={`text-[9px] font-mono font-black uppercase tracking-[0.25em] ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
+                Status
+              </div>
+              <div className={`text-[9px] font-mono font-black uppercase tracking-[0.25em] text-right ${
+                isDark ? 'text-neutral-500' : 'text-neutral-400'
+              }`}>
+                Actions
+              </div>
             </div>
 
             {/* Table Body */}
             {currentRecords.length === 0 ? (
-              <div className={`px-6 py-12 text-center ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                <Heart className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                <p className="text-lg font-semibold mb-2">No breeding records yet</p>
-                <p className="text-sm">Click "Log New Breeding" to add your first record</p>
+              <div className={`px-6 py-12 text-center ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                <Heart className={`w-12 h-12 mx-auto mb-4 ${isDark ? 'text-neutral-800' : 'text-neutral-200'}`} />
+                <p className={`${spaceGrotesk.className} text-lg font-bold mb-2 uppercase tracking-tight`}>
+                  No breeding records yet
+                </p>
+                <p className="text-sm font-medium">Click "Log New Breeding" to add your first record</p>
               </div>
             ) : (
-              <div className={`divide-y ${isDark ? 'divide-white/5' : 'divide-slate-200'}`}>
+              <div className={`divide-y ${isDark ? 'divide-white/5' : 'divide-neutral-200'}`}>
                 {currentRecords.map((record) => (
                   <div 
                     key={record.id} 
                     className={`grid grid-cols-6 gap-4 px-6 py-4 items-center transition-colors ${
-                      isDark ? 'hover:bg-white/5' : 'hover:bg-slate-50'
+                      isDark ? 'hover:bg-white/5' : 'hover:bg-neutral-50'
                     }`}
                   >
                     {/* Animal */}
                     <div>
-                      <div className="font-semibold">{record.animal}</div>
-                      <div className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                      <div className={`font-bold ${spaceGrotesk.className}`}>{record.animal}</div>
+                      <div className={`text-xs font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
                         {record.tag}
                       </div>
                     </div>
 
                     {/* Breeding Date */}
-                    <div className="text-sm">{formatDate(record.breedingDate)}</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                      {formatDate(record.breedingDate)}
+                    </div>
 
                     {/* Expected Delivery */}
-                    <div className="text-sm">{formatDate(record.expectedDelivery)}</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                      {formatDate(record.expectedDelivery)}
+                    </div>
 
                     {/* Method */}
-                    <div className="text-sm">{record.method}</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-neutral-600'}`}>
+                      {record.method}
+                    </div>
 
                     {/* Status */}
                     <div>
-                      <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                      <span className={`inline-flex items-center px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${
                         record.status === 'Confirmed'
-                          ? 'bg-green-500/10 text-green-500'
-                          : 'bg-yellow-500/10 text-yellow-500'
+                          ? isDark
+                            ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                            : 'bg-green-50 text-green-700 border-green-200'
+                          : isDark
+                            ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                            : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                       }`}>
                         {record.status}
                       </span>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex gap-2 justify-end">
+                    <div className="flex gap-1 justify-end">
                       <button 
                         onClick={() => handleEdit(record)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          isDark ? 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-400' : 'bg-blue-100 hover:bg-blue-200 text-blue-600'
+                        className={`p-2.5 border transition-colors ${
+                          isDark 
+                            ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                            : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                         }`}
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button 
                         onClick={() => handleDelete(record.id)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          isDark ? 'bg-red-500/10 hover:bg-red-500/20 text-red-400' : 'bg-red-100 hover:bg-red-200 text-red-600'
+                        className={`p-2.5 border transition-colors ${
+                          isDark 
+                            ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
+                            : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
                         }`}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -339,9 +442,9 @@ export default function BreedingRecords() {
 
             {/* Pagination */}
             <div className={`px-6 py-4 border-t flex items-center justify-between ${
-              isDark ? 'border-white/5 bg-neutral-900/50' : 'border-slate-200 bg-slate-50'
+              isDark ? 'border-white/5 bg-neutral-900/50' : 'border-neutral-200 bg-neutral-50'
             }`}>
-              <div className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+              <div className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Showing {breedingRecords.length === 0 ? 0 : indexOfFirstRecord + 1} to {Math.min(indexOfLastRecord, breedingRecords.length)} of {breedingRecords.length} results
               </div>
               
@@ -351,10 +454,12 @@ export default function BreedingRecords() {
                   <button 
                     onClick={goToFirstPage}
                     disabled={currentPage === 1}
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`px-3 py-2 border font-bold transition-colors ${
                       currentPage === 1 
                         ? 'opacity-50 cursor-not-allowed' 
-                        : isDark ? 'hover:bg-white/5 text-slate-400' : 'hover:bg-slate-200 text-slate-600'
+                        : isDark 
+                          ? 'hover:bg-white/5 border-white/10 hover:border-white/20' 
+                          : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                     }`}
                   >
                     «
@@ -362,17 +467,21 @@ export default function BreedingRecords() {
                   <button 
                     onClick={goToPrevPage}
                     disabled={currentPage === 1}
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`px-3 py-2 border font-bold transition-colors ${
                       currentPage === 1 
                         ? 'opacity-50 cursor-not-allowed' 
-                        : isDark ? 'hover:bg-white/5 text-slate-400' : 'hover:bg-slate-200 text-slate-600'
+                        : isDark 
+                          ? 'hover:bg-white/5 border-white/10 hover:border-white/20' 
+                          : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                     }`}
                   >
                     ‹
                   </button>
                   <button 
-                    className={`px-4 py-2 rounded-lg font-bold ${
-                      isDark ? 'bg-green-600 text-white' : 'bg-slate-900 text-white'
+                    className={`px-4 py-2 border font-bold ${
+                      isDark 
+                        ? 'bg-green-600 text-white border-green-600' 
+                        : 'bg-green-600 text-white border-green-600'
                     }`}
                   >
                     {currentPage}
@@ -380,10 +489,12 @@ export default function BreedingRecords() {
                   <button 
                     onClick={goToNextPage}
                     disabled={currentPage === totalPages || totalPages === 0}
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`px-3 py-2 border font-bold transition-colors ${
                       currentPage === totalPages || totalPages === 0
                         ? 'opacity-50 cursor-not-allowed' 
-                        : isDark ? 'hover:bg-white/5 text-slate-400' : 'hover:bg-slate-200 text-slate-600'
+                        : isDark 
+                          ? 'hover:bg-white/5 border-white/10 hover:border-white/20' 
+                          : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                     }`}
                   >
                     ›
@@ -391,10 +502,12 @@ export default function BreedingRecords() {
                   <button 
                     onClick={goToLastPage}
                     disabled={currentPage === totalPages || totalPages === 0}
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`px-3 py-2 border font-bold transition-colors ${
                       currentPage === totalPages || totalPages === 0
                         ? 'opacity-50 cursor-not-allowed' 
-                        : isDark ? 'hover:bg-white/5 text-slate-400' : 'hover:bg-slate-200 text-slate-600'
+                        : isDark 
+                          ? 'hover:bg-white/5 border-white/10 hover:border-white/20' 
+                          : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                     }`}
                   >
                     »
@@ -403,7 +516,7 @@ export default function BreedingRecords() {
 
                 {/* Rows per page */}
                 <div className="flex items-center gap-2">
-                  <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                  <span className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                     Rows per page
                   </span>
                   <select 
@@ -412,10 +525,10 @@ export default function BreedingRecords() {
                       setRowsPerPage(Number(e.target.value));
                       setCurrentPage(1);
                     }}
-                    className={`px-3 py-1.5 rounded-lg border text-sm font-medium ${
+                    className={`px-3 py-1.5 border text-sm font-medium ${
                       isDark 
                         ? 'bg-neutral-900 border-white/10 text-white' 
-                        : 'bg-white border-slate-300 text-slate-900'
+                        : 'bg-white border-neutral-300 text-neutral-900'
                     }`}
                   >
                     <option value={10}>10</option>
@@ -426,6 +539,7 @@ export default function BreedingRecords() {
                 </div>
               </div>
             </div>
+            <CornerBrackets />
           </div>
 
         </main>
@@ -434,23 +548,35 @@ export default function BreedingRecords() {
       {/* MODAL */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className={`w-full max-w-2xl rounded-xl border ${
-            isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-slate-200'
+          <div className={`w-full max-w-2xl border ${
+            isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-300'
           } shadow-2xl max-h-[90vh] overflow-y-auto`}>
             {/* Modal Header */}
             <div className={`flex items-center justify-between p-6 border-b ${
-              isDark ? 'border-white/10' : 'border-slate-200'
+              isDark ? 'border-white/10' : 'border-neutral-200'
             }`}>
-              <h2 className={`${spaceGrotesk.className} text-2xl font-bold`}>
-                {editingRecord ? 'Edit Breeding Record' : 'Log New Breeding'}
-              </h2>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`h-[2px] w-6 ${isDark ? 'bg-pink-500' : 'bg-pink-600'}`} />
+                  <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.3em] ${
+                    isDark ? 'text-pink-400' : 'text-pink-600'
+                  }`}>
+                    {editingRecord ? 'EDIT_MODE' : 'CREATE_MODE'}
+                  </span>
+                </div>
+                <h2 className={`${spaceGrotesk.className} text-2xl font-bold uppercase tracking-tight`}>
+                  {editingRecord ? 'Edit Breeding Record' : 'Log New Breeding'}
+                </h2>
+              </div>
               <button 
                 onClick={() => {
                   setShowModal(false);
                   setEditingRecord(null);
                 }}
-                className={`p-2 rounded-lg transition-colors ${
-                  isDark ? 'hover:bg-white/5' : 'hover:bg-slate-100'
+                className={`p-2.5 border transition-colors ${
+                  isDark 
+                    ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                    : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                 }`}
               >
                 <X className="w-5 h-5" />
@@ -461,32 +587,40 @@ export default function BreedingRecords() {
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Animal Name</label>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
+                    Animal Name
+                  </label>
                   <input
                     type="text"
                     name="animal"
                     value={formData.animal}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 rounded-lg border ${
+                    className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                       isDark 
-                        ? 'bg-neutral-800 border-white/10 text-white' 
-                        : 'bg-white border-slate-300 text-slate-900'
+                        ? 'bg-neutral-900 border-white/10 focus:border-pink-500 placeholder:text-neutral-600' 
+                        : 'bg-neutral-50 border-neutral-300 focus:border-pink-500 placeholder:text-neutral-400'
                     }`}
                     placeholder="Enter animal name"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Tag/ID</label>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
+                    Tag/ID
+                  </label>
                   <input
                     type="text"
                     name="tag"
                     value={formData.tag}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 rounded-lg border ${
+                    className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                       isDark 
-                        ? 'bg-neutral-800 border-white/10 text-white' 
-                        : 'bg-white border-slate-300 text-slate-900'
+                        ? 'bg-neutral-900 border-white/10 focus:border-pink-500 placeholder:text-neutral-600' 
+                        : 'bg-neutral-50 border-neutral-300 focus:border-pink-500 placeholder:text-neutral-400'
                     }`}
                     placeholder="Enter tag/ID"
                   />
@@ -495,31 +629,39 @@ export default function BreedingRecords() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Breeding Date</label>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
+                    Breeding Date
+                  </label>
                   <input
                     type="date"
                     name="breedingDate"
                     value={formData.breedingDate}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 rounded-lg border ${
+                    className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                       isDark 
-                        ? 'bg-neutral-800 border-white/10 text-white' 
-                        : 'bg-white border-slate-300 text-slate-900'
+                        ? 'bg-neutral-900 border-white/10 focus:border-pink-500' 
+                        : 'bg-neutral-50 border-neutral-300 focus:border-pink-500'
                     }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Expected Delivery</label>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
+                    Expected Delivery
+                  </label>
                   <input
                     type="date"
                     name="expectedDelivery"
                     value={formData.expectedDelivery}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 rounded-lg border ${
+                    className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                       isDark 
-                        ? 'bg-neutral-800 border-white/10 text-white' 
-                        : 'bg-white border-slate-300 text-slate-900'
+                        ? 'bg-neutral-900 border-white/10 focus:border-pink-500' 
+                        : 'bg-neutral-50 border-neutral-300 focus:border-pink-500'
                     }`}
                   />
                 </div>
@@ -527,15 +669,19 @@ export default function BreedingRecords() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Breeding Method</label>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
+                    Breeding Method
+                  </label>
                   <select
                     name="method"
                     value={formData.method}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 rounded-lg border ${
+                    className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                       isDark 
-                        ? 'bg-neutral-800 border-white/10 text-white' 
-                        : 'bg-white border-slate-300 text-slate-900'
+                        ? 'bg-neutral-900 border-white/10 focus:border-pink-500' 
+                        : 'bg-neutral-50 border-neutral-300 focus:border-pink-500'
                     }`}
                   >
                     <option value="Natural Breeding">Natural Breeding</option>
@@ -544,15 +690,19 @@ export default function BreedingRecords() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold mb-2">Status</label>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
+                    isDark ? 'text-neutral-500' : 'text-neutral-400'
+                  }`}>
+                    Status
+                  </label>
                   <select
                     name="status"
                     value={formData.status}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 rounded-lg border ${
+                    className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
                       isDark 
-                        ? 'bg-neutral-800 border-white/10 text-white' 
-                        : 'bg-white border-slate-300 text-slate-900'
+                        ? 'bg-neutral-900 border-white/10 focus:border-pink-500' 
+                        : 'bg-neutral-50 border-neutral-300 focus:border-pink-500'
                     }`}
                   >
                     <option value="Pending">Pending</option>
@@ -569,10 +719,10 @@ export default function BreedingRecords() {
                     setShowModal(false);
                     setEditingRecord(null);
                   }}
-                  className={`flex-1 px-6 py-3 rounded-lg font-bold transition-colors ${
+                  className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                     isDark 
-                      ? 'bg-neutral-800 hover:bg-neutral-700 text-white' 
-                      : 'bg-slate-200 hover:bg-slate-300 text-slate-900'
+                      ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
+                      : 'bg-white hover:bg-neutral-50 border-neutral-300'
                   }`}
                 >
                   Cancel
@@ -580,9 +730,9 @@ export default function BreedingRecords() {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="flex-1 px-6 py-3 bg-pink-600 hover:bg-pink-700 text-white rounded-lg font-bold transition-colors shadow-lg"
+                  className="flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-pink-600 hover:bg-pink-700 text-white border-pink-600 transition-all"
                 >
-                  {editingRecord ? 'Update Record' : 'Add Record'}
+                  {editingRecord ? 'Update' : 'Add Record'}
                 </button>
               </div>
             </div>

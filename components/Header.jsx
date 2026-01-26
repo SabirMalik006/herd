@@ -74,7 +74,7 @@ export default function Header() {
               alt="AgriHerd Logo" 
               width={240} 
               height={120} 
-              className="h-16 md:h-20 w-auto object-contain transition-transform duration-300 hover:scale-105" 
+              className="h-16 md:h-25 w-auto object-contain transition-transform duration-300 hover:scale-105" 
               priority 
             />
           </Link>
