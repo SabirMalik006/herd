@@ -23,13 +23,23 @@ export default function HomePage() {
       }`}
     >
       <Header />
+      <div id="hero">
         <HeroSection />
         <HeroScroll />
+      </div>
+      <div id="feature-cards">
         <FeatureCards />
+      </div>
+      <div id="agri-trust">
         <TrustBuilding />
-        <Testimonials />
+      </div>
+      <Testimonials />
+      <div id="pricing">
         <PricingCards />
-      <Footer />
+      </div>
+      <div id="footer">
+        <Footer />
+      </div>
     </div>
   );
 }

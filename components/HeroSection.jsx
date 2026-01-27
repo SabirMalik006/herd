@@ -21,10 +21,10 @@ export default function Hero() {
 
   const slides = [
     { id: 1, image: "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=800&q=80", title: "Herd Monitoring", tag: "LIVE DATA" },
-    { id: 2, image: "https://images.unsplash.com/photo-1560493676-04071c5f467b?w=800&q=80", title: "Precision Nutrition", tag: "AI DIET" },
-    { id: 3, image: "https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800&q=80", title: "Health Analytics", tag: "DIAGNOSTICS" },
-    { id: 4, image: "https://images.unsplash.com/photo-1605098293544-25f4c4c14090?w=800&q=80", title: "Yield Tracking", tag: "FINANCIALS" },
-    { id: 5, image: "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=800&q=80", title: "Smart Automation", tag: "ROBOTICS" },
+    { id: 2, image: "https://images.unsplash.com/photo-1560493676-04071c5f467b?w=800&q=80", title: "Milk Production", tag: "YIELD STATS" },
+    { id: 3, image: "https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=800&q=80", title: "Health Records", tag: "VETERINARY" },
+    { id: 4, image: "https://images.unsplash.com/photo-1605098293544-25f4c4c14090?w=800&q=80", title: "Breeding Cycles", tag: "REPRODUCTION" },
+    { id: 5, image: "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=800&q=80", title: "Feed Management", tag: "NUTRITION" },
   ];
   const duplicatedSlides = [...slides, ...slides];
 
@@ -52,20 +52,20 @@ export default function Hero() {
           <h1 className={`${spaceGrotesk.className} text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-bold uppercase tracking-tighter leading-[0.9] mb-6 ${
           isDark ? "text-white" : "text-white drop-shadow-2xl"
         }`}>
-          Revolutionize <br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Your Farm</span>
+          Precision <br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Livestock</span>
         </h1>
         <p className={`text-lg md:text-xl max-w-2xl mx-auto mb-8 font-light leading-relaxed ${
           isDark ? "text-neutral-300" : "text-white/90 drop-shadow-lg"
         }`}>
-          Monitor livestock health, track inventory, manage finances, and boost productivity with our all-in-one farm management solution.
+         Track herd health, optimize breeding programs, monitor milk production, and maximize farm profitability with real-time data analytics.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-40">
-          <button className="group relative px-8 py-4 bg-green-600 text-white font-bold text-sm tracking-widest overflow-hidden transition-all hover:bg-green-700">
+          <button className="group cursor-pointer relative px-8 py-4 bg-green-600 text-white font-bold text-sm tracking-widest overflow-hidden transition-all hover:bg-green-700">
             <span className="relative z-10 flex items-center gap-2">START FREE 30-DAY TRIAL<ArrowRight className="w-4 h-4" /></span>
           </button>
-          <button className={`px-8 py-4 border font-bold text-sm tracking-widest transition-all backdrop-blur-md ${
+          <button className={`px-8 py-4 border font-bold text-sm tracking-widest transition-all backdrop-blur-md cursor-pointer ${
             isDark
               ? "border-neutral-700 text-neutral-300 hover:border-green-500/50"
               : "border-white/40 text-white bg-white/10 hover:bg-white/20 hover:border-white/60"
@@ -83,7 +83,7 @@ export default function Hero() {
         <motion.div className="flex gap-6 w-max" animate={{ x: ["0%", "-50%"] }} transition={{ duration: 40, repeat: Infinity, ease: "linear" }}>
           {duplicatedSlides.map((slide, idx) => (
             <div key={`${slide.id}-${idx}`} className="group relative flex-shrink-0 w-[300px]">
-               <div className={`relative h-[180px] overflow-hidden rounded-lg border ${
+               <div className={`relative h-[180px] overflow-hidden cursor-pointer rounded-lg border ${
                  isDark 
                    ? "border-white/10 bg-neutral-900/50"
                    : "border-white/30 bg-neutral-900/40 shadow-xl"

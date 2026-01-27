@@ -227,7 +227,7 @@ export default function DryOffManagement() {
             }`}>
               <Link href="/livestockmanagement/reproduction/dashboard">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dashboard')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -242,7 +242,7 @@ export default function DryOffManagement() {
               </Link>
               <Link href="/livestockmanagement/reproduction/breeding">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/breeding')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -257,7 +257,7 @@ export default function DryOffManagement() {
               </Link>
               <Link href="/livestockmanagement/reproduction/pregnancy">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/pregnancy')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -272,7 +272,7 @@ export default function DryOffManagement() {
               </Link>
               <Link href="/livestockmanagement/reproduction/dryoff">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dryoff')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -321,7 +321,7 @@ export default function DryOffManagement() {
               </div>
               <button 
                 onClick={handleAddNew}
-                className={`px-6 py-3 border font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 transition-all ${
+                className={`cursor-pointer px-6 py-3 border font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 transition-all ${
                   isDark 
                     ? 'bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600' 
                     : 'bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600 shadow-sm'
@@ -502,7 +502,7 @@ export default function DryOffManagement() {
                     <div className="flex gap-1 justify-end">
                       <button 
                         onClick={() => handleEdit(record)}
-                        className={`p-2.5 border transition-colors ${
+                        className={`cursor-pointer p-2.5 border transition-colors ${
                           isDark 
                             ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                             : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
@@ -552,7 +552,7 @@ export default function DryOffManagement() {
                   <button 
                     onClick={goToPrevPage}
                     disabled={currentPage === 1}
-                    className={`px-3 py-2 border font-bold transition-colors ${
+                    className={`cursor-pointer px-3 py-2 border font-bold transition-colors ${
                       currentPage === 1 
                         ? 'opacity-50 cursor-not-allowed' 
                         : isDark 
@@ -563,7 +563,7 @@ export default function DryOffManagement() {
                     ‹
                   </button>
                   <button 
-                    className={`px-4 py-2 border font-bold ${
+                    className={`cursor-pointer px-4 py-2 border font-bold ${
                       isDark 
                         ? 'bg-green-600 text-white border-green-600' 
                         : 'bg-green-600 text-white border-green-600'
@@ -574,7 +574,7 @@ export default function DryOffManagement() {
                   <button 
                     onClick={goToNextPage}
                     disabled={currentPage === totalPages || totalPages === 0}
-                    className={`px-3 py-2 border font-bold transition-colors ${
+                    className={`cursor-pointer px-3 py-2 border font-bold transition-colors ${
                       currentPage === totalPages || totalPages === 0
                         ? 'opacity-50 cursor-not-allowed' 
                         : isDark 
@@ -587,7 +587,7 @@ export default function DryOffManagement() {
                   <button 
                     onClick={goToLastPage}
                     disabled={currentPage === totalPages || totalPages === 0}
-                    className={`px-3 py-2 border font-bold transition-colors ${
+                    className={`cursor-pointer px-3 py-2 border font-bold transition-colors ${
                       currentPage === totalPages || totalPages === 0
                         ? 'opacity-50 cursor-not-allowed' 
                         : isDark 
@@ -657,7 +657,7 @@ export default function DryOffManagement() {
                   setShowModal(false);
                   setEditingRecord(null);
                 }}
-                className={`p-2.5 border transition-colors ${
+                className={`cursor-pointer p-2.5 border transition-colors ${
                   isDark 
                     ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                     : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
@@ -867,7 +867,7 @@ export default function DryOffManagement() {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600 transition-all"
+                  className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600 transition-all"
                 >
                   {editingRecord ? 'Update' : 'Add Record'}
                 </button>

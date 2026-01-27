@@ -209,7 +209,7 @@ export default function ShedsManagement() {
             }`}>
               <Link href="/livestockmanagement/animal/dashboard">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/animal/dashboard')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -224,7 +224,7 @@ export default function ShedsManagement() {
               </Link>
               <Link href="/livestockmanagement/animal/sheds">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/animal/sheds')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -239,7 +239,7 @@ export default function ShedsManagement() {
               </Link>
               <Link href="/livestockmanagement/animal/animals">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/animal/animals')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -267,7 +267,7 @@ export default function ShedsManagement() {
                 </h2>
               </div>
               <button 
-                className={`group flex items-center gap-2 px-5 py-3 border transition-all duration-200 font-bold text-[11px] uppercase tracking-widest ${
+                className={`cursor-pointer group flex items-center gap-2 px-5 py-3 border transition-all duration-200 font-bold text-[11px] uppercase tracking-widest ${
                   isDark 
                     ? 'bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700' 
                     : 'bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm'
@@ -331,7 +331,7 @@ export default function ShedsManagement() {
                           setSelectedStatus(status);
                           setFilterOpen(false);
                         }}
-                        className={`w-full px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                        className={`cursor-pointer w-full px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
                           selectedStatus === status
                             ? isDark
                               ? 'bg-green-500/10 text-green-400 border-l-2 border-green-400'
@@ -422,7 +422,7 @@ export default function ShedsManagement() {
                     {/* Actions */}
                     <div className="md:col-span-1 flex items-center justify-end gap-1">
                       <button 
-                        className={`p-2.5 border transition-all ${
+                        className={`cursor-pointer p-2.5 border transition-all ${
                           isDark 
                             ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                             : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
@@ -433,7 +433,7 @@ export default function ShedsManagement() {
                         <Eye className="w-4 h-4" />
                       </button>
                       <button 
-                        className={`p-2.5 border transition-all ${
+                        className={`cursor-pointer p-2.5 border transition-all ${
                           isDark 
                             ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                             : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
@@ -444,7 +444,7 @@ export default function ShedsManagement() {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button 
-                        className={`p-2.5 border transition-all ${
+                        className={`cursor-pointer p-2.5 border transition-all ${
                           isDark 
                             ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
                             : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
@@ -508,7 +508,7 @@ export default function ShedsManagement() {
             </div>
             <button
               onClick={handleCloseForm}
-              className={`p-2.5 border transition-all ${
+              className={`cursor-pointer p-2.5 border transition-all ${
                 isDark 
                   ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                   : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
@@ -590,7 +590,7 @@ export default function ShedsManagement() {
               <button
                 type="button"
                 onClick={handleCloseForm}
-                className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                   isDark 
                     ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
                     : 'bg-white hover:bg-neutral-50 border-neutral-300'
@@ -600,7 +600,7 @@ export default function ShedsManagement() {
               </button>
               <button
                 type="submit"
-                className="flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all"
+                className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all"
               >
                 {editingShed ? 'Update' : 'Add'}
               </button>
@@ -630,7 +630,7 @@ export default function ShedsManagement() {
               <div className="flex gap-3">
                 <button
                   onClick={() => setDeleteConfirm(null)}
-                  className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                     isDark 
                       ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
                       : 'bg-white hover:bg-neutral-50 border-neutral-300'
@@ -640,7 +640,7 @@ export default function ShedsManagement() {
                 </button>
                 <button
                   onClick={() => handleDelete(deleteConfirm.id)}
-                  className="flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-red-600 hover:bg-red-700 text-white border-red-600 transition-all"
+                  className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-red-600 hover:bg-red-700 text-white border-red-600 transition-all"
                 >
                   Delete
                 </button>
@@ -678,7 +678,7 @@ export default function ShedsManagement() {
                 </div>
                 <button
                   onClick={() => setViewingShed(null)}
-                  className={`p-2.5 border transition-all ${
+                  className={`cursor-pointer p-2.5 border transition-all ${
                     isDark 
                       ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                       : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
@@ -741,7 +741,7 @@ export default function ShedsManagement() {
               <div className={`flex gap-3 pt-4 border-t ${isDark ? 'border-white/10' : 'border-neutral-200'}`}>
                 <button
                   onClick={() => setViewingShed(null)}
-                  className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                     isDark 
                       ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
                       : 'bg-white hover:bg-neutral-50 border-neutral-300'
@@ -754,7 +754,7 @@ export default function ShedsManagement() {
                     handleOpenForm(viewingShed);
                     setViewingShed(null);
                   }}
-                  className="flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all"
+                  className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all"
                 >
                   Edit Shed
                 </button>

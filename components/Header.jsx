@@ -2,7 +2,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation"; // 1. Import usePathname
+import { usePathname } from "next/navigation";
 import { Menu, X, ChevronRight, Moon, Sun } from "lucide-react";
 import { Space_Grotesk, Inter } from "next/font/google";
 import Image from "next/image";
@@ -16,7 +16,6 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { isDark, toggleTheme } = useTheme();
   
-  // 2. Get the current route
   const pathname = usePathname();
   const isHomePage = pathname === "/";
 
@@ -26,22 +25,35 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Smooth scroll handler
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      const offset = 80; // Height of fixed header
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth"
+      });
+    }
+    setMenuOpen(false);
+  };
+
   const links = [
-    { name: "Home", href: "/" },
-    { name: "Features", href: "/features" },
-    { name: "Pricing", href: "/pricing" },
-    { name: "About", href: "/about" },
-    { name: "Contact", href: "/contact" },
+    { name: "Home", href: "/", sectionId: "hero" },
+    { name: "Features", href: "/features", sectionId: "feature-cards" },
+    { name: "Pricing", href: "/pricing", sectionId: "pricing" },
+    { name: "About", href: "/about", sectionId: "agri-trust" },
+    { name: "Contact", href: "/contact", sectionId: "footer" },
   ];
 
-  // Logic: Only force white text if we are on the Home Page AND at the top.
-  // Everywhere else, follow the theme.
   const isTransparent = isHomePage && !scrolled;
 
   const getTextColor = () => {
     if (isTransparent) return "text-white hover:text-green-400";
     
-    // Standard Theme Colors
     return isDark 
       ? "text-neutral-400 hover:text-green-400" 
       : "text-neutral-600 hover:text-green-600";
@@ -59,7 +71,7 @@ export default function Header() {
         animate={{ y: 0 }}
         className={`fixed top-0 w-full z-[100] transition-all duration-500 ${
           isTransparent
-            ? "h-24 bg-transparent" // Only transparent on Home Page top
+            ? "h-24 bg-transparent"
             : isDark
               ? "h-20 bg-neutral-950/90 backdrop-blur-xl border-b border-white/5"
               : "h-20 bg-white/90 backdrop-blur-xl border-b border-neutral-200"
@@ -68,28 +80,28 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-6 lg:px-8 h-full flex items-center justify-between">
           
           {/* LOGO */}
-          <Link href="/" className="flex items-center">
+          <button onClick={() => scrollToSection("hero")} className="flex items-center">
             <Image 
               src="/erp-logo.png" 
               alt="AgriHerd Logo" 
               width={240} 
               height={120} 
-              className="h-16 md:h-25 w-auto object-contain transition-transform duration-300 hover:scale-105" 
+              className="h-16 md:h-25 w-auto object-contain transition-transform duration-300 hover:scale-105 cursor-pointer" 
               priority 
             />
-          </Link>
+          </button>
 
           {/* DESKTOP NAVIGATION */}
           <nav className={`hidden lg:flex items-center gap-8 ${inter.className}`}>
             {links.map((link) => (
-              <Link 
-                key={link.name} 
-                href={link.href} 
-                className={`text-[11px] font-semibold uppercase tracking-[0.2em] transition-all relative group ${getTextColor()}`}
+              <button
+                key={link.name}
+                onClick={() => scrollToSection(link.sectionId)}
+                className={`text-[11px] cursor-pointer font-semibold uppercase tracking-[0.2em] transition-all relative group ${getTextColor()}`}
               >
                 {link.name}
                 <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-green-500 transition-all duration-300 group-hover:w-full" />
-              </Link>
+              </button>
             ))}
           </nav>
 
@@ -110,7 +122,7 @@ export default function Header() {
             {/* THEME TOGGLE */}
             <button
               onClick={toggleTheme}
-              className={`p-2 transition-all ${getIconColor()}`}
+              className={`p-2 cursor-pointer transition-all ${getIconColor()}`}
               aria-label="Toggle theme"
             >
               {isDark ? <Sun size={20} /> : <Moon size={20} />}
@@ -141,7 +153,7 @@ export default function Header() {
         </div>
       </motion.header>
 
-      {/* MOBILE MENU (No changes needed here as it always has a solid background) */}
+      {/* MOBILE MENU */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div 
@@ -177,15 +189,14 @@ export default function Header() {
                   transition={{ delay: i * 0.1 }}
                   key={link.name}
                 >
-                  <Link 
-                    href={link.href} 
-                    onClick={() => setMenuOpen(false)} 
-                    className={`${spaceGrotesk.className} text-5xl font-bold hover:text-green-400 transition-colors block ${
+                  <button
+                    onClick={() => scrollToSection(link.sectionId)}
+                    className={`${spaceGrotesk.className} text-5xl font-bold hover:text-green-400 transition-colors block text-left ${
                       isDark ? "text-white" : "text-black"
                     }`}
                   >
                     {link.name}
-                  </Link>
+                  </button>
                 </motion.div>
               ))}
               <motion.div

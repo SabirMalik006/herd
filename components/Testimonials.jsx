@@ -167,18 +167,15 @@ export default function Testimonials() {
         <div className="flex flex-col lg:flex-row items-end justify-between mb-20 gap-8">
           <div className="max-w-2xl">
             <div className="flex items-center gap-2.5 mb-6">
-              <Terminal className="w-4 h-4 text-green-500" />
-              <span className="font-mono text-[10px] text-green-500/70 uppercase tracking-[0.3em]">
-                System Logs // User Feedback
-              </span>
+              
             </div>
             
             <h2 className={`${spaceGrotesk.className} text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-[0.9] ${
               isDark ? "text-white" : "text-black"
             }`}>
-              Field <br /> 
+              Trusted by <br /> 
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-700">
-                Validation.
+                Livestock Farmers.
               </span>
             </h2>
           </div>

@@ -209,7 +209,7 @@ export default function BreedingRecords() {
             }`}>
               <Link href="/livestockmanagement/reproduction/dashboard">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dashboard')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -224,7 +224,7 @@ export default function BreedingRecords() {
               </Link>
               <Link href="/livestockmanagement/reproduction/breeding">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/breeding')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -239,7 +239,7 @@ export default function BreedingRecords() {
               </Link>
               <Link href="/livestockmanagement/reproduction/pregnancy">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/pregnancy')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -254,7 +254,7 @@ export default function BreedingRecords() {
               </Link>
               <Link href="/livestockmanagement/reproduction/dryoff">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dryoff')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -303,7 +303,7 @@ export default function BreedingRecords() {
               </div>
               <button 
                 onClick={handleAddNew}
-                className={`px-6 py-3 border font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 transition-all ${
+                className={`cursor-pointer px-6 py-3 border font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 transition-all ${
                   isDark 
                     ? 'bg-pink-600 hover:bg-pink-700 text-white border-pink-600' 
                     : 'bg-pink-600 hover:bg-pink-700 text-white border-pink-600 shadow-sm'
@@ -454,7 +454,7 @@ export default function BreedingRecords() {
                   <button 
                     onClick={goToFirstPage}
                     disabled={currentPage === 1}
-                    className={`px-3 py-2 border font-bold transition-colors ${
+                    className={`cursor-pointer px-3 py-2 border font-bold transition-colors ${
                       currentPage === 1 
                         ? 'opacity-50 cursor-not-allowed' 
                         : isDark 
@@ -467,7 +467,7 @@ export default function BreedingRecords() {
                   <button 
                     onClick={goToPrevPage}
                     disabled={currentPage === 1}
-                    className={`px-3 py-2 border font-bold transition-colors ${
+                    className={`cursor-pointer px-3 py-2 border font-bold transition-colors ${
                       currentPage === 1 
                         ? 'opacity-50 cursor-not-allowed' 
                         : isDark 
@@ -478,7 +478,7 @@ export default function BreedingRecords() {
                     ‹
                   </button>
                   <button 
-                    className={`px-4 py-2 border font-bold ${
+                    className={`cursor-pointer px-4 py-2 border font-bold ${
                       isDark 
                         ? 'bg-green-600 text-white border-green-600' 
                         : 'bg-green-600 text-white border-green-600'
@@ -489,7 +489,7 @@ export default function BreedingRecords() {
                   <button 
                     onClick={goToNextPage}
                     disabled={currentPage === totalPages || totalPages === 0}
-                    className={`px-3 py-2 border font-bold transition-colors ${
+                    className={`cursor-pointer px-3 py-2 border font-bold transition-colors ${
                       currentPage === totalPages || totalPages === 0
                         ? 'opacity-50 cursor-not-allowed' 
                         : isDark 
@@ -573,7 +573,7 @@ export default function BreedingRecords() {
                   setShowModal(false);
                   setEditingRecord(null);
                 }}
-                className={`p-2.5 border transition-colors ${
+                className={`cursor-pointer p-2.5 border transition-colors ${
                   isDark 
                     ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                     : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
@@ -719,7 +719,7 @@ export default function BreedingRecords() {
                     setShowModal(false);
                     setEditingRecord(null);
                   }}
-                  className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                  className={`cursro-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                     isDark 
                       ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
                       : 'bg-white hover:bg-neutral-50 border-neutral-300'
@@ -730,7 +730,7 @@ export default function BreedingRecords() {
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  className="flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-pink-600 hover:bg-pink-700 text-white border-pink-600 transition-all"
+                  className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-pink-600 hover:bg-pink-700 text-white border-pink-600 transition-all"
                 >
                   {editingRecord ? 'Update' : 'Add Record'}
                 </button>

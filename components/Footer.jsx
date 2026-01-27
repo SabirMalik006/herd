@@ -100,7 +100,7 @@ export default function Footer() {
                     <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-green-500/70 font-bold">Telemetry Feed</span>
                 </div>
                 <h3 className={`${spaceGrotesk.className} text-3xl font-bold uppercase tracking-tighter text-white`}>
-                    Join the Global <br/>Intelligence Network.
+                    Built for Livestock Farmers. <br/>Trusted in the Field.
                 </h3>
             </div>
             

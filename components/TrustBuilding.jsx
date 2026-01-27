@@ -34,7 +34,7 @@ export default function AgriTrustSection() {
   }, []);
 
   const trustCards = [
-    { id: "LOG-001", icon: Users, title: "Active Farmers", stat: animatedStats[0] || 0, suffix: "+", detail: "Farmers actively using our platform" },
+    { id: "LOG-001", icon: Users, title: "Animals Tracked", stat: animatedStats[0] || 0, suffix: "+", detail: "Farmers actively using our platform" },
     { id: "LOG-002", icon: TrendingUp, title: "Productivity Increase", stat: animatedStats[1] || 0, suffix: "%", detail: "Average productivity boost reported" },
     { id: "LOG-003", icon: Shield, title: "Data Secure", stat: animatedStats[2] || 0, suffix: "%", detail: "Bank-level encryption protecting data" },
     { id: "LOG-004", icon: Headphones, title: "Customer Support", stat: "24/7", suffix: "", detail: "Round-the-clock assistance available" },
@@ -50,20 +50,15 @@ export default function AgriTrustSection() {
         
         {/* Technical Header */}
         <div className="mb-20">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="h-px w-12 bg-green-500"></div>
-            <span className="font-mono text-[10px] uppercase tracking-[0.5em] text-green-500 font-bold">
-              Infrastructure Validation // V.04
-            </span>
-          </div>
+          
           
           <h2 className={`text-6xl md:text-8xl font-bold uppercase tracking-tighter leading-[0.85] mb-8 ${spaceGrotesk.className} ${isDark ? "text-white" : "text-black"}`}>
-            Empowering <br /> 
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600">Agriculture.</span>
+            Helping Farmers <br /> 
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600">Make Better Decisions</span>
           </h2>
           
           <p className={`text-xl leading-relaxed max-w-lg font-light ${isDark ? "text-neutral-400" : "text-neutral-600"}`}>
-            Join thousands of farmers experiencing the <span className="text-green-500 font-medium italic">next level</span> of agricultural transformation with cutting-edge technology.
+            We help livestock farmers improve productivity, reduce losses, and make informed decisions using real-time herd data and smart analytics.
           </p>
         </div>
 

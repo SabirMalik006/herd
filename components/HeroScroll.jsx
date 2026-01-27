@@ -37,7 +37,7 @@ export default function HeroScroll() {
             <h2 className={`${spaceGrotesk.className} text-6xl md:text-8xl lg:text-9xl font-bold uppercase tracking-tighter leading-[0.8] ${
               isDark ? "text-white" : "text-neutral-900"
             }`}>
-              Command Center <br />
+              Dashboard <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-b from-green-400 via-green-600 to-emerald-900">
                 For Your Farm
               </span>
@@ -48,18 +48,18 @@ export default function HeroScroll() {
                 <p className={`text-sm md:text-base font-light leading-relaxed tracking-wide text-center ${
                   isDark ? "text-neutral-400" : "text-neutral-600"
                 }`}>
-                  Monitor your entire farm operation from one powerful dashboard. Track crops, livestock, equipment, and financials in real-time.
+                  Monitor livestock performance, track health records, analyze milk yield, and manage breeding cycles from one centralized platform
                 </p>
                 <div className="h-[1px] w-12 bg-green-500/50 hidden md:block" />
             </div>
 
             <div className="flex flex-wrap gap-4 justify-center items-center pt-4">
-              <button className="group relative px-10 py-4 bg-green-600 text-white font-bold text-[11px] tracking-widest uppercase overflow-hidden transition-all hover:bg-green-700">
-                <span className="relative z-10">Exploare Dashboard</span>
+              <button className="cursor-pointer group relative px-10 py-4 bg-green-600 text-white font-bold text-[11px] tracking-widest uppercase overflow-hidden transition-all hover:bg-green-700">
+                <span className="relative z-10">Explore Dashboard</span>
                 <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
               </button>
               
-              <button className={`px-10 py-4 text-[11px] font-bold uppercase tracking-widest border transition-all backdrop-blur-sm ${
+              <button className={`cursor-pointer px-10 py-4 text-[11px] font-bold uppercase tracking-widest border transition-all backdrop-blur-sm ${
                 isDark
                   ? "border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-600"
                   : "border-neutral-300 text-neutral-600 bg-white/50 hover:text-black hover:border-neutral-900 shadow-sm"
@@ -70,7 +70,7 @@ export default function HeroScroll() {
           </div>
         }
       >
-        <div className={`relative w-full h-full group overflow-hidden border ${
+        <div className={`relative cursor-pointer w-full h-full group overflow-hidden border ${
           isDark 
             ? "bg-neutral-950 border-white/10 shadow-[0_0_50px_rgba(0,0,0,0.5)]"
             : "bg-white border-neutral-300 shadow-[0_20px_50px_rgba(0,0,0,0.1)]"

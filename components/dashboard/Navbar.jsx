@@ -128,7 +128,7 @@ export default function Navbar({
            href={'/'}
           >
           <div className="flex items-center gap-3">
-            <img src='/erp-logo.png' alt="ERP Logo" className='h-28 w-auto object-contain' />
+            <img src='/erp-logo.png' alt="ERP Logo" className='cursor-pointer h-28 w-auto object-contain' />
           </div>
           </Link>
           
@@ -164,7 +164,7 @@ export default function Navbar({
                       {item.type === 'collapsible' ? (
                         <button
                           onClick={() => setLivestockExpanded(!livestockExpanded)}
-                          className={`group w-full flex items-center justify-between px-3 py-3 transition-all relative ${
+                          className={`group cursor-pointer w-full flex items-center justify-between px-3 py-3 transition-all relative ${
                             isActive
                               ? isDark 
                                 ? 'bg-green-500/10 text-green-400' 
@@ -377,7 +377,7 @@ export default function Navbar({
               {/* Theme Toggle */}
               <button 
                 onClick={() => setIsDark(!isDark)}
-                className={`p-2.5 border transition-all hover:scale-105 ${
+                className={`p-2.5 cursor-pointer border transition-all hover:scale-105 ${
                   isDark 
                     ? 'hover:bg-white/5 border-white/10 hover:border-white/20' 
                     : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
@@ -389,7 +389,7 @@ export default function Navbar({
               
               {/* Notifications */}
               <button 
-                className={`p-2.5 border transition-all relative hover:scale-105 ${
+                className={`p-2.5 border cursor-pointer transition-all relative hover:scale-105 ${
                   isDark 
                     ? 'hover:bg-white/5 border-white/10 hover:border-white/20' 
                     : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
@@ -408,8 +408,8 @@ export default function Navbar({
             <div className={`flex items-center gap-3 pl-4 border-l relative ${
               isDark ? 'border-white/10' : 'border-neutral-200'
             }`} ref={profileMenuRef}>
-              <div className="text-right hidden md:block">
-                <p className={`text-sm font-bold ${spaceGrotesk.className} tracking-tight`}>Musa</p>
+              <div className="text-right hidden cursor-pointer md:block">
+                <p className={`text-sm font-bold ${spaceGrotesk.className} tracking-tight`}>Hamza</p>
                 <p className={`text-[9px] uppercase font-mono tracking-[0.2em] font-bold ${
                   isDark ? 'text-neutral-600' : 'text-neutral-400'
                 }`}>
@@ -419,7 +419,7 @@ export default function Navbar({
               
               <button
                 onClick={() => setShowProfileMenu(!showProfileMenu)}
-                className={`relative w-10 h-10 border-2 overflow-hidden flex items-center justify-center font-bold text-sm transition-all hover:scale-105 ${
+                className={`relative cursor-pointer w-10 h-10 border-2 overflow-hidden flex items-center justify-center font-bold text-sm transition-all hover:scale-105 ${
                   showProfileMenu 
                     ? isDark
                       ? 'border-green-400 ring-2 ring-green-400/20'
@@ -454,7 +454,7 @@ export default function Navbar({
                         {profilePhoto ? (
                           <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
-                          'M'
+                          'H'
                         )}
                       </div>
                       <div>
@@ -470,7 +470,7 @@ export default function Navbar({
                     {/* Upload Photo Option */}
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
+                      className={`w-full cursor-pointer flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
                         isDark 
                           ? 'hover:bg-white/5 text-neutral-300' 
                           : 'hover:bg-neutral-50 text-neutral-700'
@@ -484,7 +484,7 @@ export default function Navbar({
                     {profilePhoto && (
                       <button
                         onClick={handleRemovePhoto}
-                        className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
+                        className={`w-full curosr-pointer flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
                           isDark 
                             ? 'hover:bg-red-500/10 text-red-400' 
                             : 'hover:bg-red-50 text-red-600'
@@ -501,7 +501,7 @@ export default function Navbar({
                     {/* Logout Option */}
                     <button
                       onClick={handleLogout}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
+                      className={`w-full cursor-pointer flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
                         isDark 
                           ? 'hover:bg-red-500/10 text-red-400' 
                           : 'hover:bg-red-50 text-red-600'

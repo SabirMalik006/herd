@@ -274,7 +274,7 @@ export default function PregnancyTracking() {
             }`}>
               <Link href="/livestockmanagement/reproduction/dashboard">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dashboard')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -289,7 +289,7 @@ export default function PregnancyTracking() {
               </Link>
               <Link href="/livestockmanagement/reproduction/breeding">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/breeding')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -304,7 +304,7 @@ export default function PregnancyTracking() {
               </Link>
               <Link href="/livestockmanagement/reproduction/pregnancy">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/pregnancy')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -319,7 +319,7 @@ export default function PregnancyTracking() {
               </Link>
               <Link href="/livestockmanagement/reproduction/dryoff">
                 <button 
-                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dryoff')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -368,7 +368,7 @@ export default function PregnancyTracking() {
               </div>
               <button 
                 onClick={handleAddNew}
-                className={`px-6 py-3 border font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 transition-all ${
+                className={`cursor-pointer px-6 py-3 border font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 transition-all ${
                   isDark 
                     ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
                     : 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600 shadow-sm'
@@ -516,7 +516,7 @@ export default function PregnancyTracking() {
                           <button
                             key={idx}
                             onClick={() => toggleMilestone(record.id, idx)}
-                            className={`px-2 py-1 text-xs font-medium transition-all border ${
+                            className={`cursor-pointer px-2 py-1 text-xs font-medium transition-all border ${
                               milestone.completed
                                 ? isDark
                                   ? 'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30'
@@ -557,7 +557,7 @@ export default function PregnancyTracking() {
                         </button>
                         <button 
                           onClick={() => handleDelete(record.id)}
-                          className={`p-2.5 border transition-colors ${
+                          className={`cursor-pointer p-2.5 border transition-colors ${
                             isDark 
                               ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
                               : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
@@ -605,7 +605,7 @@ export default function PregnancyTracking() {
                   setShowModal(false);
                   setEditingRecord(null);
                 }}
-                className={`p-2.5 border transition-colors ${
+                className={`cursor-pointer p-2.5 border transition-colors ${
                   isDark 
                     ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                     : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
@@ -771,7 +771,7 @@ export default function PregnancyTracking() {
                     setShowModal(false);
                     setEditingRecord(null);
                   }}
-                  className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                     isDark 
                       ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
                       : 'bg-white hover:bg-neutral-50 border-neutral-300'

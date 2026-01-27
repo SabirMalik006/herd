@@ -12,50 +12,80 @@ export default function FeatureCards() {
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const { isDark } = useTheme();
 
- const features = [
-    {
-      icon: Package,
-      title: "Inventory Control",
-      id: "MOD_01",
-      description: "Complete inventory management solution for your farm operations",
-      benefits: ["Real-time stock tracking", "Automated reorder alerts", "Barcode scanning support", "Multi-location inventory"],
-    },
-    {
-      icon: TrendingUp,
-      title: "Financial Analysis",
-      id: "MOD_02",
-      description: "Powerful insights to maximize your farm's profitability",
-      benefits: ["Profit & loss tracking", "Expense categorization", "Revenue forecasting", "Financial reports"],
-    },
-    {
-      icon: Heart,
-      title: "Animal Health Management",
-      id: "MOD_03",
-      description: "Keep your livestock healthy with comprehensive health tracking",
-      benefits: ["Health record management", "Vaccination schedules", "Veterinary appointments", "Disease tracking"],
-    },
-    {
-      icon: BarChart3,
-      title: "Production Analysis",
-      id: "MOD_04",
-      description: "Data-driven insights to optimize farm productivity",
-      benefits: ["Yield tracking", "Performance metrics", "Production forecasting", "Efficiency analysis"],
-    },
-    {
-      icon: Bell,
-      title: "Smart Alerts & Reminders",
-      id: "MOD_05",
-      description: "Never miss important tasks with intelligent notifications",
-      benefits: ["Custom alert rules", "Task reminders", "Critical notifications", "Calendar integration"],
-    },
-    {
-      icon: Users,
-      title: "Worker Management",
-      id: "MOD_06",
-      description: "Streamline workforce operations and boost productivity",
-      benefits: ["Attendance tracking", "Task assignment", "Performance monitoring", "Payroll integration"],
-    },
-  ];
+const features = [
+  {
+    icon: Package,
+    title: "Livestock Records",
+    id: "MOD_01",
+    description: "Complete animal tracking from birth to sale with detailed health records",
+    benefits: [
+      "Individual animal profiles",
+      "Breeding history tracking", 
+      "Weight & growth monitoring",
+      "Electronic ID tag integration"
+    ],
+  },
+  {
+    icon: TrendingUp,
+    title: "Milk Production Analytics",
+    id: "MOD_02",
+    description: "Real-time milk yield tracking and lactation performance insights",
+    benefits: [
+      "Daily production monitoring",
+      "Lactation curve analysis",
+      "Somatic cell count tracking",
+      "Quality grade reporting"
+    ],
+  },
+  {
+    icon: Heart,
+    title: "Breeding Management",
+    id: "MOD_03",
+    description: "Optimize reproduction with heat detection and pregnancy tracking",
+    benefits: [
+      "Heat cycle monitoring",
+      "Pregnancy confirmation",
+      "Calving date prediction",
+      "Genetic lineage records"
+    ],
+  },
+  {
+    icon: BarChart3,
+    title: "Health & Veterinary",
+    id: "MOD_04",
+    description: "Comprehensive herd health monitoring and treatment records",
+    benefits: [
+      "Vaccination schedules",
+      "Disease outbreak alerts",
+      "Treatment history logs",
+      "Veterinary visit tracking"
+    ],
+  },
+  {
+    icon: Bell,
+    title: "Feed Management",
+    id: "MOD_05",
+    description: "Optimize nutrition with feed inventory and ration planning",
+    benefits: [
+      "Feed consumption tracking",
+      "Ration formulation tools",
+      "Feed cost analysis",
+      "Inventory level alerts"
+    ],
+  },
+  {
+    icon: Users,
+    title: "Farm Operations",
+    id: "MOD_06",
+    description: "Manage daily tasks, barn schedules, and worker assignments",
+    benefits: [
+      "Milking schedule management",
+      "Barn cleaning routines",
+      "Task assignment system",
+      "Labor cost tracking"
+    ],
+  },
+];
 
   useEffect(() => {
     if (!isAutoPlaying) return;
@@ -112,20 +142,20 @@ export default function FeatureCards() {
           }`}>
             <Activity className="w-3 h-3 text-green-500" />
             <span className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-green-500/80">
-              Comprehensive Farm Management
+              Complete Herd Management Platform
             </span>
           </div>
 
           <h2 className={`text-4xl md:text-6xl font-bold tracking-tighter ${spaceGrotesk.className} ${
             isDark ? "text-white" : "text-black"
           }`}>
-            POWERFUL <span className="text-green-500">FEATURES</span>
+            PRECISION <span className="text-green-500">FARMING TOOLS</span>
           </h2>
           
           <p className={`text-sm md:text-base max-w-lg mx-auto font-mono ${
             isDark ? "text-neutral-400" : "text-neutral-600"
           }`}>
-            // Transform your farm with cutting edge technology.
+            // Modern livestock management for profitable dairy operations.
           
           </p>
         </div>
@@ -221,12 +251,12 @@ export default function FeatureCards() {
                     </div>
 
                     {/* Action Button */}
-                    <button className={`w-full mt-4 py-3 border text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 ${
+                    <button className={`cursor-pointer w-full mt-4 py-3 border text-[10px] font-bold uppercase tracking-[0.2em] transition-all duration-300 ${
                       isDark
                         ? "border-green-500/30 text-green-400 hover:bg-green-500 hover:text-black"
                         : "border-green-500/50 text-green-600 hover:bg-green-500 hover:text-white"
                     }`}>
-                      Access Data
+                      See In Action
                     </button>
 
                   </div>

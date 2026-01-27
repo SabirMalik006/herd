@@ -86,16 +86,13 @@ export default function Pricing() {
         <div className="flex flex-col lg:flex-row items-end justify-between mb-24 gap-8">
           <div className="max-w-2xl space-y-4">
             <div className="flex items-center gap-3">
-              <Box className="w-4 h-4 text-green-500" />
-              <span className="font-mono text-[10px] uppercase tracking-[0.4em] text-green-500/80">
-                Resource_Allocation_Protocol
-              </span>
+              
             </div>
             <h2 className={`text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-[0.9] ${spaceGrotesk.className} ${
               isDark ? "text-white" : "text-black"
             }`}>
-              Scalable <br /> 
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-700">Infrastructure.</span>
+              Flexible Plans for <br /> 
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-700">Every Herd Size.</span>
             </h2>
           </div>
           
@@ -238,7 +235,7 @@ export default function Pricing() {
                   ))}
                 </div>
 
-                <button className={`w-full py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 relative overflow-hidden group/btn rounded ${
+                <button className={`cursor-pointer w-full py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 relative overflow-hidden group/btn rounded ${
                   plan.highlight 
                     ? "bg-green-500 text-black hover:bg-green-400" 
                     : isDark

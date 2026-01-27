@@ -141,7 +141,7 @@ export default function FarmDashboard() {
                     
                     <h1 className={`${spaceGrotesk.className} text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] mb-4`}>
                       Good Morning, <br/>
-                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Musa</span>
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Hamza</span>
                     </h1>
                     
                     <p className={`text-sm max-w-xl font-light leading-relaxed ${
@@ -152,7 +152,7 @@ export default function FarmDashboard() {
                 </div>
                 
                 {/* Weather Widget */}
-                <div className={`relative overflow-hidden border backdrop-blur-md group/weather ${
+                <div className={`relative cursor-pointer overflow-hidden border backdrop-blur-md group/weather ${
                   isDark 
                     ? 'bg-neutral-900/50 border-white/10' 
                     : 'bg-white border-neutral-300 shadow-sm'
