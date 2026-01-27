@@ -34,10 +34,10 @@ export default function AgriTrustSection() {
   }, []);
 
   const trustCards = [
-    { id: "LOG-001", icon: Users, title: "Animals Tracked", stat: animatedStats[0] || 0, suffix: "+", detail: "Farmers actively using our platform" },
-    { id: "LOG-002", icon: TrendingUp, title: "Productivity Increase", stat: animatedStats[1] || 0, suffix: "%", detail: "Average productivity boost reported" },
-    { id: "LOG-003", icon: Shield, title: "Data Secure", stat: animatedStats[2] || 0, suffix: "%", detail: "Bank-level encryption protecting data" },
-    { id: "LOG-004", icon: Headphones, title: "Customer Support", stat: "24/7", suffix: "", detail: "Round-the-clock assistance available" },
+    { id: "LOG-001", icon: Users, title: "Animals Tracked", stat: animatedStats[0] || 0, suffix: "+", detail: "Livestock monitored across farms globally" },
+    { id: "LOG-002", icon: TrendingUp, title: "Milk Yield Increase", stat: animatedStats[1] || 0, suffix: "%", detail: "Average milk production improvement" },
+    { id: "LOG-003", icon: Shield, title: "Data Security", stat: animatedStats[2] || 0, suffix: "%", detail: "Veterinary-grade data encryption" },
+    { id: "LOG-004", icon: Headphones, title: "Farm Support", stat: "24/7", suffix: "", detail: "Expert livestock assistance available" },
   ];
 
   const themeBorder = isDark ? "border-white/10" : "border-neutral-200";
@@ -111,7 +111,7 @@ export default function AgriTrustSection() {
              </div>
              <div>
                 <p className="text-[9px] font-mono text-green-400 uppercase tracking-widest">Figure 01.A</p>
-                <p className="text-xs font-bold text-white uppercase tracking-wider">Precision Telemetry</p>
+                <p className="text-xs font-bold text-white uppercase tracking-wider">Herd Telemetry</p>
              </div>
           </div>
         </div>
@@ -131,7 +131,7 @@ export default function AgriTrustSection() {
              </div>
              <div>
                 <p className="text-[9px] font-mono text-green-400 uppercase tracking-widest">Figure 01.B</p>
-                <p className="text-xs font-bold text-white uppercase tracking-wider">Operational Integrity</p>
+                <p className="text-xs font-bold text-white uppercase tracking-wider">Farm Operations</p>
              </div>
           </div>
         </div>

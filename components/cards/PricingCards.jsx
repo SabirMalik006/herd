@@ -17,47 +17,47 @@ export default function Pricing() {
 
  const plans = [
     {
-      id: "UNIT_ALPHA",
-      name: "Starter",
+      id: "BASIC_PLAN",
+      name: "Small Farm",
       icon: Zap,
-      description: "Perfect for individuals and small projects",
+      description: "Essential tools for small livestock operations",
       monthlyPrice: "29",
       annualPrice: "24",
       specs: [
-        { label: "Core Features", val: "ACCESS" },
-        { label: "Email Support", val: "INCLUDED" },
-        { label: "Team Members", val: "UP_TO_5" },
-        { label: "Storage", val: "10_GB" }
+        { label: "Animals Tracked", val: "UP_TO_50" },
+        { label: "Health Records", val: "UNLIMITED" },
+        { label: "Farm Users", val: "UP_TO_2" },
+        { label: "Mobile Access", val: "INCLUDED" }
       ],
       highlight: false
     },
     {
-      id: "UNIT_BETA",
-      name: "Professional",
+      id: "PRO_PLAN",
+      name: "Medium Farm",
       icon: Crown,
-      description: "Most popular for growing teams",
+      description: "Advanced features for growing dairy operations",
       monthlyPrice: "79",
       annualPrice: "64",
       specs: [
-        { label: "All Starter", val: "PLUS" },
-        { label: "Priority Support", val: "24/7" },
-        { label: "Team Members", val: "UNLIMITED" },
-        { label: "Storage", val: "100_GB" }
+        { label: "Animals Tracked", val: "UP_TO_500" },
+        { label: "Milk Analytics", val: "REAL_TIME" },
+        { label: "Farm Users", val: "UP_TO_10" },
+        { label: "Vet Integration", val: "INCLUDED" }
       ],
       highlight: true
     },
     {
-      id: "UNIT_GAMMA",
-      name: "Enterprise",
+      id: "ENTERPRISE_PLAN",
+      name: "Large Farm",
       icon: Sparkles,
-      description: "Ultimate power for large organizations",
+      description: "Complete solution for large-scale ranches",
       monthlyPrice: "149",
       annualPrice: "119",
       specs: [
-        { label: "All Professional", val: "PLUS" },
-        { label: "Account Manager", val: "DEDICATED" },
-        { label: "Integrations", val: "CUSTOM_API" },
-        { label: "Storage", val: "UNLIMITED" }
+        { label: "Animals Tracked", val: "UNLIMITED" },
+        { label: "Custom Reports", val: "ADVANCED" },
+        { label: "Farm Users", val: "UNLIMITED" },
+        { label: "API Access", val: "FULL" }
       ],
       highlight: false
     },
@@ -112,7 +112,7 @@ export default function Pricing() {
                      : "text-neutral-500 hover:text-black"
                }`}
              >
-               Monthly_Log
+               Monthly
              </button>
              <button 
                onClick={() => setIsAnnual(true)}
@@ -124,7 +124,7 @@ export default function Pricing() {
                      : "text-neutral-500 hover:text-black"
                }`}
              >
-               Annual_Log <span className="text-[9px] opacity-60 ml-1">[-20%]</span>
+               Annual <span className="text-[9px] opacity-60 ml-1">[-20%]</span>
              </button>
           </div>
         </div>
@@ -199,7 +199,7 @@ export default function Pricing() {
                 }`}>
                   <span className={`font-mono text-[10px] block mb-1 ${
                     isDark ? "text-neutral-500" : "text-neutral-400"
-                  }`}>CAPITAL_REQ // MONTHLY</span>
+                  }`}>PRICE // MONTHLY</span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-sm font-bold text-green-500">$</span>
                     <span className={`text-5xl font-bold tracking-tighter ${spaceGrotesk.className} ${
@@ -242,7 +242,7 @@ export default function Pricing() {
                       ? "bg-white/5 text-white border border-white/10 hover:bg-white/10"
                       : "bg-neutral-100 text-black border border-neutral-200 hover:bg-neutral-200"
                 }`}>
-                  <span className="relative z-10">Initialize</span>
+                  <span className="relative z-10">Get Started</span>
                   <ChevronRight className="w-3 h-3 relative z-10 transition-transform group-hover/btn:translate-x-1" />
                 </button>
               </div>
@@ -260,9 +260,9 @@ export default function Pricing() {
             isDark ? "divide-white/5" : "divide-neutral-200"
           }`}>
             {[
-                { icon: Shield, label: "Encryption_Std", val: "AES_256_GCM" },
-                { icon: Activity, label: "SLA_Guarantee", val: "99.99_PCT" },
-                { icon: Cpu, label: "Interface_Type", val: "REST_/_GRPC" }
+                { icon: Shield, label: "Data Security", val: "BANK_LEVEL" },
+                { icon: Activity, label: "System Uptime", val: "99.9_PCT" },
+                { icon: Cpu, label: "Support", val: "24/7_EXPERT" }
             ].map((item, i) => (
                 <div key={i} className={`p-6 flex flex-col items-center justify-center gap-2 transition-colors ${
                   isDark ? "hover:bg-white/[0.02]" : "hover:bg-neutral-50"
@@ -284,7 +284,7 @@ export default function Pricing() {
             <p className={`font-mono text-[9px] uppercase tracking-[0.3em] ${
               isDark ? "text-neutral-600" : "text-neutral-400"
             }`}>
-                // System_Status: Operational // Region: Global_South_1
+                // Trusted by 10,000+ livestock farmers worldwide
             </p>
         </div>
       </div>

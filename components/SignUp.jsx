@@ -46,20 +46,20 @@ export default function SignUp() {
     {
       icon: Activity,
       id: "SYS_01",
-      title: "Real-Time Telemetry",
-      description: "Monitor herd vitals with <15ms latency across global nodes",
+      title: "Herd Health Tracking",
+      description: "Monitor animal health, vaccinations, and veterinary records in real-time",
     },
     {
       icon: Database,
       id: "SYS_02",
-      title: "Predictive Analytics",
-      description: "AI-powered yield forecasting with 94.7% accuracy rate",
+      title: "Breeding Management",
+      description: "Track breeding cycles, pregnancy status, and calving predictions",
     },
     {
       icon: Shield,
       id: "SYS_03",
-      title: "Enterprise Security",
-      description: "Military-grade AES-256 encryption for all data streams",
+      title: "Secure Data Storage",
+      description: "Bank-level encryption protects all your livestock records",
     },
   ];
 
@@ -117,7 +117,7 @@ export default function SignUp() {
               <h1 className={`${spaceGrotesk.className} text-4xl md:text-5xl font-bold uppercase tracking-tighter leading-[0.9] mb-4 ${
                 isDark ? "text-white" : "text-black"
               }`}>
-                Transform YOur <br/>
+                Transform Your <br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-700">
                   Farming Journey
                 </span>
@@ -126,7 +126,7 @@ export default function SignUp() {
               <p className={`text-sm leading-relaxed ${
                 isDark ? "text-neutral-400" : "text-neutral-600"
               }`}>
-                Join thousands of progressive farmers revolutionizing agriculture through smart technology.
+                Join thousands of livestock farmers using smart technology to manage healthier herds and increase profits.
               </p>
             </div>
 
@@ -202,7 +202,7 @@ export default function SignUp() {
               <p className={`text-sm ${
                 isDark ? "text-neutral-400" : "text-neutral-600"
               }`}>
-                Sign up to get started with Agri Farm
+                Sign up to get started with AgriHerd
               </p>
             </div>
 
@@ -221,8 +221,8 @@ export default function SignUp() {
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  placeholder="JOHN_SMITH"
-                  className={`w-full px-4 py-3 border font-mono text-sm uppercase tracking-wide outline-none transition-all ${
+                  placeholder="John Smith"
+                  className={`w-full px-4 py-3 border font-mono text-sm tracking-wide outline-none transition-all ${
                     isDark
                       ? "bg-neutral-950 border-white/10 text-white placeholder-neutral-600 focus:border-green-500"
                       : "bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-green-500"
@@ -244,8 +244,8 @@ export default function SignUp() {
                   name="farmName"
                   value={formData.farmName}
                   onChange={handleChange}
-                  placeholder="RANCH_ALPHA_001"
-                  className={`w-full px-4 py-3 border font-mono text-sm uppercase tracking-wide outline-none transition-all ${
+                  placeholder="Green Valley Ranch"
+                  className={`w-full px-4 py-3 border font-mono text-sm tracking-wide outline-none transition-all ${
                     isDark
                       ? "bg-neutral-950 border-white/10 text-white placeholder-neutral-600 focus:border-green-500"
                       : "bg-neutral-50 border-neutral-300 text-black placeholder-neutral-400 focus:border-green-500"
@@ -267,7 +267,7 @@ export default function SignUp() {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  placeholder="operator@agriherd.sys"
+                  placeholder="your@email.com"
                   className={`w-full px-4 py-3 border font-mono text-sm lowercase tracking-wide outline-none transition-all ${
                     isDark
                       ? "bg-neutral-950 border-white/10 text-white placeholder-neutral-600 focus:border-green-500"
@@ -302,7 +302,7 @@ export default function SignUp() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
+                    className={`cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
                       isDark
                         ? "text-neutral-600 hover:text-neutral-400"
                         : "text-neutral-400 hover:text-neutral-600"
@@ -338,7 +338,7 @@ export default function SignUp() {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
+                    className={`cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
                       isDark
                         ? "text-neutral-600 hover:text-neutral-400"
                         : "text-neutral-400 hover:text-neutral-600"
@@ -352,10 +352,10 @@ export default function SignUp() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="group w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)] mt-8"
+                className="cursor-pointer group w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)] mt-8"
               >
                 <Zap className="w-4 h-4" />
-                 Submit
+                Create Account
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
             </form>
@@ -377,13 +377,13 @@ export default function SignUp() {
             </div>
 
             {/* Sign In Link */}
-            <p className={`text-center font-mono text-xs uppercase tracking-wider ${
+            <p className={`text-center cursor-pointer font-mono text-xs uppercase tracking-wider ${
               isDark ? "text-neutral-500" : "text-neutral-600"
             }`}>
               Already have an account?{" "}
               <Link
                 href="/login"
-                className="text-green-500 hover:text-green-400 font-bold transition-colors"
+                className="text-green-500 hover:text-green-400 cursor-pointer font-bold transition-colors"
               >
                 Sign In →
               </Link>

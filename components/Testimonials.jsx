@@ -9,46 +9,46 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "400", "600"] });
 
 const testimonials = [
   {
-    text: "Latency reduced by 40% across our northern herds. The offline-first architecture saved our data during the station outage.",
+    text: "This platform helped us reduce calf mortality by 30% through early health alerts. The breeding calendar alone has saved us countless hours of manual tracking.",
     image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop&q=80",
-    name: "Briana Patton",
-    role: "Logistics Director",
-    id: "OP-A102"
+    name: "Sarah Mitchell",
+    role: "Dairy Farm Owner",
+    id: "FARM-A102"
   },
   {
-    text: "The API integration with our existing milking robotics was seamless. We achieved full bi-directional sync in under 48 hours.",
+    text: "Our milk production increased by 18% after we started using the feed optimization tools. The system pays for itself in feed savings alone.",
     image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&q=80",
-    name: "Bilal Ahmed",
-    role: "Systems Architect",
-    id: "SYS-B221"
+    name: "Ahmed Khan",
+    role: "Farm Manager",
+    id: "DAIRY-B221"
   },
   {
-    text: "Finally, an ERP that treats biological data as a first-class citizen. The predictive yield algorithms are frighteningly accurate.",
+    text: "I can now track every animal's health history from my phone. The vaccination reminders ensure we never miss a treatment, and our vet loves the detailed records.",
     image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop&q=80",
-    name: "Saman Malik",
-    role: "Head Agronomist",
-    id: "BIO-C098"
+    name: "Fatima Noor",
+    role: "Livestock Veterinarian",
+    id: "VET-C098"
   },
   {
-    text: "We replaced three separate legacy systems with this platform. The operational overhead dropped by 22% in the first quarter.",
+    text: "Managing 500+ head of cattle used to be overwhelming. Now I have complete visibility into breeding cycles, health issues, and production metrics all in one place.",
     image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop&q=80",
-    name: "Omar Raza",
-    role: "Chief Operations Officer",
-    id: "EXEC-D442"
+    name: "James Patterson",
+    role: "Cattle Ranch Owner",
+    id: "RANCH-D442"
   },
   {
-    text: "The granular permission controls allowed us to give specific access to our veterinary contractors without exposing financial data.",
+    text: "The pregnancy tracking feature is a game-changer. We've improved our calving success rate by 25% and can plan our herd expansion more accurately.",
     image: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=400&h=400&fit=crop&q=80",
-    name: "Zainab Hussain",
-    role: "Compliance Officer",
-    id: "SEC-E511"
+    name: "Maria Garcia",
+    role: "Breeding Specialist",
+    id: "BREED-E511"
   },
   {
-    text: "Deployment was executed remotely. The automated training modules meant our field staff were proficient within two days.",
+    text: "Real-time milk yield data helps us identify underperforming cows immediately. The financial reports show exactly which animals contribute most to our profit.",
     image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&q=80",
-    name: "Aliza Khan",
-    role: "Field Manager",
-    id: "OPS-F702"
+    name: "David Chen",
+    role: "Dairy Operations Manager",
+    id: "MILK-F702"
   }
 ];
 

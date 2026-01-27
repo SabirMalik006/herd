@@ -227,7 +227,7 @@ export default function DryOffManagement() {
             }`}>
               <Link href="/livestockmanagement/reproduction/dashboard">
                 <button 
-                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer w-[110px] py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dashboard')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -242,7 +242,7 @@ export default function DryOffManagement() {
               </Link>
               <Link href="/livestockmanagement/reproduction/breeding">
                 <button 
-                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer w-[110px] py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/breeding')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -257,7 +257,7 @@ export default function DryOffManagement() {
               </Link>
               <Link href="/livestockmanagement/reproduction/pregnancy">
                 <button 
-                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer w-[110px] py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/pregnancy')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -272,7 +272,7 @@ export default function DryOffManagement() {
               </Link>
               <Link href="/livestockmanagement/reproduction/dryoff">
                 <button 
-                  className={`cursor-pointer px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`cursor-pointer w-[110px] py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dryoff')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -512,7 +512,7 @@ export default function DryOffManagement() {
                       </button>
                       <button 
                         onClick={() => handleDelete(record.id)}
-                        className={`p-2.5 border transition-colors ${
+                        className={`cursor-pointer p-2.5 border transition-colors ${
                           isDark 
                             ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
                             : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
@@ -539,7 +539,7 @@ export default function DryOffManagement() {
                   <button 
                     onClick={goToFirstPage}
                     disabled={currentPage === 1}
-                    className={`px-3 py-2 border font-bold transition-colors ${
+                    className={`cursor-pointer px-3 py-2 border font-bold transition-colors ${
                       currentPage === 1 
                         ? 'opacity-50 cursor-not-allowed' 
                         : isDark 
@@ -856,7 +856,7 @@ export default function DryOffManagement() {
                     setShowModal(false);
                     setEditingRecord(null);
                   }}
-                  className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                     isDark 
                       ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
                       : 'bg-white hover:bg-neutral-50 border-neutral-300'
