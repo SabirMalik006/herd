@@ -135,7 +135,7 @@ export default function FarmDashboard() {
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                       </div>
                       <span className="font-mono text-[10px] text-green-500/80 uppercase tracking-[0.3em]">
-                        [SYSTEM_ACTIVE] // {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                         // {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                     

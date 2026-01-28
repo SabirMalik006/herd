@@ -124,12 +124,10 @@ export default function Navbar({
         <div className={`h-20 flex-shrink-0 flex items-center px-6 border-b relative ${
           isDark ? 'border-white/10' : 'border-neutral-200'
         }`}>
-          <Link
-           href={'/'}
-          >
-          <div className="flex items-center gap-3">
-            <img src='/erp-logo.png' alt="ERP Logo" className='cursor-pointer h-28 w-auto object-contain' />
-          </div>
+          <Link href={'/'}>
+            <div className="flex items-center gap-3">
+              <img src='/erp-logo.png' alt="ERP Logo" className='cursor-pointer h-28 w-auto object-contain' />
+            </div>
           </Link>
           
           {/* Animated accent line */}
@@ -346,30 +344,6 @@ export default function Navbar({
           {/* RIGHT SECTION */}
           <div className="flex items-center gap-6 ml-auto">
             
-            {/* Enhanced System Status */}
-            <div className={`hidden xl:flex items-center gap-3 px-4 py-2 border backdrop-blur-md relative overflow-hidden group/status ${
-              isDark 
-                ? 'bg-green-500/5 border-green-500/20' 
-                : 'bg-green-50 border-green-200'
-            }`}>
-              <div className="flex items-center gap-2">
-                <div className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </div>
-                <span className={`font-mono text-[9px] uppercase tracking-[0.2em] font-bold ${
-                  isDark ? 'text-green-400' : 'text-green-700'
-                }`}>
-                  SYS_ONLINE
-                </span>
-              </div>
-              
-              {/* Hover effect line */}
-              <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover/status:w-full transition-all duration-500 ${
-                isDark ? 'bg-green-400' : 'bg-green-600'
-              }`} />
-            </div>
-            
             {/* Action Buttons */}
             <div className={`flex items-center gap-2 border-l pl-6 ${
               isDark ? 'border-white/10' : 'border-neutral-200'
@@ -484,7 +458,7 @@ export default function Navbar({
                     {profilePhoto && (
                       <button
                         onClick={handleRemovePhoto}
-                        className={`w-full curosr-pointer flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
+                        className={`w-full cursor-pointer flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
                           isDark 
                             ? 'hover:bg-red-500/10 text-red-400' 
                             : 'hover:bg-red-50 text-red-600'

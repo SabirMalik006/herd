@@ -17,47 +17,47 @@ export default function Pricing() {
 
  const plans = [
     {
-      id: "BASIC_PLAN",
-      name: "Small Farm",
+      id: "STARTER_PLAN",
+      name: "Starter",
       icon: Zap,
-      description: "Essential tools for small livestock operations",
+      description: "Perfect for individuals and small projects",
       monthlyPrice: "29",
       annualPrice: "24",
       specs: [
-        { label: "Animals Tracked", val: "UP_TO_50" },
-        { label: "Health Records", val: "UNLIMITED" },
-        { label: "Farm Users", val: "UP_TO_2" },
-        { label: "Mobile Access", val: "INCLUDED" }
+        { label: "Core Features", val: "INCLUDED" },
+        { label: "Email Support", val: "INCLUDED" },
+        { label: "Team Members", val: "UP_TO_5" },
+        { label: "Storage", val: "10GB" }
       ],
       highlight: false
     },
     {
-      id: "PRO_PLAN",
-      name: "Medium Farm",
+      id: "PROFESSIONAL_PLAN",
+      name: "Professional",
       icon: Crown,
-      description: "Advanced features for growing dairy operations",
+      description: "Most popular for growing teams",
       monthlyPrice: "79",
       annualPrice: "64",
       specs: [
-        { label: "Animals Tracked", val: "UP_TO_500" },
-        { label: "Milk Analytics", val: "REAL_TIME" },
-        { label: "Farm Users", val: "UP_TO_10" },
-        { label: "Vet Integration", val: "INCLUDED" }
+        { label: "Everything in Starter", val: "PLUS_MORE" },
+        { label: "Priority Support", val: "24/7" },
+        { label: "Team Members", val: "UNLIMITED" },
+        { label: "Storage", val: "100GB" }
       ],
       highlight: true
     },
     {
       id: "ENTERPRISE_PLAN",
-      name: "Large Farm",
+      name: "Enterprise",
       icon: Sparkles,
-      description: "Complete solution for large-scale ranches",
+      description: "Ultimate power for large organizations",
       monthlyPrice: "149",
       annualPrice: "119",
       specs: [
-        { label: "Animals Tracked", val: "UNLIMITED" },
-        { label: "Custom Reports", val: "ADVANCED" },
-        { label: "Farm Users", val: "UNLIMITED" },
-        { label: "API Access", val: "FULL" }
+        { label: "Everything in Pro", val: "PLUS_MORE" },
+        { label: "Account Manager", val: "DEDICATED" },
+        { label: "Custom Integrations", val: "FULL_API" },
+        { label: "Storage", val: "UNLIMITED" }
       ],
       highlight: false
     },
@@ -91,8 +91,8 @@ export default function Pricing() {
             <h2 className={`text-5xl md:text-7xl font-bold uppercase tracking-tighter leading-[0.9] ${spaceGrotesk.className} ${
               isDark ? "text-white" : "text-black"
             }`}>
-              Flexible Plans for <br /> 
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-700">Every Herd Size.</span>
+              Choose Your <br /> 
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-700">Power Level.</span>
             </h2>
           </div>
           
@@ -260,9 +260,9 @@ export default function Pricing() {
             isDark ? "divide-white/5" : "divide-neutral-200"
           }`}>
             {[
-                { icon: Shield, label: "Data Security", val: "BANK_LEVEL" },
-                { icon: Activity, label: "System Uptime", val: "99.9_PCT" },
-                { icon: Cpu, label: "Support", val: "24/7_EXPERT" }
+                { icon: Shield, label: "Money-Back", val: "30_DAYS" },
+                { icon: Activity, label: "No Credit Card", val: "REQUIRED" },
+                { icon: Cpu, label: "Setup Time", val: "UNDER_5MIN" }
             ].map((item, i) => (
                 <div key={i} className={`p-6 flex flex-col items-center justify-center gap-2 transition-colors ${
                   isDark ? "hover:bg-white/[0.02]" : "hover:bg-neutral-50"
@@ -284,7 +284,7 @@ export default function Pricing() {
             <p className={`font-mono text-[9px] uppercase tracking-[0.3em] ${
               isDark ? "text-neutral-600" : "text-neutral-400"
             }`}>
-                // Trusted by 10,000+ livestock farmers worldwide
+                // Start with a 30-day free trial. Scale as you grow.
             </p>
         </div>
       </div>

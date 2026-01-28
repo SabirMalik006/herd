@@ -22,7 +22,7 @@ export default function Footer() {
             
             <div className="mb-8">
               <h2 className={`${spaceGrotesk.className} text-3xl font-bold uppercase tracking-tighter leading-none text-white`}>
-                AGRI<span className="text-green-500">HERD</span>
+                HERD<span className="text-green-500">ERP</span>
                 <span className="block text-[9px] tracking-[0.5em] text-green-500/50 mt-2 font-mono font-bold">
                   // LIVESTOCK_PLATFORM
                 </span>

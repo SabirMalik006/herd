@@ -108,16 +108,7 @@ export default function Header() {
           {/* RIGHT SIDE ACTIONS */}
           <div className="flex items-center gap-6">
             
-            {/* SYSTEM STATUS */}
-            <div className={`hidden xl:flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-widest ${
-               isTransparent ? "text-green-400" : (isDark ? "text-green-500/80" : "text-green-600/80")
-            }`}>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-              </span>
-              [SYS_ONLINE]
-            </div>
+            
 
             {/* THEME TOGGLE */}
             <button

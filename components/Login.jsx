@@ -73,37 +73,15 @@ const Login = () => {
             <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-green-500/50" />
 
             <div>
-              {/* Logo */}
-              <Link href="/" className="mb-12 block">
-                <Image 
-                  src="/erp-logo.png" 
-                  alt="AgriHerd Logo" 
-                  width={200} 
-                  height={100} 
-                  className="h-16 cursor-pointer w-auto object-contain" 
-                />
-              </Link>
+              
 
-              {/* System Status Badge */}
-              <div className={`inline-flex items-center gap-2 px-3 py-1 border mb-8 ${
-                isDark 
-                  ? "bg-green-500/5 border-green-500/20" 
-                  : "bg-green-50 border-green-200"
-              }`}>
-                <div className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </div>
-                <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-green-500/80">
-                  System_Active
-                </span>
-              </div>
+            
 
               {/* Main Heading */}
-              <h1 className={`${spaceGrotesk.className} text-5xl md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] mb-6 ${
+              <h1 className={`${spaceGrotesk.className} text-5xl w-max md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] mb-6 ${
                 isDark ? "text-white" : "text-black"
               }`}>
-                Modern Farming <br/>
+                Modern Livestock <br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-700">
                   Reliable Results
                 </span>

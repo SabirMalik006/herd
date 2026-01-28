@@ -15,75 +15,75 @@ export default function FeatureCards() {
 const features = [
   {
     icon: Package,
-    title: "Livestock Records",
+    title: "Inventory Control",
     id: "MOD_01",
-    description: "Complete animal tracking from birth to sale with detailed health records",
-    benefits: [
-      "Individual animal profiles",
-      "Breeding history tracking", 
-      "Weight & growth monitoring",
-      "Electronic ID tag integration"
-    ],
+    description: "Complete inventory management solution for your farm operations",
+     benefits: [
+    "Real-time stock tracking",
+    "Automated reorder alerts",
+    "Barcode scanning support",
+    "Multi-location inventory"
+      ]
   },
   {
     icon: TrendingUp,
-    title: "Milk Production Analytics",
+    title: "Financial Analysis",
     id: "MOD_02",
-    description: "Real-time milk yield tracking and lactation performance insights",
+    description: "Powerful insights to maximize your farm's profitability",
     benefits: [
-      "Daily production monitoring",
-      "Lactation curve analysis",
-      "Somatic cell count tracking",
-      "Quality grade reporting"
-    ],
+      "Profit & loss tracking",
+      "Expense categorization",
+      "Revenue forecasting",
+      "Financial reports"
+       ],
   },
   {
     icon: Heart,
-    title: "Breeding Management",
+    title: "Animal Health Management",
     id: "MOD_03",
-    description: "Optimize reproduction with heat detection and pregnancy tracking",
+    description: "Keep your livestock healthy with comprehensive health tracking",
     benefits: [
-      "Heat cycle monitoring",
-      "Pregnancy confirmation",
-      "Calving date prediction",
-      "Genetic lineage records"
-    ],
+       "Health record management",
+       "Vaccination schedules",
+       "Veterinary appointments",
+       "Disease tracking"
+       ]
   },
   {
     icon: BarChart3,
-    title: "Health & Veterinary",
+    title: "Production Analysis",
     id: "MOD_04",
-    description: "Comprehensive herd health monitoring and treatment records",
+    description: "Data-driven insights to optimize farm productivity",
     benefits: [
-      "Vaccination schedules",
-      "Disease outbreak alerts",
-      "Treatment history logs",
-      "Veterinary visit tracking"
-    ],
+         "Yield tracking",
+         "Performance metrics",
+         "Production forecasting",
+         "Efficiency analysis"
+       ],
   },
   {
     icon: Bell,
-    title: "Feed Management",
+    title: "Smart Alerts & Reminders",
     id: "MOD_05",
-    description: "Optimize nutrition with feed inventory and ration planning",
+    description: "Never miss important tasks with intelligent notifications",
     benefits: [
-      "Feed consumption tracking",
-      "Ration formulation tools",
-      "Feed cost analysis",
-      "Inventory level alerts"
-    ],
+        "Custom alert rules",
+        "Task reminders",
+        "Critical notifications",
+        "Calendar integration"
+      ],
   },
   {
     icon: Users,
-    title: "Farm Operations",
+    title: "Worker Management",
     id: "MOD_06",
-    description: "Manage daily tasks, barn schedules, and worker assignments",
+    description: "Streamline workforce operations and boost productivity",
     benefits: [
-      "Milking schedule management",
-      "Barn cleaning routines",
-      "Task assignment system",
-      "Labor cost tracking"
-    ],
+        "Attendance tracking",
+        "Task assignment",
+        "Performance monitoring",
+        "Payroll integration"
+       ],
   },
 ];
 
@@ -149,7 +149,7 @@ const features = [
           <h2 className={`text-4xl md:text-6xl font-bold tracking-tighter ${spaceGrotesk.className} ${
             isDark ? "text-white" : "text-black"
           }`}>
-            PRECISION <span className="text-green-500">FARMING TOOLS</span>
+            PRECISION <span className="text-green-500">HERD MANAGEMENT TOOLS</span>
           </h2>
           
           <p className={`text-sm md:text-base max-w-lg mx-auto font-mono ${

@@ -45,19 +45,16 @@ export default function SignUp() {
   const systemFeatures = [
     {
       icon: Activity,
-      id: "SYS_01",
       title: "Herd Health Tracking",
       description: "Monitor animal health, vaccinations, and veterinary records in real-time",
     },
     {
       icon: Database,
-      id: "SYS_02",
       title: "Breeding Management",
       description: "Track breeding cycles, pregnancy status, and calving predictions",
     },
     {
       icon: Shield,
-      id: "SYS_03",
       title: "Secure Data Storage",
       description: "Bank-level encryption protects all your livestock records",
     },
@@ -94,32 +91,18 @@ export default function SignUp() {
             <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-green-500/50" />
             <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-green-500/50" />
 
-            {/* Logo */}
-            <Link href="/" className="mb-3 m-0">
-              <Image 
-                src="/erp-logo.png" 
-                alt="AgriHerd Logo" 
-                width={300} 
-                height={200} 
-                className="h-30 w-auto object-contain" 
-              />
-            </Link>
+            
 
             {/* System Header */}
             <div className="mb-10">
-              <div className="flex items-center gap-2 mb-6">
-                <Terminal className="w-4 h-4 text-green-500" />
-                <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-green-500/80">
-                  Access_Protocol_v4.0
-                </span>
-              </div>
+              
               
               <h1 className={`${spaceGrotesk.className} text-4xl md:text-5xl font-bold uppercase tracking-tighter leading-[0.9] mb-4 ${
                 isDark ? "text-white" : "text-black"
               }`}>
                 Transform Your <br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-700">
-                  Farming Journey
+                  Livestock Journey
                 </span>
               </h1>
               
@@ -152,7 +135,7 @@ export default function SignUp() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-[9px] text-green-500/60">[{feature.id}]</span>
+                        
                         <h3 className={`text-sm font-bold uppercase tracking-wider ${
                           isDark ? "text-white" : "text-black"
                         }`}>
@@ -175,15 +158,8 @@ export default function SignUp() {
               isDark ? "border-white/5" : "border-neutral-200"
             }`}>
               <div className="flex items-center gap-3">
-                <div className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </div>
-                <span className={`font-mono text-[10px] uppercase tracking-widest ${
-                  isDark ? "text-neutral-500" : "text-neutral-400"
-                }`}>
-                  System Status: <span className="text-green-500">Operational</span>
-                </span>
+               
+                
               </div>
             </div>
           </div>
@@ -202,7 +178,7 @@ export default function SignUp() {
               <p className={`text-sm ${
                 isDark ? "text-neutral-400" : "text-neutral-600"
               }`}>
-                Sign up to get started with AgriHerd
+                Sign up to get started with HerdErp
               </p>
             </div>
 
