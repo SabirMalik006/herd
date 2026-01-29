@@ -1,9 +1,9 @@
 "use client";
 import { Space_Grotesk, Inter } from "next/font/google";
-import { Crosshair, BarChart3, Activity, ShieldCheck, Zap, Monitor, Play } from "lucide-react";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { Crosshair, BarChart3, Activity, ShieldCheck, Zap, Monitor, Play, X } from "lucide-react";
+import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from "framer-motion";
 import { useTheme } from "@/context/ThemeContext";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "600"] });
@@ -11,7 +11,9 @@ const inter = Inter({ subsets: ["latin"], weight: ["400", "600"] });
 export default function HeroScroll() {
   const { isDark } = useTheme();
   const containerRef = useRef(null);
+  const videoRef = useRef(null);
   const [isHovering, setIsHovering] = useState(false);
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -34,6 +36,35 @@ export default function HeroScroll() {
     mouseY.set(0);
     setIsHovering(false);
   };
+
+  const handlePlayVideo = () => {
+    setIsVideoPlaying(true);
+  };
+
+  const handleCloseVideo = () => {
+    setIsVideoPlaying(false);
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+    }
+  };
+
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === "Escape" && isVideoPlaying) {
+        handleCloseVideo();
+      }
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isVideoPlaying]);
+
+  useEffect(() => {
+    if (isVideoPlaying && videoRef.current) {
+      videoRef.current.play();
+    }
+  }, [isVideoPlaying]);
 
   return (
     <div className={`flex flex-col overflow-hidden relative py-32 ${inter.className} ${
@@ -164,6 +195,7 @@ export default function HeroScroll() {
                   <motion.div
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
+                    onClick={handlePlayVideo}
                     className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center cursor-pointer shadow-2xl shadow-green-500/50"
                   >
                     <Play className="w-10 h-10 text-white ml-1" fill="white" />
@@ -234,6 +266,57 @@ export default function HeroScroll() {
           </motion.div>
         </div>
       </div>
+
+      {/* Video Modal */}
+      <AnimatePresence>
+        {isVideoPlaying && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm"
+            onClick={handleCloseVideo}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-6xl mx-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={handleCloseVideo}
+                className="absolute -top-12 right-0 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 flex items-center justify-center transition-all group z-50"
+                aria-label="Close video"
+              >
+                <X className="w-5 h-5 text-white group-hover:rotate-90 transition-transform duration-300" />
+              </button>
+
+              {/* Video Container */}
+              <div className="relative rounded-xl overflow-hidden shadow-2xl border border-white/10">
+                <video
+                  ref={videoRef}
+                  src="/Videos/herd-dashboard.mp4"
+                  controls
+                  className="w-full h-auto"
+                  controlsList="nodownload"
+                >
+                  Your browser does not support the video tag.
+                </video>
+              </div>
+
+              {/* Escape hint */}
+              <div className="absolute -bottom-10 left-0 right-0 text-center">
+                <p className="text-white/50 text-sm font-mono">
+                  Press <kbd className="px-2 py-1 bg-white/10 rounded text-white/70">ESC</kbd> to close
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

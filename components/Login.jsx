@@ -245,6 +245,7 @@ const Login = () => {
               </div>
 
               {/* Submit Button */}
+              <Link href={'/dashboard'} >
               <button
                 type="submit"
                 className="cursor-pointer group w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)] mt-8"
@@ -253,6 +254,7 @@ const Login = () => {
                 Login
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
+              </Link>
             </form>
 
             {/* Divider */}
