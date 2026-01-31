@@ -87,7 +87,7 @@ export default function Navbar({
           children: [
             { name: 'Animals', route: '/livestockmanagement/animal/dashboard' },
             { name: 'Species Management', route: '/livestockmanagement/species' },
-            { name: 'Health & Vaccination', route: '/livestockmanagement/health' },
+            { name: 'Health & Vaccination', route: '/livestockmanagement/health/veterinarians' },
             { name: 'Reproduction', route: '/livestockmanagement/reproduction/dashboard' }
           ]
         },
