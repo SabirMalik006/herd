@@ -103,8 +103,8 @@ export default function FarmDashboard() {
         searchPlaceholder="Search orders..."
       />
 
-      {/* MAIN CONTENT WRAPPER */}
-      <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
+      {/* MAIN CONTENT WRAPPER WITH DYNAMIC MARGIN */}
+      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
           {/* MODERNIZED WELCOME HERO */}
