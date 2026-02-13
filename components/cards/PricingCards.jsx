@@ -13,6 +13,7 @@ const inter = Inter({ subsets: ["latin"], weight: ["400", "600"] });
 
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
+  const [hoveredIndex, setHoveredIndex] = useState(null);
   const { isDark } = useTheme();
 
  const plans = [
@@ -104,7 +105,7 @@ export default function Pricing() {
           }`}>
              <button 
                onClick={() => setIsAnnual(false)}
-               className={`px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all rounded-md ${
+               className={`px-6 cursor-pointer py-3 text-[10px] font-bold uppercase tracking-widest transition-all rounded-md ${
                  !isAnnual 
                    ? "bg-green-500 text-black shadow-[0_0_15px_rgba(34,197,94,0.4)]" 
                    : isDark
@@ -116,7 +117,7 @@ export default function Pricing() {
              </button>
              <button 
                onClick={() => setIsAnnual(true)}
-               className={`px-6 py-3 text-[10px] font-bold uppercase tracking-widest transition-all rounded-md ${
+               className={`px-6 py-3 text-[10px] cursor-pointer font-bold uppercase tracking-widest transition-all rounded-md ${
                  isAnnual 
                    ? "bg-green-500 text-black shadow-[0_0_15px_rgba(34,197,94,0.4)]" 
                    : isDark
@@ -131,11 +132,15 @@ export default function Pricing() {
 
         {/* --- PRICING GRID --- */}
         <div className="grid lg:grid-cols-3 gap-6">
-          {plans.map((plan, idx) => (
+          {plans.map((plan, idx) => {
+            const isHovered = hoveredIndex === idx;
+            return (
             <div
               key={idx}
+              onMouseEnter={() => setHoveredIndex(idx)}
+              onMouseLeave={() => setHoveredIndex(null)}
               className={`relative group transition-all duration-500 border rounded-xl overflow-hidden ${
-                plan.highlight 
+                isHovered
                   ? isDark
                     ? "bg-neutral-900/60 border-green-500/50 shadow-[0_0_40px_-10px_rgba(34,197,94,0.15)] transform md:-translate-y-4"
                     : "bg-white border-green-500/60 shadow-[0_0_40px_-10px_rgba(34,197,94,0.25)] transform md:-translate-y-4"
@@ -145,7 +150,7 @@ export default function Pricing() {
               }`}
             >
               {/* Badge for Popular */}
-              {plan.highlight && (
+              {isHovered && (
                 <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-green-500 to-transparent opacity-50" />
               )}
 
@@ -171,7 +176,7 @@ export default function Pricing() {
                     {plan.id}
                   </span>
                   <div className={`p-2 rounded-lg ${
-                    plan.highlight 
+                    isHovered
                       ? "bg-green-500/20 text-green-400" 
                       : isDark
                         ? "bg-white/5 text-neutral-400"
@@ -223,7 +228,7 @@ export default function Pricing() {
                         isDark ? "text-neutral-500" : "text-neutral-400"
                       }`}>{spec.label}</span>
                       <span className={`font-mono text-[11px] ${
-                        plan.highlight 
+                        isHovered
                           ? "text-green-400" 
                           : isDark
                             ? "text-neutral-300"
@@ -236,7 +241,7 @@ export default function Pricing() {
                 </div>
 
                 <button className={`cursor-pointer w-full py-4 text-[10px] font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 relative overflow-hidden group/btn rounded ${
-                  plan.highlight 
+                  isHovered
                     ? "bg-green-500 text-black hover:bg-green-400" 
                     : isDark
                       ? "bg-white/5 text-white border border-white/10 hover:bg-white/10"
@@ -247,7 +252,7 @@ export default function Pricing() {
                 </button>
               </div>
             </div>
-          ))}
+          )})}
         </div>
 
         {/* --- SYSTEM TRUST BAR --- */}

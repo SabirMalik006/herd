@@ -16,7 +16,6 @@ const features = [
   {
     icon: Package,
     title: "Inventory Control",
-    id: "MOD_01",
     description: "Complete inventory management solution for your farm operations",
      benefits: [
     "Real-time stock tracking",
@@ -28,7 +27,6 @@ const features = [
   {
     icon: TrendingUp,
     title: "Financial Analysis",
-    id: "MOD_02",
     description: "Powerful insights to maximize your farm's profitability",
     benefits: [
       "Profit & loss tracking",
@@ -40,7 +38,6 @@ const features = [
   {
     icon: Heart,
     title: "Animal Health Management",
-    id: "MOD_03",
     description: "Keep your livestock healthy with comprehensive health tracking",
     benefits: [
        "Health record management",
@@ -52,7 +49,7 @@ const features = [
   {
     icon: BarChart3,
     title: "Production Analysis",
-    id: "MOD_04",
+    
     description: "Data-driven insights to optimize farm productivity",
     benefits: [
          "Yield tracking",
@@ -64,7 +61,7 @@ const features = [
   {
     icon: Bell,
     title: "Smart Alerts & Reminders",
-    id: "MOD_05",
+    
     description: "Never miss important tasks with intelligent notifications",
     benefits: [
         "Custom alert rules",
@@ -76,7 +73,7 @@ const features = [
   {
     icon: Users,
     title: "Worker Management",
-    id: "MOD_06",
+    
     description: "Streamline workforce operations and boost productivity",
     benefits: [
         "Attendance tracking",
@@ -213,12 +210,7 @@ const features = [
                         <Icon className="w-6 h-6" />
                       </div>
                       <div className="text-right">
-                        <div className="font-mono text-[10px] text-green-500/60 tracking-widest">{feature.id}</div>
-                        <div className={`h-1 w-8 ml-auto mt-1 rounded-full overflow-hidden ${
-                          isDark ? "bg-green-500/20" : "bg-green-500/30"
-                        }`}>
-                            <div className="h-full bg-green-500 animate-pulse w-2/3 ml-auto" />
-                        </div>
+                        
                       </div>
                     </div>
 

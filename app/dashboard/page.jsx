@@ -119,21 +119,12 @@ export default function FarmDashboard() {
                  : 'bg-gradient-to-br from-green-50/50 via-transparent to-transparent'
              }`} />
              
-             {/* Scan line effect */}
-             <div className={`absolute top-0 left-0 w-full h-[2px] bg-green-500/30 ${
-               isDark ? 'shadow-[0_0_15px_rgba(34,197,94,0.5)]' : ''
-             }`} 
-             style={{
-               animation: 'scanLine 8s ease-in-out infinite'
-             }} />
+             
              
              <div className="relative z-10 p-8 md:p-12 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-4">
-                      <div className="flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                      </div>
+                    
                       <span className="font-mono text-[10px] text-green-500/80 uppercase tracking-[0.3em]">
                          // {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                       </span>

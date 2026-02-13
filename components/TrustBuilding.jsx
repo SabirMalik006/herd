@@ -110,7 +110,7 @@ export default function AgriTrustSection() {
                 <Target className="w-5 h-5 text-green-400" />
              </div>
              <div>
-                <p className="text-[9px] font-mono text-green-400 uppercase tracking-widest">Figure 01.A</p>
+                
                 <p className="text-xs font-bold text-white uppercase tracking-wider">Herd Telemetry</p>
              </div>
           </div>
@@ -130,7 +130,7 @@ export default function AgriTrustSection() {
                 <Zap className="w-5 h-5 text-green-400" />
              </div>
              <div>
-                <p className="text-[9px] font-mono text-green-400 uppercase tracking-widest">Figure 01.B</p>
+                
                 <p className="text-xs font-bold text-white uppercase tracking-wider">Farm Operations</p>
              </div>
           </div>

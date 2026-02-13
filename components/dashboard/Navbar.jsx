@@ -19,10 +19,24 @@ export default function Navbar({
 }) {
   const pathname = usePathname();
   const [livestockExpanded, setLivestockExpanded] = useState(true);
+  const [milkExpanded, setMilkExpanded] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
   const fileInputRef = useRef(null);
   const profileMenuRef = useRef(null);
+
+  // Load theme preference on mount
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('themeMode');
+    if (savedTheme !== null) {
+      setIsDark(savedTheme === 'dark');
+    }
+  }, [setIsDark]);
+
+  // Save theme preference whenever it changes
+  useEffect(() => {
+    localStorage.setItem('themeMode', isDark ? 'dark' : 'light');
+  }, [isDark]);
 
   useEffect(() => {
     const savedPhoto = localStorage.getItem('profilePhoto');
@@ -77,9 +91,11 @@ export default function Navbar({
       section: 'FARM OPS', 
       items: [
         { 
-          name: 'Livestock', 
+          name: 'Livestock Management', 
           icon: Activity, 
           type: 'collapsible',
+          expandedState: livestockExpanded,
+          setExpandedState: setLivestockExpanded,
           children: [
             { name: 'Animals', route: '/livestockmanagement/animal/dashboard' },
             { name: 'Species Management', route: '/livestockmanagement/species' },
@@ -87,7 +103,19 @@ export default function Navbar({
             { name: 'Reproduction', route: '/livestockmanagement/reproduction/dashboard' }
           ]
         },
-        { name: 'Milk Records', icon: Milk, route: '/milk-records' },
+        { 
+          name: 'Milk Management', 
+          icon: Milk, 
+          type: 'collapsible',
+          expandedState: milkExpanded,
+          setExpandedState: setMilkExpanded,
+          children: [
+            { name: 'Sales Overview', route: '/milk-management/sales-overview' },
+            { name: 'Milk Production', route: '/milk-management/production' },
+            { name: 'Sales', route: '/milk-management/sales' },
+            { name: 'One Time Cash Sales', route: '/milk-management/cash-sales' }
+          ]
+        },
         { name: 'Inventory', icon: Package, route: '/inventory' },
         { name: 'Finances', icon: DollarSign, route: '/finances' },
         { name: 'Staff', icon: Users, route: '/staff' },
@@ -169,7 +197,7 @@ export default function Navbar({
                       {item.type === 'collapsible' ? (
                         sidebarOpen ? (
                           <button
-                            onClick={() => setLivestockExpanded(!livestockExpanded)}
+                            onClick={() => item.setExpandedState(!item.expandedState)}
                             className={`group cursor-pointer w-full flex items-center justify-between px-3 py-3 transition-all relative ${
                               isActive
                                 ? isDark 
@@ -193,7 +221,7 @@ export default function Navbar({
                               <span className="text-[12px] font-bold tracking-wide">{item.name}</span>
                             </div>
                             <div className="transition-transform duration-200">
-                              {livestockExpanded ? (
+                              {item.expandedState ? (
                                 <ChevronDown className="w-3 h-3 opacity-50" />
                               ) : (
                                 <ChevronRight className="w-3 h-3 opacity-50" />
@@ -259,7 +287,7 @@ export default function Navbar({
                         </Link>
                       )}
 
-                      {sidebarOpen && item.type === 'collapsible' && livestockExpanded && item.children && (
+                      {sidebarOpen && item.type === 'collapsible' && item.expandedState && item.children && (
                         <div className={`mt-1 ml-6 pl-4 border-l space-y-1 ${
                           isDark ? 'border-white/10' : 'border-neutral-200'
                         }`}>
@@ -435,7 +463,7 @@ export default function Navbar({
                 {profilePhoto ? (
                   <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  'M'
+                  'H'
                 )}
               </button>
 
@@ -459,7 +487,7 @@ export default function Navbar({
                         )}
                       </div>
                       <div>
-                        <p className={`font-bold text-sm ${spaceGrotesk.className}`}>Musa</p>
+                        <p className={`font-bold text-sm ${spaceGrotesk.className}`}>Hamza</p>
                         <p className={`text-[10px] font-mono uppercase tracking-wider ${
                           isDark ? 'text-neutral-500' : 'text-neutral-400'
                         }`}>Manager</p>
