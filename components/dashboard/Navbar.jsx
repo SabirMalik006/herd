@@ -111,9 +111,9 @@ export default function Navbar({
           setExpandedState: setMilkExpanded,
           children: [
             { name: 'Sales Overview', route: '/milk-management/sales-overview' },
-            { name: 'Milk Production', route: '/milk-management/production' },
-            { name: 'Sales', route: '/milk-management/sales' },
-            { name: 'One Time Cash Sales', route: '/milk-management/cash-sales' }
+            { name: 'Milk Production', route: '/milk-management/production/dashboard' },
+            { name: 'Sales', route: '/milk-management/sales/dashboard' },
+            { name: 'One Time Cash Sales', route: '/milk-management/otcs/dashboard' }
           ]
         },
         { name: 'Inventory', icon: Package, route: '/inventory' },

@@ -21,11 +21,12 @@ export default function MilkProductionDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
 
+  // Debug: Log the current pathname
+  React.useEffect(() => {
+    console.log('Current pathname:', pathname);
+  }, [pathname]);
+
   const isActive = (path) => {
-    // If we're on the base milk production route, make dashboard active
-    if (pathname === '/milkmanagement/production' && path === '/milkmanagement/production/dashboard') {
-      return true;
-    }
     return pathname === path;
   };
 
@@ -126,53 +127,50 @@ export default function MilkProductionDashboard() {
             <div className={`flex p-1.5 border backdrop-blur-md ${
               isDark ? 'bg-neutral-900/50 border-white/10' : 'bg-white border-neutral-300 shadow-sm'
             }`}>
-              <Link href="/milkmanagement/production/dashboard">
-                <button 
-                  className={`flex cursor-pointer items-center gap-2 px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
-                    isActive('/milkmanagement/production/dashboard')
-                      ? isDark
-                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
-                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
-                      : isDark 
-                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
-                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
-                  }`}
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  Dashboard
-                </button>
+              <Link 
+                href="/milk-management/production/dashboard"
+                className={`cursor-pointer flex items-center gap-2 px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  isActive('/milk-management/production/dashboard')
+                    ? isDark
+                      ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                      : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                    : isDark 
+                      ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                      : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                Dashboard
               </Link>
-              <Link href="/milkmanagement/production/daily-records">
-                <button 
-                  className={`flex cursor-pointer items-center gap-2 px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
-                    isActive('/milkmanagement/production/daily-records')
-                      ? isDark
-                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
-                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
-                      : isDark 
-                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
-                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
-                  }`}
-                >
-                  <Calendar className="w-4 h-4" />
-                  Daily Records
-                </button>
+              <Link 
+                href="/milk-management/production/daily-records"
+                className={`cursor-pointer flex items-center gap-2 px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  isActive('/milk-management/production/daily-records')
+                    ? isDark
+                      ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                      : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                    : isDark 
+                      ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                      : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+                }`}
+              >
+                <Calendar className="w-4 h-4" />
+                Daily Records
               </Link>
-              <Link href="/milkmanagement/production/analytics">
-                <button 
-                  className={`flex cursor-pointer items-center gap-2 px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
-                    isActive('/milkmanagement/production/analytics')
-                      ? isDark
-                        ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
-                        : 'bg-green-500/10 text-green-700 border border-green-500/30'
-                      : isDark 
-                        ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
-                        : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
-                  }`}
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  Analytics
-                </button>
+              <Link 
+                href="/milk-management/production/analytics"
+                className={`cursor-pointer flex items-center gap-2 px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  isActive('/milk-management/production/analytics')
+                    ? isDark
+                      ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
+                      : 'bg-green-500/10 text-green-700 border border-green-500/30'
+                    : isDark 
+                      ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5' 
+                      : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+                }`}
+              >
+                <TrendingUp className="w-4 h-4" />
+                Analytics
               </Link>
             </div>
           </div>
@@ -369,7 +367,7 @@ export default function MilkProductionDashboard() {
               </div>
 
               {productionTrendData.every(d => d.volume === 0) ? (
-                <div className="h-[400px] flex items-center justify-center border-2 border-dashed rounded-lg" style={{
+                <div className="h-[400px] min-h-[400px] flex items-center justify-center border-2 border-dashed rounded-lg" style={{
                   borderColor: isDark ? 'rgba(115, 115, 115, 0.2)' : 'rgba(212, 212, 212, 0.5)'
                 }}>
                   <div className="text-center">
@@ -383,8 +381,8 @@ export default function MilkProductionDashboard() {
                   </div>
                 </div>
               ) : (
-                <div className="h-[400px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
+                <div className="h-[400px] min-h-[400px] w-full">
+                  <ResponsiveContainer width="100%" height="100%" minHeight={400}>
                     <AreaChart data={productionTrendData}>
                       <defs>
                         <linearGradient id="colorProduction" x1="0" y1="0" x2="0" y2="1">
