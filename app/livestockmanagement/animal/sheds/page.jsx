@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
-import { 
+import axios from 'axios';
+import Cookies from 'js-cookie';
+import {
   Home, Search, Filter, Plus, Eye, Edit, Trash2, ChevronDown, X
 } from 'lucide-react';
 import { Space_Grotesk, Inter } from "next/font/google";
@@ -12,8 +14,12 @@ import { usePathname } from 'next/navigation';
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+const API_URL = `${API_BASE_URL}/sheds`;
+
 export default function ShedsManagement() {
-  const [isDark, setIsDark] = useState(false); 
+  const [isDark, setIsDark] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterOpen, setFilterOpen] = useState(false);
@@ -22,51 +28,118 @@ export default function ShedsManagement() {
   const [editingShed, setEditingShed] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [viewingShed, setViewingShed] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     capacity: '',
     status: 'active'
   });
+
   const pathname = usePathname();
 
-  // --- SHEDS DATA WITH STORAGE ---
-  const [sheds, setSheds] = useState(() => {
-    // Load from storage on mount
+  // ============================
+  // API DATA (Sheds)
+  // ============================
+  const [sheds, setSheds] = useState([]);
+
+  // Helper to get headers with token
+  const getHeaders = () => ({
+    Authorization: `Bearer ${Cookies.get('accessToken')}`
+  });
+
+  // Normalize shed data
+  const normalizeShed = (shed) => {
+    return {
+      id: shed.id,
+      shedName: shed.shedName || shed.name || '',
+      name: shed.shedName || shed.name || '',
+      capacity: shed.capacity || 0,
+      status: shed.status || 'active',
+      createdAt: shed.createdAt || new Date().toISOString(),
+      createdDate: shed.createdAt ? new Date(shed.createdAt).toLocaleDateString() : new Date().toLocaleDateString()
+    };
+  };
+
+  // Fetch sheds
+  const fetchSheds = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axios.get(API_URL, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+
+      if (response.data && response.data.success) {
+        const fetchedSheds = (response.data.data || []).map(normalizeShed);
+        setSheds(fetchedSheds);
+        localStorage.setItem('livestockSheds', JSON.stringify(fetchedSheds));
+      } else if (Array.isArray(response.data)) {
+        const fetchedSheds = response.data.map(normalizeShed);
+        setSheds(fetchedSheds);
+        localStorage.setItem('livestockSheds', JSON.stringify(fetchedSheds));
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error("❌ Fetch sheds error:", error);
+      setError('Failed to fetch sheds');
+      loadFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load from localStorage as fallback
+  const loadFromLocalStorage = () => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('livestockSheds');
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          return parsed.length > 0 ? parsed : [];
+          setSheds(parsed);
         } catch (e) {
           console.error('Error parsing stored sheds:', e);
+          setSheds([]);
         }
       }
     }
-    return [];
-  });
+  };
 
-  // Save to storage whenever sheds change
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
+  // Initial fetch
+  useEffect(() => {
+    fetchSheds();
+  }, []);
+
+  // Save to localStorage whenever sheds change (backup)
+  useEffect(() => {
+    if (sheds.length > 0 && typeof window !== 'undefined') {
       localStorage.setItem('livestockSheds', JSON.stringify(sheds));
     }
   }, [sheds]);
 
+  // ============================
+  // FILTERS
+  // ============================
   const filteredSheds = sheds.filter(shed => {
-    const matchesSearch = shed.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (shed.shedName || shed.name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = selectedStatus === 'all' || shed.status === selectedStatus;
     return matchesSearch && matchesStatus;
   });
 
-  // Handle Add/Edit Shed
+  // ============================
+  // FORM LOGIC
+  // ============================
   const handleOpenForm = (shed = null) => {
     if (shed) {
       setEditingShed(shed);
       setFormData({
-        name: shed.name,
-        capacity: shed.capacity.toString(),
-        status: shed.status
+        name: shed.shedName || shed.name || '',
+        capacity: shed.capacity?.toString() || '',
+        status: shed.status || 'active'
       });
     } else {
       setEditingShed(null);
@@ -89,41 +162,114 @@ export default function ShedsManagement() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (editingShed) {
-      // Update existing shed
-      setSheds(sheds.map(shed => 
-        shed.id === editingShed.id 
-          ? { 
-              ...shed, 
-              name: formData.name, 
-              capacity: parseInt(formData.capacity),
-              status: formData.status
-            }
-          : shed
-      ));
-    } else {
-      // Add new shed
+
+    if (!formData.name || !formData.capacity) {
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    const payload = {
+      shedName: formData.name,
+      capacity: parseInt(formData.capacity),
+      status: formData.status
+    };
+
+    try {
+      if (editingShed) {
+        // Update existing shed
+        const response = await axios.patch(`${API_URL}/${editingShed.id}`, payload, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
+
+        if (response.data && response.data.success) {
+          await fetchSheds();
+          setSearchTerm('');
+          setSelectedStatus('all');
+        }
+      } else {
+        // Add new shed
+        const response = await axios.post(API_URL, payload, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
+
+        if (response.data && response.data.success) {
+          await fetchSheds();
+          setSearchTerm('');
+          setSelectedStatus('all');
+        }
+      }
+
+      handleCloseForm();
+
+    } catch (error) {
+      console.error("❌ API Error, saving locally:", error);
+
+      // Fallback to localStorage if API fails
       const newShed = {
-        id: sheds.length > 0 ? Math.max(...sheds.map(s => s.id)) + 1 : 1,
+        id: editingShed ? editingShed.id : (sheds.length > 0 ? Math.max(...sheds.map(s => s.id)) + 1 : 1),
+        shedName: formData.name,
         name: formData.name,
         capacity: parseInt(formData.capacity),
         status: formData.status,
-        createdDate: new Date().toISOString().slice(0, 19).replace('T', ' ')
+        createdDate: new Date().toLocaleDateString(),
+        createdAt: new Date().toISOString()
       };
-      setSheds([newShed, ...sheds]);
+
+      let updatedSheds;
+      if (editingShed) {
+        updatedSheds = sheds.map(s => s.id === editingShed.id ? newShed : s);
+      } else {
+        updatedSheds = [newShed, ...sheds];
+      }
+
+      setSheds(updatedSheds);
+      localStorage.setItem('livestockSheds', JSON.stringify(updatedSheds));
+      setSearchTerm('');
+      setSelectedStatus('all');
+      handleCloseForm();
+
+    } finally {
+      setSubmitting(false);
     }
-    
-    handleCloseForm();
   };
 
-  const handleDelete = (id) => {
-    setSheds(sheds.filter(shed => shed.id !== id));
-    setDeleteConfirm(null);
+  const handleDelete = async (id) => {
+    try {
+      setSubmitting(true);
+      await axios.delete(`${API_URL}/${id}`, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      await fetchSheds();
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error("❌ Delete failed, deleting locally:", error);
+      const updatedSheds = sheds.filter(s => s.id !== id);
+      setSheds(updatedSheds);
+      localStorage.setItem('livestockSheds', JSON.stringify(updatedSheds));
+      setDeleteConfirm(null);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      // Optional: Add search API call here if backend supports search
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // ============================
+  // CORNER BRACKETS
+  // ============================
   const CornerBrackets = () => {
     const borderColor = isDark ? "border-green-500/20" : "border-neutral-300";
     return (
@@ -160,7 +306,7 @@ export default function ShedsManagement() {
 
       {/* OVERLAY FOR MODALS */}
       {(showShedForm || deleteConfirm || viewingShed) && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
           onClick={() => {
             handleCloseForm();
@@ -171,10 +317,10 @@ export default function ShedsManagement() {
       )}
 
       {/* NAVBAR WITH SIDEBAR */}
-      <Navbar 
-        isDark={isDark} 
-        setIsDark={setIsDark} 
-        sidebarOpen={sidebarOpen} 
+      <Navbar
+        isDark={isDark}
+        setIsDark={setIsDark}
+        sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         searchPlaceholder="Search ID, tag..."
       />
@@ -187,7 +333,13 @@ export default function ShedsManagement() {
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                
+                <div className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className="font-mono text-[10px] text-green-500/80 uppercase tracking-[0.3em]">
+                  [LIVESTOCK_SYSTEM]
+                </span>
               </div>
               <h1 className={`${spaceGrotesk.className} text-4xl md:text-5xl font-bold uppercase tracking-tighter leading-[0.9] mb-2`}>
                 Shed <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Management</span>
@@ -195,6 +347,12 @@ export default function ShedsManagement() {
               <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Manage farm buildings, sheds, and field locations for housing your livestock.
               </p>
+              {loading && (
+                <span className="text-xs text-green-500 font-mono mt-2">SYNCING_DATA...</span>
+              )}
+              {error && (
+                <span className="text-xs text-red-500 font-mono mt-2">{error}</span>
+              )}
             </div>
             
             {/* Enhanced Tab Navigation */}
@@ -259,17 +417,32 @@ export default function ShedsManagement() {
                 }`}>
                   Shed Locations
                 </h2>
+                <button
+                  onClick={fetchSheds}
+                  disabled={loading}
+                  className={`ml-2 text-xs font-mono px-2 py-1 border transition-all ${
+                    loading 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : isDark 
+                        ? 'hover:bg-white/5 border-white/10 hover:border-green-500/20' 
+                        : 'hover:bg-neutral-50 border-neutral-200 hover:border-green-300'
+                  }`}
+                  title="Refresh Data"
+                >
+                  {loading ? '...' : '⟲'}
+                </button>
               </div>
               <button 
-                className={`cursor-pointer group flex items-center gap-2 px-5 py-3 border transition-all duration-200 font-bold text-[11px] uppercase tracking-widest ${
+                className={`group flex items-center gap-2 px-5 py-3 border transition-all duration-200 font-bold text-[11px] uppercase tracking-widest ${
                   isDark 
                     ? 'bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700' 
                     : 'bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm'
                 }`}
                 onClick={() => handleOpenForm()}
+                disabled={submitting}
               >
                 <Plus className="w-4 h-4" />
-                Add Shed
+                {submitting ? 'Saving...' : 'Add Shed'}
               </button>
             </div>
           </section>
@@ -292,6 +465,16 @@ export default function ShedsManagement() {
                       isDark ? 'placeholder:text-neutral-600' : 'placeholder:text-neutral-400'
                     }`}
                   />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className={`p-1 transition-all ${
+                        isDark ? 'hover:text-white text-neutral-400' : 'hover:text-neutral-900 text-neutral-500'
+                      }`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover/search:w-full transition-all duration-500 ${
                   isDark ? 'bg-green-500' : 'bg-green-600'
@@ -307,7 +490,9 @@ export default function ShedsManagement() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Filter className={`w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Filter by status</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider">
+                        {selectedStatus === 'all' ? 'Filter by status' : selectedStatus}
+                      </span>
                     </div>
                     <ChevronDown className={`w-4 h-4 transition-transform ${filterOpen ? 'rotate-180' : ''}`} />
                   </div>
@@ -355,108 +540,128 @@ export default function ShedsManagement() {
               </h2>
             </div>
             
-            <div className="grid grid-cols-1 gap-4">
-              {filteredSheds.map((shed) => (
-                <div key={shed.id} className={`relative p-6 border transition-all duration-300 hover:-translate-y-1 ${
-                  isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
-                }`}>
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                    {/* Name */}
-                    <div className="md:col-span-4">
-                      <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-2 ${
-                        isDark ? 'text-neutral-500' : 'text-neutral-400'
-                      }`}>
-                        Shed Name
-                      </span>
-                      <h3 className={`text-lg font-bold ${spaceGrotesk.className}`}>{shed.name}</h3>
-                    </div>
+            {loading && sheds.length === 0 ? (
+              <div className={`relative p-16 border text-center ${
+                isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
+              }`}>
+                <div className="animate-spin w-12 h-12 border-3 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <h3 className={`${spaceGrotesk.className} text-2xl font-bold mb-2 uppercase tracking-tight`}>
+                  Loading sheds...
+                </h3>
+                <CornerBrackets />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4">
+                {filteredSheds.map((shed) => (
+                  <div key={shed.id} className={`relative p-6 border transition-all duration-300 hover:-translate-y-1 ${
+                    isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
+                  }`}>
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                      {/* Name */}
+                      <div className="md:col-span-4">
+                        <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-2 ${
+                          isDark ? 'text-neutral-500' : 'text-neutral-400'
+                        }`}>
+                          Shed Name
+                        </span>
+                        <h3 className={`text-lg font-bold ${spaceGrotesk.className}`}>{shed.shedName || shed.name}</h3>
+                      </div>
 
-                    {/* Capacity */}
-                    <div className="md:col-span-2">
-                      <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-2 ${
-                        isDark ? 'text-neutral-500' : 'text-neutral-400'
-                      }`}>
-                        Capacity
-                      </span>
-                      <p className={`${spaceGrotesk.className} text-2xl font-bold tracking-tight ${
-                        isDark ? 'text-green-400' : 'text-green-600'
-                      }`}>
-                        {shed.capacity}
-                      </p>
-                    </div>
+                      {/* Capacity */}
+                      <div className="md:col-span-2">
+                        <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-2 ${
+                          isDark ? 'text-neutral-500' : 'text-neutral-400'
+                        }`}>
+                          Capacity
+                        </span>
+                        <p className={`${spaceGrotesk.className} text-2xl font-bold tracking-tight ${
+                          isDark ? 'text-green-400' : 'text-green-600'
+                        }`}>
+                          {shed.capacity}
+                        </p>
+                      </div>
 
-                    {/* Status */}
-                    <div className="md:col-span-2">
-                      <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-2 ${
-                        isDark ? 'text-neutral-500' : 'text-neutral-400'
-                      }`}>
-                        Status
-                      </span>
-                      <span className={`inline-flex items-center px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${
-                        isDark
-                          ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                          : 'bg-green-50 text-green-700 border-green-200'
-                      }`}>
-                        {shed.status}
-                      </span>
-                    </div>
+                      {/* Status */}
+                      <div className="md:col-span-2">
+                        <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-2 ${
+                          isDark ? 'text-neutral-500' : 'text-neutral-400'
+                        }`}>
+                          Status
+                        </span>
+                        <span className={`inline-flex items-center px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${
+                          shed.status === 'active'
+                            ? isDark
+                              ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                              : 'bg-green-50 text-green-700 border-green-200'
+                            : shed.status === 'inactive'
+                            ? isDark
+                              ? 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20'
+                              : 'bg-neutral-100 text-neutral-600 border-neutral-200'
+                            : isDark
+                              ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                              : 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                        }`}>
+                          {shed.status}
+                        </span>
+                      </div>
 
-                    {/* Created Date */}
-                    <div className="md:col-span-3">
-                      <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-2 ${
-                        isDark ? 'text-neutral-500' : 'text-neutral-400'
-                      }`}>
-                        Created Date
-                      </span>
-                      <p className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                        {shed.createdDate}
-                      </p>
-                    </div>
+                      {/* Created Date */}
+                      <div className="md:col-span-3">
+                        <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-2 ${
+                          isDark ? 'text-neutral-500' : 'text-neutral-400'
+                        }`}>
+                          Created Date
+                        </span>
+                        <p className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                          {shed.createdDate || (shed.createdAt ? new Date(shed.createdAt).toLocaleDateString() : 'N/A')}
+                        </p>
+                      </div>
 
-                    {/* Actions */}
-                    <div className="md:col-span-1 flex items-center justify-end gap-1">
-                      <button 
-                        className={`cursor-pointer p-2.5 border transition-all ${
-                          isDark 
-                            ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
-                            : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
-                        }`} 
-                        title="View"
-                        onClick={() => setViewingShed(shed)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button 
-                        className={`cursor-pointer p-2.5 border transition-all ${
-                          isDark 
-                            ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
-                            : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
-                        }`} 
-                        title="Edit"
-                        onClick={() => handleOpenForm(shed)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button 
-                        className={`cursor-pointer p-2.5 border transition-all ${
-                          isDark 
-                            ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
-                            : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
-                        }`} 
-                        title="Delete"
-                        onClick={() => setDeleteConfirm(shed)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {/* Actions */}
+                      <div className="md:col-span-1 flex items-center justify-end gap-1">
+                        <button 
+                          className={`cursor-pointer p-2.5 border transition-all ${
+                            isDark 
+                              ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                              : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                          }`} 
+                          title="View"
+                          onClick={() => setViewingShed(shed)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button 
+                          className={`cursor-pointer p-2.5 border transition-all ${
+                            isDark 
+                              ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                              : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                          }`} 
+                          title="Edit"
+                          onClick={() => handleOpenForm(shed)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          className={`cursor-pointer p-2.5 border transition-all ${
+                            isDark 
+                              ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
+                              : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
+                          }`} 
+                          title="Delete"
+                          onClick={() => setDeleteConfirm(shed)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
+                    <CornerBrackets />
                   </div>
-                  <CornerBrackets />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Empty State */}
-            {filteredSheds.length === 0 && (
+            {!loading && filteredSheds.length === 0 && (
               <div className={`relative p-16 border text-center ${
                 isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
               }`}>
@@ -465,8 +670,25 @@ export default function ShedsManagement() {
                   No sheds found
                 </h3>
                 <p className={`text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                  Try adjusting your search or filter criteria
+                  {searchTerm || selectedStatus !== 'all' 
+                    ? 'Try adjusting your search or filter criteria' 
+                    : 'Click "Add Shed" to create your first shed'}
                 </p>
+                {(searchTerm || selectedStatus !== 'all') && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedStatus('all');
+                    }}
+                    className={`mt-4 px-4 py-2 border text-xs font-bold uppercase tracking-wider transition-all ${
+                      isDark 
+                        ? 'bg-neutral-800 hover:bg-neutral-700 border-white/10 hover:border-white/20' 
+                        : 'bg-white hover:bg-neutral-50 border-neutral-300 hover:border-neutral-400'
+                    }`}
+                  >
+                    Clear Filters
+                  </button>
+                )}
                 <CornerBrackets />
               </div>
             )}
@@ -507,6 +729,7 @@ export default function ShedsManagement() {
                   ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                   : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
               }`}
+              disabled={submitting}
             >
               <X className="w-5 h-5" />
             </button>
@@ -532,6 +755,7 @@ export default function ShedsManagement() {
                     ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
                     : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                 }`}
+                disabled={submitting}
               />
             </div>
 
@@ -554,6 +778,7 @@ export default function ShedsManagement() {
                     ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
                     : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                 }`}
+                disabled={submitting}
               />
             </div>
 
@@ -572,6 +797,7 @@ export default function ShedsManagement() {
                     ? 'bg-neutral-900 border-white/10 focus:border-green-500' 
                     : 'bg-neutral-50 border-neutral-300 focus:border-green-500'
                 }`}
+                disabled={submitting}
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
@@ -589,14 +815,20 @@ export default function ShedsManagement() {
                     ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
                     : 'bg-white hover:bg-neutral-50 border-neutral-300'
                 }`}
+                disabled={submitting}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all"
+                disabled={submitting}
+                className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                  submitting
+                    ? 'bg-green-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'
+                } text-white border-green-600`}
               >
-                {editingShed ? 'Update' : 'Add'}
+                {submitting ? 'Saving...' : (editingShed ? 'Update' : 'Add')}
               </button>
             </div>
           </form>
@@ -619,7 +851,7 @@ export default function ShedsManagement() {
                 Delete Shed?
               </h3>
               <p className={`text-sm font-medium mb-8 ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                Are you sure you want to delete "{deleteConfirm.name}"? This action cannot be undone.
+                Are you sure you want to delete "{deleteConfirm.shedName || deleteConfirm.name}"? This action cannot be undone.
               </p>
               <div className="flex gap-3">
                 <button
@@ -629,14 +861,20 @@ export default function ShedsManagement() {
                       ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
                       : 'bg-white hover:bg-neutral-50 border-neutral-300'
                   }`}
+                  disabled={submitting}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={() => handleDelete(deleteConfirm.id)}
-                  className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-red-600 hover:bg-red-700 text-white border-red-600 transition-all"
+                  disabled={submitting}
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                    submitting
+                      ? 'bg-red-400 cursor-not-allowed'
+                      : 'bg-red-600 hover:bg-red-700'
+                  } text-white border-red-600`}
                 >
-                  Delete
+                  {submitting ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>
@@ -690,7 +928,7 @@ export default function ShedsManagement() {
                   }`}>
                     Shed Name
                   </label>
-                  <p className={`text-lg font-bold ${spaceGrotesk.className}`}>{viewingShed.name}</p>
+                  <p className={`text-lg font-bold ${spaceGrotesk.className}`}>{viewingShed.shedName || viewingShed.name}</p>
                 </div>
 
                 <div>
@@ -713,9 +951,17 @@ export default function ShedsManagement() {
                     Status
                   </label>
                   <span className={`inline-flex items-center px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${
-                    isDark
-                      ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                      : 'bg-green-50 text-green-700 border-green-200'
+                    viewingShed.status === 'active'
+                      ? isDark
+                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                        : 'bg-green-50 text-green-700 border-green-200'
+                      : viewingShed.status === 'inactive'
+                      ? isDark
+                        ? 'bg-neutral-500/10 text-neutral-400 border-neutral-500/20'
+                        : 'bg-neutral-100 text-neutral-600 border-neutral-200'
+                      : isDark
+                        ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                        : 'bg-yellow-50 text-yellow-700 border-yellow-200'
                   }`}>
                     {viewingShed.status}
                   </span>
@@ -727,7 +973,9 @@ export default function ShedsManagement() {
                   }`}>
                     Created Date
                   </label>
-                  <p className="text-sm font-medium">{viewingShed.createdDate}</p>
+                  <p className="text-sm font-medium">
+                    {viewingShed.createdDate || (viewingShed.createdAt ? new Date(viewingShed.createdAt).toLocaleDateString() : 'N/A')}
+                  </p>
                 </div>
               </div>
 

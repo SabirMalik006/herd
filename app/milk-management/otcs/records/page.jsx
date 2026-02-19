@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import {
   LayoutDashboard, Receipt, Plus, Edit, Trash2,
   X, Search, ShoppingCart, ChevronLeft, ChevronRight, ChevronDown, Eye
@@ -14,25 +16,65 @@ const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 const TABS = [
-  { label: 'Dashboard',     icon: LayoutDashboard, path: '/milk-management/otcs/dashboard' },
-  { label: 'Sales Records', icon: Receipt,          path: '/milk-management/otcs/records'   },
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/milk-management/otcs/dashboard' },
+  { label: 'Sales Records', icon: Receipt, path: '/milk-management/otcs/records' },
 ];
 
 export const LS_KEY = 'otcSalesRecords';
 const ROWS_PER_PAGE_OPTS = [5, 10, 20, 50];
 
 export const SEED = [
-  { id: 1, customerName: 'Musa', date: '2025-08-04', time: 'morning', quantity: 4, unitPrice: 34, total: 136, notes: 'dhgfgd' },
+  { id: 1, customerName: 'Musa', date: '2025-08-04', time: 'Morning', quantity: 4, unitPrice: 34, total: 136, notes: 'dhgfgd' },
 ];
+
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+const API_URL = `${API_BASE_URL}/milk/otcs`;
+
+// ✅ Create axios instance
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  withCredentials: true,
+});
+
+// ✅ Request interceptor - automatically add token to every request
+api.interceptors.request.use(
+  (config) => {
+    // Get token from cookies
+    const token = Cookies.get('accessToken');
+
+    // If token exists, add to headers
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// ✅ Response interceptor - handle errors globally
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      console.error('Unauthorized access - redirecting to login');
+      // window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
 
 function emptyForm() {
   return {
     customerName: '',
-    date:         new Date().toISOString().split('T')[0],
-    time:         'morning',
-    quantity:     '',
-    unitPrice:    '',
-    notes:        '',
+    date: new Date().toISOString().split('T')[0],
+    time: 'Morning',
+    quantity: '',
+    unitPrice: '',
+    notes: '',
   };
 }
 
@@ -53,20 +95,18 @@ export function OTCSTabs({ isDark }) {
   const isActive = (path) => pathname === path;
 
   return (
-    <div className={`flex border backdrop-blur-md ${
-      isDark ? 'bg-neutral-900/50 border-white/10' : 'bg-white border-neutral-300 shadow-sm'
-    }`}>
+    <div className={`flex border backdrop-blur-md ${isDark ? 'bg-neutral-900/50 border-white/10' : 'bg-white border-neutral-300 shadow-sm'
+      }`}>
       {TABS.map(({ label, icon: Icon, path }) => (
         <Link key={path} href={path} className="flex-1">
-          <button className={`cursor-pointer w-full flex items-center justify-center gap-2 px-6 py-3.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
-            isActive(path)
+          <button className={`cursor-pointer w-full flex items-center justify-center gap-2 px-6 py-3.5 text-[11px] font-bold uppercase tracking-wider transition-all ${isActive(path)
               ? isDark
                 ? 'bg-green-500/10 text-green-400 border-b-2 border-green-400'
                 : 'bg-green-500/10 text-green-700 border-b-2 border-green-600'
               : isDark
-              ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5'
-              : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
-          }`}>
+                ? 'text-neutral-400 hover:text-green-400 hover:bg-white/5'
+                : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-50'
+            }`}>
             <Icon className="w-4 h-4" />
             {label}
           </button>
@@ -77,69 +117,173 @@ export function OTCSTabs({ isDark }) {
 }
 
 export default function OTCSRecords() {
-  const [isDark, setIsDark]               = useState(false);
-  const [sidebarOpen, setSidebarOpen]     = useState(true);
-  const [searchTerm, setSearchTerm]       = useState('');
-  const [showForm, setShowForm]           = useState(false);
+  const [isDark, setIsDark] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showForm, setShowForm] = useState(false);
   const [viewingRecord, setViewingRecord] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [formData, setFormData]           = useState(emptyForm());
-  const [currentPage, setCurrentPage]     = useState(1);
-  const [rowsPerPage, setRowsPerPage]     = useState(10);
-  const [rowsOpen, setRowsOpen]           = useState(false);
+  const [formData, setFormData] = useState(emptyForm());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsOpen, setRowsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
 
-  const [records, setRecords] = useState(() => {
+  const [records, setRecords] = useState([]);
+
+  // Normalize record to handle different field names
+  const normalizeRecord = (record) => {
+    // Handle time field
+    let timeValue = 'Morning';
+    if (record.time) {
+      timeValue = record.time;
+    } else if (record.Time) {
+      timeValue = record.Time;
+    } else if (record.timeOfDay) {
+      timeValue = record.timeOfDay;
+    }
+
+    // Ensure time is properly capitalized
+    const timeStr = String(timeValue);
+    const capitalizedTime = timeStr.charAt(0).toUpperCase() + timeStr.slice(1).toLowerCase();
+
+    // Handle unit price
+    const unitPrice =
+      record.unitPrice ||
+      record.pricePerLiter ||
+      record.UnitPrice ||
+      record.PricePerLiter ||
+      0;
+
+    return {
+      id: record.id || record._id,
+      customerName: record.customerName || '',
+      date: record.date || '',
+      time: capitalizedTime,
+      quantity: record.quantity || 0,
+      unitPrice: unitPrice,
+      total: record.total || (record.quantity * unitPrice) || 0,
+      notes: record.notes || '',
+    };
+  };
+
+  // ✅ FIXED: Fetch Records from API - using API_URL
+  const fetchRecords = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await api.get(API_URL, {  // ✅ API_URL use karo
+        params: { search: searchTerm || undefined }
+      });
+
+      if (response.data && response.data.success) {
+        const fetchedRecords = (response.data.data || []).map(normalizeRecord);
+        setRecords(fetchedRecords);
+        localStorage.setItem(LS_KEY, JSON.stringify(fetchedRecords));
+      } else if (Array.isArray(response.data)) {
+        const fetchedRecords = response.data.map(normalizeRecord);
+        setRecords(fetchedRecords);
+        localStorage.setItem(LS_KEY, JSON.stringify(fetchedRecords));
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error("❌ Error fetching records:", error);
+      setError('Failed to fetch records');
+      loadFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load from localStorage as fallback
+  const loadFromLocalStorage = () => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(LS_KEY);
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            return parsed.map(r => ({
-              ...r,
-              unitPrice: r.unitPrice ?? r.pricePerLiter ?? 0,
-              time:      r.time ?? 'morning',
-              notes:     r.notes ?? '',
-            }));
-          }
-        } catch (e) { console.error(e); }
+          setRecords(parsed);
+        } catch (e) {
+          console.error('Error parsing stored records:', e);
+          setRecords(SEED);
+        }
+      } else {
+        setRecords(SEED);
       }
-      // Initialize with SEED and save to localStorage
-      localStorage.setItem(LS_KEY, JSON.stringify(SEED));
     }
-    return SEED;
-  });
+  };
 
+  // Initial data fetch
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    fetchRecords();
+  }, []);
+
+  // Save to localStorage whenever records change
+  useEffect(() => {
+    if (records.length > 0 && typeof window !== 'undefined') {
       localStorage.setItem(LS_KEY, JSON.stringify(records));
     }
   }, [records]);
 
   // Filter
   const filtered = records.filter(r =>
-    r.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (r.customerName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (r.notes || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
-  const safePage   = Math.min(currentPage, totalPages);
-  const pageStart  = (safePage - 1) * rowsPerPage;
-  const paginated  = filtered.slice(pageStart, pageStart + rowsPerPage);
+  const safePage = Math.min(currentPage, totalPages);
+  const pageStart = (safePage - 1) * rowsPerPage;
+  const paginated = filtered.slice(pageStart, pageStart + rowsPerPage);
+
+  // Helper function to format time display
+  const formatTime = (time) => {
+    if (!time) return '—';
+    const timeStr = String(time);
+    return timeStr.charAt(0).toUpperCase() + timeStr.slice(1).toLowerCase();
+  };
+
+  // Helper function to get time color class
+  const getTimeColor = (time) => {
+    const timeStr = String(time || '').toLowerCase();
+
+    if (timeStr.includes('morning')) {
+      return isDark
+        ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+        : 'bg-amber-50 text-amber-700 border-amber-200';
+    } else if (timeStr.includes('afternoon')) {
+      return isDark
+        ? 'bg-orange-500/10 text-orange-400 border-orange-500/20'
+        : 'bg-orange-50 text-orange-700 border-orange-200';
+    } else if (timeStr.includes('evening')) {
+      return isDark
+        ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+        : 'bg-blue-50 text-blue-700 border-blue-200';
+    }
+
+    return isDark
+      ? 'bg-neutral-800 border-white/10 text-neutral-300'
+      : 'bg-neutral-100 border-neutral-200 text-neutral-600';
+  };
 
   // Form
   const openForm = (record = null) => {
     if (record) {
       setEditingRecord(record);
       setFormData({
-        customerName: record.customerName,
-        date:         record.date,
-        time:         record.time,
-        quantity:     record.quantity.toString(),
-        unitPrice:    (record.unitPrice ?? record.pricePerLiter ?? 0).toString(),
-        notes:        record.notes || '',
+        customerName: record.customerName || '',
+        date: record.date || '',
+        time: record.time || 'Morning',
+        quantity: (record.quantity || 0).toString(),
+        unitPrice: (record.unitPrice || 0).toString(),
+        notes: record.notes || '',
       });
     } else {
       setEditingRecord(null);
@@ -154,43 +298,109 @@ export default function OTCSRecords() {
     setFormData(emptyForm());
   };
 
-  const handleSubmit = (e) => {
+  // Submit Handler
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const qty   = parseFloat(formData.quantity)  || 0;
+
+    if (!formData.customerName || !formData.date || !formData.quantity || !formData.unitPrice) {
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
+
+    const qty = parseFloat(formData.quantity) || 0;
     const price = parseFloat(formData.unitPrice) || 0;
     const total = parseFloat((qty * price).toFixed(2));
 
-    if (editingRecord) {
-      setRecords(prev => {
-        const updated = prev.map(r =>
-          r.id === editingRecord.id
-            ? { ...r, customerName: formData.customerName, date: formData.date,
-                time: formData.time, quantity: qty, unitPrice: price, total, notes: formData.notes }
-            : r
-        );
-        return updated;
-      });
-    } else {
-      const newId = records.length > 0 ? Math.max(...records.map(r => r.id)) + 1 : 1;
-      setRecords(prev => {
-        const updated = [{ id: newId, customerName: formData.customerName,
-          date: formData.date, time: formData.time, quantity: qty,
-          unitPrice: price, total, notes: formData.notes,
-        }, ...prev];
-        return updated;
-      });
+    const apiData = {
+      customerName: formData.customerName,
+      date: formData.date,
+      time: formData.time,
+      quantity: qty,
+      unitPrice: price,
+      pricePerLiter: price,
+      notes: formData.notes || ''
+    };
+
+    try {
+      if (editingRecord) {
+        const response = await api.patch(`${API_URL}/${editingRecord.id || editingRecord._id}`, apiData);
+
+        if (response.data && response.data.success) {
+          await fetchRecords();
+          setSearchTerm('');
+        }
+      } else {
+        const response = await api.post(API_URL, apiData);
+
+        if (response.data && response.data.success) {
+          await fetchRecords();
+          setSearchTerm('');
+        }
+      }
+
+      closeForm();
       setCurrentPage(1);
+
+    } catch (error) {
+      console.error("❌ API Error, saving locally:", error);
+
+      const newRecord = {
+        id: editingRecord ? (editingRecord.id || editingRecord._id) : (records.length > 0 ? Math.max(...records.map(r => r.id)) + 1 : 1),
+        customerName: formData.customerName,
+        date: formData.date,
+        time: formData.time,
+        quantity: qty,
+        unitPrice: price,
+        total,
+        notes: formData.notes || ''
+      };
+
+      let updatedRecords;
+      if (editingRecord) {
+        updatedRecords = records.map(r => (r.id || r._id) === (editingRecord.id || editingRecord._id) ? newRecord : r);
+      } else {
+        updatedRecords = [newRecord, ...records];
+      }
+
+      setRecords(updatedRecords);
+      localStorage.setItem(LS_KEY, JSON.stringify(updatedRecords));
+      setSearchTerm('');
+      closeForm();
+      setCurrentPage(1);
+
+    } finally {
+      setSubmitting(false);
     }
-    closeForm();
   };
 
-  const handleDelete = (id) => {
-    setRecords(prev => {
-      const updated = prev.filter(r => r.id !== id);
-      return updated;
-    });
-    setDeleteConfirm(null);
+  // Delete Handler
+  const handleDelete = async (id) => {
+    try {
+      setSubmitting(true);
+      await api.delete(`${API_URL}/${id}`);
+      await fetchRecords();
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error("❌ Delete failed, deleting locally:", error);
+      const updatedRecords = records.filter(r => (r.id || r._id) !== id);
+      setRecords(updatedRecords);
+      localStorage.setItem(LS_KEY, JSON.stringify(updatedRecords));
+      setDeleteConfirm(null);
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchRecords();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   const liveTotal = formData.quantity && formData.unitPrice
     ? (parseFloat(formData.quantity) * parseFloat(formData.unitPrice)).toFixed(2)
@@ -198,24 +408,28 @@ export default function OTCSRecords() {
 
   const modalOpen = showForm || !!deleteConfirm || !!viewingRecord;
 
-  const labelCls = `block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
-    isDark ? 'text-neutral-500' : 'text-neutral-400'
-  }`;
-  const inputCls = `w-full px-4 py-3.5 border outline-none transition-all font-medium ${
-    isDark
+  const labelCls = `block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${isDark ? 'text-neutral-500' : 'text-neutral-400'
+    }`;
+  const inputCls = `w-full px-4 py-3.5 border outline-none transition-all font-medium ${isDark
       ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600'
       : 'bg-neutral-50  border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
-  }`;
+    }`;
 
-  // Format date like "Aug 4, 2025"
-  const fmtDate = (d) => new Date(d).toLocaleDateString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric'
-  });
+  // Format date
+  const fmtDate = (d) => {
+    if (!d) return '';
+    try {
+      return new Date(d).toLocaleDateString('en-US', {
+        month: 'short', day: 'numeric', year: 'numeric'
+      });
+    } catch (e) {
+      return d;
+    }
+  };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${inter.className} ${
-      isDark ? 'bg-neutral-950 text-white' : 'bg-neutral-50 text-neutral-900'
-    }`}>
+    <div className={`min-h-screen transition-colors duration-300 ${inter.className} ${isDark ? 'bg-neutral-950 text-white' : 'bg-neutral-50 text-neutral-900'
+      }`}>
 
       {/* BACKGROUND TEXTURE */}
       <div className="fixed inset-0 pointer-events-none z-0">
@@ -248,48 +462,65 @@ export default function OTCSRecords() {
         searchPlaceholder="Search cash sales..."
       />
 
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
+      <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
 
           {/* TABS */}
           <OTCSTabs isDark={isDark} />
 
-          {/* HEADER BANNER — matching screenshot purple/gradient */}
-          <section className={`relative p-6 border ${
-            isDark
+          {/* HEADER BANNER */}
+          <section className={`relative p-6 border ${isDark
               ? 'bg-gradient-to-r from-purple-500/20 via-violet-500/20 to-indigo-500/20 border-purple-500/30'
               : 'bg-gradient-to-r from-purple-100 via-violet-100 to-indigo-100 border-purple-300'
-          }`}>
+            }`}>
             <div className="flex items-center justify-between">
               <div>
-                <h2 className={`${spaceGrotesk.className} text-2xl font-bold uppercase tracking-tight mb-1 ${
-                  isDark ? 'text-white' : 'text-neutral-900'
-                }`}>
+                <h2 className={`${spaceGrotesk.className} text-2xl font-bold uppercase tracking-tight mb-1 ${isDark ? 'text-white' : 'text-neutral-900'
+                  }`}>
                   Cash Sales Records
                 </h2>
                 <p className={`text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
                   All direct cash sales transactions
                 </p>
+                {error && (
+                  <p className="text-xs text-red-500 font-mono mt-1">{error}</p>
+                )}
+                {loading && (
+                  <p className="text-xs text-purple-500 font-mono mt-1">SYNCING_DATA...</p>
+                )}
               </div>
-              <button
-                onClick={() => openForm()}
-                className={`cursor-pointer flex items-center gap-2 px-5 py-3 border font-bold text-[11px] uppercase tracking-widest transition-all ${
-                  isDark
-                    ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600'
-                    : 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600 shadow-sm'
-                }`}
-              >
-                <Plus className="w-4 h-4" />
-                Add Cash Sale
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={fetchRecords}
+                  disabled={loading}
+                  className={`cursor-pointer px-4 py-2 border font-bold text-[10px] uppercase tracking-widest transition-all ${loading
+                      ? 'opacity-50 cursor-not-allowed'
+                      : isDark
+                        ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600'
+                        : 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600 shadow-sm'
+                    }`}
+                >
+                  {loading ? '⟳' : '⟲ Refresh'}
+                </button>
+                <button
+                  onClick={() => openForm()}
+                  disabled={submitting}
+                  className={`cursor-pointer flex items-center gap-2 px-5 py-3 border font-bold text-[11px] uppercase tracking-widest transition-all ${isDark
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600'
+                      : 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600 shadow-sm'
+                    }`}
+                >
+                  <Plus className="w-4 h-4" />
+                  {submitting ? 'Saving...' : 'Add Cash Sale'}
+                </button>
+              </div>
             </div>
           </section>
 
           {/* SEARCH */}
           <section>
-            <div className={`relative p-4 border ${
-              isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
-            }`}>
+            <div className={`relative p-4 border ${isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
+              }`}>
               <div className="flex items-center gap-3">
                 <Search className={`w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
                 <input
@@ -297,24 +528,33 @@ export default function OTCSRecords() {
                   placeholder="Search by customer name..."
                   value={searchTerm}
                   onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                  className={`flex-1 bg-transparent outline-none text-sm font-medium ${
-                    isDark ? 'placeholder:text-neutral-600' : 'placeholder:text-neutral-400'
-                  }`}
+                  className={`flex-1 bg-transparent outline-none text-sm font-medium ${isDark ? 'placeholder:text-neutral-600' : 'placeholder:text-neutral-400'
+                    }`}
                 />
+                {searchTerm && (
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      fetchRecords();
+                    }}
+                    className={`cursor-pointer p-1 transition-all ${isDark ? 'hover:text-white text-neutral-400' : 'hover:text-neutral-900 text-neutral-500'
+                      }`}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           </section>
 
           {/* TABLE */}
           <section>
-            <div className={`relative border overflow-hidden ${
-              isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
-            }`}>
+            <div className={`relative border overflow-hidden ${isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
+              }`}>
 
               {/* Table Header */}
-              <div className={`grid gap-4 px-5 py-4 border-b text-[11px] font-black uppercase tracking-wider ${
-                isDark ? 'bg-neutral-800/50 border-white/5 text-neutral-400' : 'bg-neutral-50 border-neutral-200 text-neutral-500'
-              }`} style={{ gridTemplateColumns: '1.5fr 1.2fr 1fr 1.2fr 1.2fr 1.2fr 1.5fr 120px' }}>
+              <div className={`grid gap-4 px-5 py-4 border-b text-[11px] font-black uppercase tracking-wider ${isDark ? 'bg-neutral-800/50 border-white/5 text-neutral-400' : 'bg-neutral-50 border-neutral-200 text-neutral-500'
+                }`} style={{ gridTemplateColumns: '1.5fr 1.2fr 1fr 1.2fr 1.2fr 1.2fr 1.5fr 120px' }}>
                 <div>Customer</div>
                 <div>Date</div>
                 <div>Time</div>
@@ -326,79 +566,60 @@ export default function OTCSRecords() {
               </div>
 
               {/* Rows */}
-              {paginated.length > 0 ? paginated.map(record => (
-                <div
-                  key={record.id}
-                  className={`grid gap-4 px-5 py-4 border-b items-center transition-colors ${
-                    isDark ? 'border-white/5 hover:bg-white/5' : 'border-neutral-100 hover:bg-neutral-50'
-                  }`}
-                  style={{ gridTemplateColumns: '1.5fr 1.2fr 1fr 1.2fr 1.2fr 1.2fr 1.5fr 120px' }}
-                >
-                  {/* Customer */}
-                  <div className="text-sm font-semibold">{record.customerName}</div>
-
-                  {/* Date */}
-                  <div className={`text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                    {fmtDate(record.date)}
-                  </div>
-
-                  {/* Time badge */}
-                  <div>
-                    <span className={`text-[10px] font-bold font-mono px-2 py-1 border ${
-                      isDark ? 'bg-neutral-800 border-white/10 text-neutral-300' : 'bg-neutral-100 border-neutral-200 text-neutral-600'
-                    }`}>
-                      {record.time}
-                    </span>
-                  </div>
-
-                  {/* Quantity */}
-                  <div className="text-sm font-medium">{(record.quantity ?? 0).toFixed(2)} gallons</div>
-
-                  {/* Unit Price */}
-                  <div className="text-sm font-medium">PKR {(record.unitPrice ?? 0).toFixed(2)}</div>
-
-                  {/* Total */}
-                  <div className={`text-sm font-bold ${isDark ? 'text-green-400' : 'text-green-700'}`}>
-                    PKR {(record.total ?? 0).toFixed(2)}
-                  </div>
-
-                  {/* Notes */}
-                  <div className={`text-sm font-medium truncate ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                    {record.notes || '—'}
-                  </div>
-
-                  {/* Actions — view, edit, delete */}
-                  <div className="flex items-center justify-end gap-1">
-                    <button
-                      onClick={() => setViewingRecord(record)}
-                      className={`cursor-pointer p-2 border transition-all ${
-                        isDark ? 'hover:bg-white/10 border-white/10 text-green-400' : 'hover:bg-green-50 border-neutral-200 text-green-600'
-                      }`}
-                      title="View"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => openForm(record)}
-                      className={`cursor-pointer p-2 border transition-all ${
-                        isDark ? 'hover:bg-white/10 border-white/10 text-blue-400' : 'hover:bg-blue-50 border-neutral-200 text-blue-600'
-                      }`}
-                      title="Edit"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteConfirm(record)}
-                      className={`cursor-pointer p-2 border transition-all ${
-                        isDark ? 'hover:bg-red-500/20 text-red-400 border-white/10' : 'hover:bg-red-50 text-red-600 border-neutral-200'
-                      }`}
-                      title="Delete"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+              {loading && records.length === 0 ? (
+                <div className="p-16 text-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className={`text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Loading records...
+                  </p>
                 </div>
-              )) : (
+              ) : paginated.length > 0 ? (
+                paginated.map(record => (
+                  <div
+                    key={record.id || record._id}
+                    className={`grid gap-4 px-5 py-4 border-b items-center transition-colors ${isDark ? 'border-white/5 hover:bg-white/5' : 'border-neutral-100 hover:bg-neutral-50'
+                      }`}
+                    style={{ gridTemplateColumns: '1.5fr 1.2fr 1fr 1.2fr 1.2fr 1.2fr 1.5fr 120px' }}
+                  >
+                    <div className="text-sm font-semibold">{record.customerName}</div>
+                    <div className={`text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                      {fmtDate(record.date)}
+                    </div>
+                    <div>
+                      <span className={`inline-flex items-center px-2 py-1 text-[10px] font-bold font-mono uppercase tracking-wider border ${getTimeColor(record.time)}`}>
+                        {formatTime(record.time)}
+                      </span>
+                    </div>
+                    <div className="text-sm font-medium">{(record.quantity ?? 0).toFixed(2)} gallons</div>
+                    <div className="text-sm font-medium">
+                      PKR {(record.unitPrice && !isNaN(record.unitPrice) ? record.unitPrice : 0).toFixed(2)}
+                    </div>
+                    <div className={`text-sm font-bold ${isDark ? 'text-green-400' : 'text-green-700'}`}>
+                      PKR {(record.total && !isNaN(record.total) ? record.total : 0).toFixed(2)}
+                    </div>
+                    <div className={`text-sm font-medium truncate ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                      {record.notes || '—'}
+                    </div>
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => setViewingRecord(record)}
+                        className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10 text-green-400' : 'hover:bg-green-50 border-neutral-200 text-green-600'
+                          }`} title="View">
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => openForm(record)}
+                        className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10 text-blue-400' : 'hover:bg-blue-50 border-neutral-200 text-blue-600'
+                          }`} title="Edit">
+                        <Edit className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => setDeleteConfirm(record)}
+                        className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-red-500/20 text-red-400 border-white/10' : 'hover:bg-red-50 text-red-600 border-neutral-200'
+                          }`} title="Delete">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
                 <div className="relative p-16 text-center">
                   <ShoppingCart className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-neutral-800' : 'text-neutral-200'}`} />
                   <h3 className={`${spaceGrotesk.className} text-2xl font-bold mb-2 uppercase tracking-tight`}>
@@ -411,108 +632,79 @@ export default function OTCSRecords() {
               )}
 
               {/* PAGINATION FOOTER */}
-              <div className={`flex items-center justify-between px-5 py-4 border-t ${
-                isDark ? 'border-white/5 bg-neutral-800/30' : 'border-neutral-100 bg-neutral-50'
-              }`}>
-                {/* Showing info */}
-                <p className={`text-[11px] font-mono ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                  Showing {filtered.length === 0 ? 0 : pageStart + 1} to {Math.min(pageStart + rowsPerPage, filtered.length)} of {filtered.length} results
-                </p>
+              {!loading && paginated.length > 0 && (
+                <div className={`flex items-center justify-between px-5 py-4 border-t ${isDark ? 'border-white/5 bg-neutral-800/30' : 'border-neutral-100 bg-neutral-50'
+                  }`}>
+                  <p className={`text-[11px] font-mono ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Showing {filtered.length === 0 ? 0 : pageStart + 1} to {Math.min(pageStart + rowsPerPage, filtered.length)} of {filtered.length} results
+                  </p>
+                  <div className="flex items-center gap-2">
+                    {/* Pagination buttons - same as before */}
+                    <button onClick={() => setCurrentPage(1)} disabled={safePage === 1}
+                      className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
+                        }`}>
+                      <ChevronLeft className="w-3 h-3 inline" /><ChevronLeft className="w-3 h-3 inline -ml-1.5" />
+                    </button>
+                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={safePage === 1}
+                      className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
+                        }`}>
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
 
-                <div className="flex items-center gap-2">
-                  {/* First */}
-                  <button
-                    onClick={() => setCurrentPage(1)}
-                    disabled={safePage === 1}
-                    className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                      isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
-                    }`}>
-                    <ChevronLeft className="w-3 h-3 inline" /><ChevronLeft className="w-3 h-3 inline -ml-1.5" />
-                  </button>
-                  {/* Prev */}
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={safePage === 1}
-                    className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                      isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
-                    }`}>
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
+                    {/* Page numbers */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                      .reduce((acc, p, idx, arr) => {
+                        if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                        acc.push(p);
+                        return acc;
+                      }, [])
+                      .map((item, idx) =>
+                        item === '...'
+                          ? <span key={`e-${idx}`} className={`px-2 text-[11px] font-mono ${isDark ? 'text-neutral-600' : 'text-neutral-400'}`}>…</span>
+                          : <button key={item} onClick={() => setCurrentPage(item)}
+                            className={`cursor-pointer w-8 h-8 border text-[11px] font-bold font-mono transition-all ${safePage === item
+                                ? isDark ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-green-600 text-white border-green-600'
+                                : isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
+                              }`}>{item}</button>
+                      )}
 
-                  {/* Page numbers */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
-                    .reduce((acc, p, idx, arr) => {
-                      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
-                      acc.push(p);
-                      return acc;
-                    }, [])
-                    .map((item, idx) =>
-                      item === '...'
-                        ? <span key={`e-${idx}`} className={`px-2 text-[11px] font-mono ${isDark ? 'text-neutral-600' : 'text-neutral-400'}`}>…</span>
-                        : <button key={item}
-                            onClick={() => setCurrentPage(item)}
-                            className={`cursor-pointer w-8 h-8 border text-[11px] font-bold font-mono transition-all ${
-                              safePage === item
-                                ? isDark
-                                  ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                                  : 'bg-green-600 text-white border-green-600'
-                                : isDark
-                                ? 'border-white/10 hover:bg-white/10'
-                                : 'border-neutral-200 hover:bg-neutral-100'
-                            }`}>{item}</button>
-                    )}
+                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}
+                      className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
+                        }`}>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => setCurrentPage(totalPages)} disabled={safePage === totalPages}
+                      className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
+                        }`}>
+                      <ChevronRight className="w-3 h-3 inline" /><ChevronRight className="w-3 h-3 inline -ml-1.5" />
+                    </button>
 
-                  {/* Next */}
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={safePage === totalPages}
-                    className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                      isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
-                    }`}>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                  {/* Last */}
-                  <button
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={safePage === totalPages}
-                    className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                      isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
-                    }`}>
-                    <ChevronRight className="w-3 h-3 inline" /><ChevronRight className="w-3 h-3 inline -ml-1.5" />
-                  </button>
-
-                  {/* Rows per page */}
-                  <div className="relative ml-4">
-                    <div
-                      className={`flex items-center gap-2 px-3 py-2 border cursor-pointer transition-all ${
-                        isDark ? 'border-white/10 hover:border-green-500/20 bg-neutral-800/50' : 'border-neutral-200 hover:border-neutral-300 bg-white'
-                      }`}
-                      onClick={() => setRowsOpen(o => !o)}
-                    >
-                      <span className={`text-[11px] font-bold font-mono ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                        Rows per page {rowsPerPage}
-                      </span>
-                      <ChevronDown className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} />
-                    </div>
-                    {rowsOpen && (
-                      <div className={`absolute bottom-full mb-2 right-0 border shadow-xl overflow-hidden z-30 backdrop-blur-md ${
-                        isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-neutral-200'
-                      }`}>
-                        {ROWS_PER_PAGE_OPTS.map(n => (
-                          <button key={n}
-                            onClick={() => { setRowsPerPage(n); setCurrentPage(1); setRowsOpen(false); }}
-                            className={`cursor-pointer w-full px-4 py-2.5 text-left text-[11px] font-bold font-mono transition-colors ${
-                              rowsPerPage === n
-                                ? isDark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700'
-                                : isDark ? 'hover:bg-white/5' : 'hover:bg-neutral-50'
-                            }`}>{n}</button>
-                        ))}
+                    {/* Rows per page */}
+                    <div className="relative ml-4">
+                      <div className={`flex items-center gap-2 px-3 py-2 border cursor-pointer transition-all ${isDark ? 'border-white/10 hover:border-green-500/20 bg-neutral-800/50' : 'border-neutral-200 hover:border-neutral-300 bg-white'
+                        }`} onClick={() => setRowsOpen(o => !o)}>
+                        <span className={`text-[11px] font-bold font-mono ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                          Rows: {rowsPerPage}
+                        </span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} />
                       </div>
-                    )}
+                      {rowsOpen && (
+                        <div className={`absolute bottom-full mb-2 right-0 border shadow-xl overflow-hidden z-30 backdrop-blur-md ${isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-neutral-200'
+                          }`}>
+                          {ROWS_PER_PAGE_OPTS.map(n => (
+                            <button key={n} onClick={() => { setRowsPerPage(n); setCurrentPage(1); setRowsOpen(false); }}
+                              className={`cursor-pointer w-full px-4 py-2.5 text-left text-[11px] font-bold font-mono transition-colors ${rowsPerPage === n
+                                  ? isDark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700'
+                                  : isDark ? 'hover:bg-white/5' : 'hover:bg-neutral-50'
+                                }`}>{n}</button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
             </div>
           </section>
@@ -520,14 +712,11 @@ export default function OTCSRecords() {
         </main>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════
-          VIEW MODAL
-      ══════════════════════════════════════════════════════════ */}
+      {/* VIEW MODAL */}
       {viewingRecord && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className={`relative max-w-2xl w-full p-8 border shadow-2xl ${
-            isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-300'
-          }`}>
+          <div className={`relative max-w-2xl w-full p-8 border shadow-2xl ${isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-300'
+            }`}>
             {/* Header */}
             <div className={`flex items-center justify-between mb-8 pb-6 border-b ${isDark ? 'border-white/10' : 'border-neutral-200'}`}>
               <div>
@@ -566,13 +755,9 @@ export default function OTCSRecords() {
               </div>
               <div>
                 <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>Time</label>
-                <span className={`inline-flex items-center px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${
-                  viewingRecord.time === 'morning'
-                    ? isDark ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-amber-50 text-amber-700 border-amber-200'
-                    : viewingRecord.time === 'afternoon'
-                    ? isDark ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-orange-50 text-orange-700 border-orange-200'
-                    : isDark ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-700 border-blue-200'
-                }`}>{viewingRecord.time}</span>
+                <span className={`inline-flex items-center px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${getTimeColor(viewingRecord.time)}`}>
+                  {formatTime(viewingRecord.time)}
+                </span>
               </div>
             </div>
 
@@ -616,9 +801,8 @@ export default function OTCSRecords() {
             {/* Actions */}
             <div className={`flex gap-3 pt-4 border-t ${isDark ? 'border-white/10' : 'border-neutral-200'}`}>
               <button onClick={() => setViewingRecord(null)}
-                className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
-                  isDark ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' : 'bg-white hover:bg-neutral-50 border-neutral-300'
-                }`}>Close</button>
+                className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${isDark ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' : 'bg-white hover:bg-neutral-50 border-neutral-300'
+                  }`}>Close</button>
               <button onClick={() => { openForm(viewingRecord); setViewingRecord(null); }}
                 className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-purple-600 hover:bg-purple-700 text-white border-purple-600 transition-all">
                 Edit Record
@@ -629,12 +813,9 @@ export default function OTCSRecords() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════
-          ADD / EDIT FORM SIDEBAR
-      ══════════════════════════════════════════════════════════ */}
-      <div className={`fixed top-0 right-0 h-full w-full md:w-[500px] z-50 transform transition-transform duration-300 border-l shadow-2xl overflow-y-auto ${
-        showForm ? 'translate-x-0' : 'translate-x-full'
-      } ${isDark ? 'bg-neutral-950 border-white/10' : 'bg-white border-neutral-200'}`}>
+      {/* ADD / EDIT FORM SIDEBAR */}
+      <div className={`fixed top-0 right-0 h-full w-full md:w-[500px] z-50 transform transition-transform duration-300 border-l shadow-2xl overflow-y-auto ${showForm ? 'translate-x-0' : 'translate-x-full'
+        } ${isDark ? 'bg-neutral-950 border-white/10' : 'bg-white border-neutral-200'}`}>
         <div className="p-8">
           <div className={`flex items-center justify-between mb-8 pb-6 border-b ${isDark ? 'border-white/10' : 'border-neutral-200'}`}>
             <div>
@@ -665,7 +846,8 @@ export default function OTCSRecords() {
               <input type="text" required placeholder="Enter customer name"
                 value={formData.customerName}
                 onChange={e => setFormData(f => ({ ...f, customerName: e.target.value }))}
-                className={inputCls} />
+                className={inputCls}
+                disabled={submitting} />
             </div>
 
             {/* Date & Time */}
@@ -675,16 +857,18 @@ export default function OTCSRecords() {
                 <input type="date" required
                   value={formData.date}
                   onChange={e => setFormData(f => ({ ...f, date: e.target.value }))}
-                  className={inputCls} />
+                  className={inputCls}
+                  disabled={submitting} />
               </div>
               <div>
                 <label className={labelCls}>Time *</label>
                 <select value={formData.time}
                   onChange={e => setFormData(f => ({ ...f, time: e.target.value }))}
-                  className={inputCls}>
-                  <option value="morning">Morning</option>
-                  <option value="afternoon">Afternoon</option>
-                  <option value="evening">Evening</option>
+                  className={inputCls}
+                  disabled={submitting}>
+                  <option value="Morning">Morning</option>
+                  <option value="Afternoon">Afternoon</option>
+                  <option value="Evening">Evening</option>
                 </select>
               </div>
             </div>
@@ -696,14 +880,16 @@ export default function OTCSRecords() {
                 <input type="number" step="0.01" required placeholder="0.00"
                   value={formData.quantity}
                   onChange={e => setFormData(f => ({ ...f, quantity: e.target.value }))}
-                  className={inputCls} />
+                  className={inputCls}
+                  disabled={submitting} />
               </div>
               <div>
                 <label className={labelCls}>Unit Price (PKR) *</label>
                 <input type="number" step="0.01" required placeholder="0.00"
                   value={formData.unitPrice}
                   onChange={e => setFormData(f => ({ ...f, unitPrice: e.target.value }))}
-                  className={inputCls} />
+                  className={inputCls}
+                  disabled={submitting} />
               </div>
             </div>
 
@@ -725,31 +911,35 @@ export default function OTCSRecords() {
               <textarea rows={3} placeholder="Enter any additional notes"
                 value={formData.notes}
                 onChange={e => setFormData(f => ({ ...f, notes: e.target.value }))}
-                className={`${inputCls} resize-none`} />
+                className={`${inputCls} resize-none`}
+                disabled={submitting} />
             </div>
 
             <div className="flex gap-3 pt-4">
               <button type="button" onClick={closeForm}
-                className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
-                  isDark ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' : 'bg-white hover:bg-neutral-50 border-neutral-300'
-                }`}>Cancel</button>
+                className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${isDark ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' : 'bg-white hover:bg-neutral-50 border-neutral-300'
+                  }`}
+                disabled={submitting}>
+                Cancel
+              </button>
               <button type="submit"
-                className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-purple-600 hover:bg-purple-700 text-white border-purple-600 transition-all">
-                {editingRecord ? 'Update' : 'Add Sale'}
+                disabled={submitting}
+                className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${submitting
+                    ? 'bg-purple-400 cursor-not-allowed'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                  } text-white border-purple-600`}>
+                {submitting ? 'Saving...' : (editingRecord ? 'Update' : 'Add Sale')}
               </button>
             </div>
           </form>
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════
-          DELETE MODAL
-      ══════════════════════════════════════════════════════════ */}
+      {/* DELETE MODAL */}
       {deleteConfirm && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className={`relative max-w-md w-full p-8 border shadow-2xl ${
-            isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-300'
-          }`}>
+          <div className={`relative max-w-md w-full p-8 border shadow-2xl ${isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-300'
+            }`}>
             <div className="text-center">
               <div className={`inline-flex p-5 border mb-5 ${isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200'}`}>
                 <Trash2 className={`w-10 h-10 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
@@ -764,12 +954,18 @@ export default function OTCSRecords() {
               </p>
               <div className="flex gap-3">
                 <button onClick={() => setDeleteConfirm(null)}
-                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
-                    isDark ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' : 'bg-white hover:bg-neutral-50 border-neutral-300'
-                  }`}>Cancel</button>
-                <button onClick={() => handleDelete(deleteConfirm.id)}
-                  className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-red-600 hover:bg-red-700 text-white border-red-600 transition-all">
-                  Delete
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${isDark ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' : 'bg-white hover:bg-neutral-50 border-neutral-300'
+                    }`}
+                  disabled={submitting}>
+                  Cancel
+                </button>
+                <button onClick={() => handleDelete(deleteConfirm.id || deleteConfirm._id)}
+                  disabled={submitting}
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${submitting
+                      ? 'bg-red-400 cursor-not-allowed'
+                      : 'bg-red-600 hover:bg-red-700'
+                    } text-white border-red-600`}>
+                  {submitting ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>

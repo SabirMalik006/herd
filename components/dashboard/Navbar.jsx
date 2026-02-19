@@ -2,6 +2,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import { 
   Sun, Moon, Bell, LogOut, Upload, Trash2,
   Home, Milk, Package, DollarSign, Users, CreditCard,
@@ -10,6 +12,8 @@ import {
 import { Space_Grotesk } from "next/font/google";
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
 
 export default function Navbar({ 
   isDark, 
@@ -22,8 +26,42 @@ export default function Navbar({
   const [milkExpanded, setMilkExpanded] = useState(true);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [profilePhoto, setProfilePhoto] = useState(null);
+  const [user, setUser] = useState({
+    name: '',
+    role: '',
+    profile_photo: null
+  });
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const profileMenuRef = useRef(null);
+
+  // Helper to get headers with token
+  const getHeaders = () => ({
+    Authorization: `Bearer ${Cookies.get('accessToken')}`
+  });
+
+  // Fetch user profile from backend
+  const fetchUserProfile = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/user/me`, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data?.success) {
+        setUser({
+          name: response.data.data.name || 'User',
+          role: response.data.data.role || 'User',
+          profile_photo: response.data.data.profile_photo || null
+        });
+        if (response.data.data.profile_photo) {
+          setProfilePhoto(response.data.data.profile_photo);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
+  };
 
   // Load theme preference on mount
   useEffect(() => {
@@ -31,19 +69,13 @@ export default function Navbar({
     if (savedTheme !== null) {
       setIsDark(savedTheme === 'dark');
     }
+    fetchUserProfile(); // ✅ Fetch real user data
   }, [setIsDark]);
 
   // Save theme preference whenever it changes
   useEffect(() => {
     localStorage.setItem('themeMode', isDark ? 'dark' : 'light');
   }, [isDark]);
-
-  useEffect(() => {
-    const savedPhoto = localStorage.getItem('profilePhoto');
-    if (savedPhoto) {
-      setProfilePhoto(savedPhoto);
-    }
-  }, []);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -55,36 +87,76 @@ export default function Navbar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handlePhotoUpload = (e) => {
+  const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result;
-        setProfilePhoto(base64String);
-        localStorage.setItem('profilePhoto', base64String);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    setUploading(true);
+
+    const formData = new FormData();
+    formData.append('photo', file);
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/user/upload-photo`,
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            ...getHeaders(),
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      if (response.data?.success) {
+        const photoUrl = response.data.data.profile_photo;
+        setProfilePhoto(photoUrl);
+        setUser(prev => ({ ...prev, profile_photo: photoUrl }));
+      }
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+    } finally {
+      setUploading(false);
+      setShowProfileMenu(false);
     }
-    setShowProfileMenu(false);
   };
 
-  const handleRemovePhoto = () => {
+  const handleRemovePhoto = async () => {
+    // You can add remove endpoint if needed
     setProfilePhoto(null);
-    localStorage.removeItem('profilePhoto');
+    setUser(prev => ({ ...prev, profile_photo: null }));
     setShowProfileMenu(false);
   };
 
-  const handleLogout = () => {
-    console.log('Logging out...');
-    setShowProfileMenu(false);
+  const handleLogout = async () => {
+    try {
+      await axios.post(`${API_BASE_URL}/auth/logout`, {}, {
+        withCredentials: true
+      });
+      
+      Cookies.remove('accessToken');
+      Cookies.remove('refreshToken');
+      
+      window.location.href = '/login';
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (user.name) {
+      return user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return 'U';
   };
 
   const menuItems = [
     { 
       section: 'OVERVIEW', 
       items: [
-        { name: 'Dashboard', icon: Home, route: '/dashboard' }
+        { name: 'Dashboard', icon: Home, route: '/' }
       ]
     },
     { 
@@ -111,9 +183,14 @@ export default function Navbar({
           setExpandedState: setMilkExpanded,
           children: [
             { name: 'Sales Overview', route: '/milk-management/sales-overview' },
-            { name: 'Milk Production', route: '/milk-management/production/dashboard' },
+            { name: 'Production', route: '/milk-management/production/dashboard' },
+            { name: 'Daily Records', route: '/milk-management/production/daily-records' },
+            { name: 'Analytics', route: '/milk-management/production/analytics' },
             { name: 'Sales', route: '/milk-management/sales/dashboard' },
-            { name: 'One Time Cash Sales', route: '/milk-management/otcs/dashboard' }
+            { name: 'Sales Records', route: '/milk-management/sales/records' },
+            { name: 'Usage', route: '/milk-management/sales/usage' },
+            { name: 'OTCS Dashboard', route: '/milk-management/otcs/dashboard' },
+            { name: 'OTCS Records', route: '/milk-management/otcs/records' }
           ]
         },
         { name: 'Inventory', icon: Package, route: '/inventory' },
@@ -440,11 +517,11 @@ export default function Navbar({
               isDark ? 'border-white/10' : 'border-neutral-200'
             }`} ref={profileMenuRef}>
               <div className="text-right hidden cursor-pointer md:block">
-                <p className={`text-sm font-bold ${spaceGrotesk.className} tracking-tight`}>Hamza</p>
+                <p className={`text-sm font-bold ${spaceGrotesk.className} tracking-tight`}>{user.name}</p>
                 <p className={`text-[9px] uppercase font-mono tracking-[0.2em] font-bold ${
                   isDark ? 'text-neutral-600' : 'text-neutral-400'
                 }`}>
-                  Manager
+                  {user.role}
                 </p>
               </div>
               
@@ -463,7 +540,7 @@ export default function Navbar({
                 {profilePhoto ? (
                   <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  'H'
+                  getUserInitials()
                 )}
               </button>
 
@@ -483,14 +560,14 @@ export default function Navbar({
                         {profilePhoto ? (
                           <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
-                          'H'
+                          getUserInitials()
                         )}
                       </div>
                       <div>
-                        <p className={`font-bold text-sm ${spaceGrotesk.className}`}>Hamza</p>
+                        <p className={`font-bold text-sm ${spaceGrotesk.className}`}>{user.name}</p>
                         <p className={`text-[10px] font-mono uppercase tracking-wider ${
                           isDark ? 'text-neutral-500' : 'text-neutral-400'
-                        }`}>Manager</p>
+                        }`}>{user.role}</p>
                       </div>
                     </div>
                   </div>
@@ -498,14 +575,15 @@ export default function Navbar({
                   <div className="p-2">
                     <button
                       onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
                       className={`w-full cursor-pointer flex items-center gap-3 px-4 py-3 text-sm font-medium transition-all ${
                         isDark 
                           ? 'hover:bg-white/5 text-neutral-300' 
                           : 'hover:bg-neutral-50 text-neutral-700'
-                      }`}
+                      } ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                       <Upload size={16} />
-                      {profilePhoto ? 'Change Photo' : 'Upload Photo'}
+                      {uploading ? 'Uploading...' : (profilePhoto ? 'Change Photo' : 'Upload Photo')}
                     </button>
 
                     {profilePhoto && (

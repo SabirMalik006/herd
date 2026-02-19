@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import { 
   BarChart3, Calendar, TrendingUp, Plus, Filter, X, Trash2, Edit, Eye,
   ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ChevronDown
@@ -13,17 +15,23 @@ import { usePathname } from 'next/navigation';
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+const API_URL = `${API_BASE_URL}/milk/production/daily-records`;
+
 export default function DailyProductionRecords() {
   const [isDark, setIsDark] = useState(false); 
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [startDate, setStartDate] = useState('2024-01-01');
-  const [endDate, setEndDate] = useState('2027-12-31');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [viewingRecord, setViewingRecord] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const pathname = usePathname();
 
   const [formData, setFormData] = useState({
@@ -38,30 +46,88 @@ export default function DailyProductionRecords() {
     scc: ''
   });
 
-  // --- RECORDS DATA WITH STORAGE ---
-  const [records, setRecords] = useState(() => {
+  // --- RECORDS DATA ---
+  const [records, setRecords] = useState([]);
+
+  // Helper to get headers with token
+  const getHeaders = () => ({
+    Authorization: `Bearer ${Cookies.get('accessToken')}`
+  });
+
+  // Fetch Records from API - WITHOUT date filters by default
+  const fetchRecords = async (useDateFilter = false) => {
+    try {
+      setLoading(true);
+      
+      // Only include date params if useDateFilter is true and both dates are set
+      const params = {};
+      if (useDateFilter && startDate && endDate) {
+        params.startDate = startDate;
+        params.endDate = endDate;
+      }
+      
+      const response = await axios.get(API_URL, {
+        params,
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        setRecords(response.data.data);
+        // Save to localStorage as backup
+        localStorage.setItem('milkProductionRecords', JSON.stringify(response.data.data));
+      } else if (response.data && Array.isArray(response.data)) {
+        setRecords(response.data);
+        localStorage.setItem('milkProductionRecords', JSON.stringify(response.data));
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        // Fallback to localStorage
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error("❌ Error fetching records:", error);
+      // Fallback to localStorage
+      loadFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load from localStorage as fallback
+  const loadFromLocalStorage = () => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('milkProductionRecords');
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          return parsed.length > 0 ? parsed : [];
+          setRecords(parsed.length > 0 ? parsed : []);
         } catch (e) {
           console.error('Error parsing stored records:', e);
+          setRecords([]);
         }
+      } else {
+        setRecords([]);
       }
     }
-    return [];
-  });
+  };
 
-  // Save to storage whenever records change
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
+  // Initial data fetch - NO date filters
+  useEffect(() => {
+    fetchRecords(false);
+  }, []);
+
+  // Save to localStorage whenever records change (backup)
+  useEffect(() => {
+    if (records.length > 0 && typeof window !== 'undefined') {
       localStorage.setItem('milkProductionRecords', JSON.stringify(records));
     }
   }, [records]);
 
+  // Filter records based on date range (client-side)
   const filteredRecords = records.filter(record => {
+    // If no date filters are set, show all records
+    if (!startDate || !endDate) return true;
+    
     const recordDate = new Date(record.dateRecorded);
     const start = new Date(startDate);
     const end = new Date(endDate);
@@ -80,15 +146,15 @@ export default function DailyProductionRecords() {
     if (record) {
       setEditingRecord(record);
       setFormData({
-        animalName: record.animalName,
-        dateRecorded: record.dateRecorded,
-        recordedBy: record.recordedBy,
-        morning: record.morning,
-        afternoon: record.afternoon,
-        evening: record.evening,
-        fatPercentage: record.fatPercentage,
-        proteinPercentage: record.proteinPercentage,
-        scc: record.scc
+        animalName: record.animalName || '',
+        dateRecorded: record.dateRecorded || '',
+        recordedBy: record.recordedBy || '',
+        morning: record.morning?.toString() || '',
+        afternoon: record.afternoon?.toString() || '',
+        evening: record.evening?.toString() || '',
+        fatPercentage: record.fatPercentage?.toString() || '',
+        proteinPercentage: record.proteinPercentage?.toString() || '',
+        scc: record.scc?.toString() || ''
       });
     } else {
       setEditingRecord(null);
@@ -123,37 +189,134 @@ export default function DailyProductionRecords() {
     });
   };
 
-  const handleSubmit = (e) => {
+  // Submit Handler - API Integration
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.animalName || !formData.dateRecorded || !formData.recordedBy) {
+      return;
+    }
+    
+    setSubmitting(true);
     
     const total = (parseFloat(formData.morning) || 0) + 
                   (parseFloat(formData.afternoon) || 0) + 
                   (parseFloat(formData.evening) || 0);
     
-    if (editingRecord) {
-      // Update existing record
-      setRecords(records.map(record => 
-        record.id === editingRecord.id 
-          ? { ...record, ...formData, total }
-          : record
-      ));
-    } else {
-      // Add new record
-      const newRecord = {
-        id: records.length > 0 ? Math.max(...records.map(r => r.id)) + 1 : 1,
-        ...formData,
-        total
-      };
-      setRecords([...records, newRecord]);
-    }
+    const apiData = {
+      ...formData,
+      morning: parseFloat(formData.morning) || 0,
+      afternoon: parseFloat(formData.afternoon) || 0,
+      evening: parseFloat(formData.evening) || 0,
+      total,
+      fatPercentage: formData.fatPercentage ? parseFloat(formData.fatPercentage) : null,
+      proteinPercentage: formData.proteinPercentage ? parseFloat(formData.proteinPercentage) : null,
+      scc: formData.scc ? parseInt(formData.scc) : null
+    };
     
-    handleCloseForm();
-    setCurrentPage(1); // Reset to first page to see new/updated record
+    try {
+      if (editingRecord) {
+        // Update existing record
+        const response = await axios.patch(`${API_URL}/${editingRecord.id || editingRecord._id}`, apiData, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
+        
+        if (response.data && response.data.success) {
+          // Reset date filters and fetch all records
+          setStartDate('');
+          setEndDate('');
+          setCurrentPage(1);
+          await fetchRecords(false);
+        }
+      } else {
+        // Add new record
+        const response = await axios.post(API_URL, apiData, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
+        
+        if (response.data && response.data.success) {
+          // Reset date filters and fetch all records
+          setStartDate('');
+          setEndDate('');
+          setCurrentPage(1);
+          await fetchRecords(false);
+        }
+      }
+      
+      handleCloseForm();
+      
+    } catch (error) {
+      console.error("❌ API Error, saving locally:", error);
+      
+      // Fallback to localStorage if API fails
+      const newRecord = {
+        id: editingRecord ? (editingRecord.id || editingRecord._id) : Date.now(),
+        ...apiData,
+        createdDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      let updatedRecords;
+      if (editingRecord) {
+        updatedRecords = records.map(record => 
+          (record.id || record._id) === (editingRecord.id || editingRecord._id) ? newRecord : record
+        );
+      } else {
+        updatedRecords = [newRecord, ...records];
+      }
+      
+      setRecords(updatedRecords);
+      localStorage.setItem('milkProductionRecords', JSON.stringify(updatedRecords));
+      
+      // Reset date filters
+      setStartDate('');
+      setEndDate('');
+      setCurrentPage(1);
+      handleCloseForm();
+      
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleDelete = (id) => {
-    setRecords(records.filter(record => record.id !== id));
+  // Delete Handler - API Integration
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`${API_URL}/${id}`, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      await fetchRecords(false);
+    } catch (error) {
+      console.error("❌ Delete failed, deleting locally:", error);
+      const updatedRecords = records.filter(record => 
+        (record.id || record._id) !== id
+      );
+      setRecords(updatedRecords);
+      localStorage.setItem('milkProductionRecords', JSON.stringify(updatedRecords));
+    }
     setDeleteConfirm(null);
+  };
+
+  // Apply date filter - fetch with date params
+  const handleFilter = () => {
+    if (!startDate || !endDate) {
+      alert('Please select both start and end dates');
+      return;
+    }
+    fetchRecords(true);
+    setCurrentPage(1);
+  };
+
+  // Reset filters - clear dates and fetch all records
+  const handleReset = () => {
+    setStartDate('');
+    setEndDate('');
+    fetchRecords(false);
+    setCurrentPage(1);
   };
 
   const CornerBrackets = () => {
@@ -210,7 +373,7 @@ export default function DailyProductionRecords() {
       />
 
       {/* MAIN CONTENT WRAPPER WITH DYNAMIC MARGIN */}
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
+      <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
           {/* MODERNIZED TITLE & TABS */}
@@ -222,6 +385,9 @@ export default function DailyProductionRecords() {
               <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Track individual animal milk production on a daily basis
               </p>
+              {loading && (
+                <span className="text-xs text-green-500 font-mono mt-2">SYNCING_DATA...</span>
+              )}
             </div>
             
             {/* Enhanced Tab Navigation */}
@@ -286,6 +452,19 @@ export default function DailyProductionRecords() {
                 }`}>
                   Daily Records
                 </h2>
+                <button
+                  onClick={() => fetchRecords(false)}
+                  disabled={loading}
+                  className={`cursor-pointer ml-2 text-xs font-mono px-2 py-1 border transition-all ${
+                    loading 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : isDark 
+                        ? 'hover:bg-white/5 border-white/10 hover:border-green-500/20' 
+                        : 'hover:bg-neutral-50 border-neutral-200 hover:border-green-300'
+                  }`}
+                >
+                  {loading ? '...' : '⟲'}
+                </button>
               </div>
               <button 
                 className={`cursor-pointer flex items-center gap-2 px-5 py-3 border transition-all duration-200 font-bold text-[11px] uppercase tracking-widest ${
@@ -294,9 +473,10 @@ export default function DailyProductionRecords() {
                     : 'bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm'
                 }`}
                 onClick={() => handleOpenForm()}
+                disabled={submitting}
               >
                 <Plus className="w-4 h-4" />
-                Add Milk Record
+                {submitting ? 'Saving...' : 'Add Milk Record'}
               </button>
             </div>
           </section>
@@ -356,6 +536,7 @@ export default function DailyProductionRecords() {
 
               {/* Filter Button */}
               <button 
+                onClick={handleFilter}
                 className={`cursor-pointer flex items-center gap-2 px-6 py-5 border transition-all font-bold text-[11px] uppercase tracking-widest ${
                   isDark 
                     ? 'bg-green-600 hover:bg-green-700 text-white border-green-600' 
@@ -364,6 +545,18 @@ export default function DailyProductionRecords() {
               >
                 <Filter className="w-4 h-4" />
                 Filter
+              </button>
+
+              {/* Reset Button */}
+              <button 
+                onClick={handleReset}
+                className={`cursor-pointer px-6 py-5 border transition-all font-bold text-[11px] uppercase tracking-widest ${
+                  isDark 
+                    ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700' 
+                    : 'bg-white hover:bg-neutral-50 text-neutral-700 border-neutral-300'
+                }`}
+              >
+                Reset
               </button>
             </div>
           </section>
@@ -379,191 +572,203 @@ export default function DailyProductionRecords() {
               </h2>
             </div>
             
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {paginatedRecords.map((record) => (
-                <div key={record.id} className={`relative border transition-all duration-300 hover:-translate-y-1 overflow-hidden ${
-                  isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/30' : 'bg-white border-neutral-300 hover:border-green-500/40 shadow-sm'
-                }`}>
-                  {/* Header with Animal Name and Actions */}
-                  <div className={`flex items-center justify-between p-6 pb-4 border-b ${isDark ? 'border-white/5' : 'border-neutral-200'}`}>
-                    <div>
-                      <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-1 ${
-                        isDark ? 'text-neutral-600' : 'text-neutral-400'
-                      }`}>
-                        Animal ID #{record.id}
-                      </span>
-                      <h3 className={`text-2xl font-bold uppercase tracking-tight ${spaceGrotesk.className}`}>
-                        {record.animalName}
-                      </h3>
-                    </div>
-                    
-                    <div className="flex items-center gap-1">
-                      <button 
-                        onClick={() => setViewingRecord(record)}
-                        className={`cursor-pointer p-2.5 border transition-all ${
-                          isDark 
-                            ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
-                            : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
-                        }`} 
-                        title="View"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => handleOpenForm(record)}
-                        className={`cursor-pointer p-2.5 border transition-all ${
-                          isDark 
-                            ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
-                            : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
-                        }`} 
-                        title="Edit"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button 
-                        onClick={() => setDeleteConfirm(record)}
-                        className={`cursor-pointer p-2.5 border transition-all ${
-                          isDark 
-                            ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
-                            : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
-                        }`} 
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Production Stats Grid */}
-                  <div className="p-6 space-y-4">
-                    {/* Date and Recorder Info */}
-                    <div className="grid grid-cols-2 gap-4">
+            {loading && records.length === 0 ? (
+              <div className={`relative p-16 border text-center ${
+                isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
+              }`}>
+                <div className="animate-spin w-12 h-12 border-3 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <h3 className={`${spaceGrotesk.className} text-2xl font-bold mb-2 uppercase tracking-tight`}>
+                  Loading records...
+                </h3>
+                <CornerBrackets />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {paginatedRecords.map((record) => (
+                  <div key={record.id || record._id} className={`relative border transition-all duration-300 hover:-translate-y-1 overflow-hidden ${
+                    isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/30' : 'bg-white border-neutral-300 hover:border-green-500/40 shadow-sm'
+                  }`}>
+                    {/* Header with Animal Name and Actions */}
+                    <div className={`flex items-center justify-between p-6 pb-4 border-b ${isDark ? 'border-white/5' : 'border-neutral-200'}`}>
                       <div>
                         <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-1 ${
                           isDark ? 'text-neutral-600' : 'text-neutral-400'
                         }`}>
-                          Date
+                          Animal ID #{record.id || record._id}
                         </span>
-                        <p className={`text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                          {record.dateRecorded}
-                        </p>
+                        <h3 className={`text-2xl font-bold uppercase tracking-tight ${spaceGrotesk.className}`}>
+                          {record.animalName}
+                        </h3>
                       </div>
-                      <div>
-                        <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-1 ${
+                      
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={() => setViewingRecord(record)}
+                          className={`cursor-pointer p-2.5 border transition-all ${
+                            isDark 
+                              ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                              : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                          }`} 
+                          title="View"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleOpenForm(record)}
+                          className={`cursor-pointer p-2.5 border transition-all ${
+                            isDark 
+                              ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                              : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                          }`} 
+                          title="Edit"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => setDeleteConfirm(record)}
+                          className={`cursor-pointer p-2.5 border transition-all ${
+                            isDark 
+                              ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
+                              : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
+                          }`} 
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Production Stats Grid */}
+                    <div className="p-6 space-y-4">
+                      {/* Date and Recorder Info */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-1 ${
+                            isDark ? 'text-neutral-600' : 'text-neutral-400'
+                          }`}>
+                            Date
+                          </span>
+                          <p className={`text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                            {record.dateRecorded}
+                          </p>
+                        </div>
+                        <div>
+                          <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-1 ${
+                            isDark ? 'text-neutral-600' : 'text-neutral-400'
+                          }`}>
+                            Recorded By
+                          </span>
+                          <p className={`text-sm font-medium truncate ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                            {record.recordedBy}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Production Breakdown */}
+                      <div className={`p-4 border ${isDark ? 'bg-neutral-800/30 border-white/5' : 'bg-neutral-50 border-neutral-200'}`}>
+                        <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-3 ${
                           isDark ? 'text-neutral-600' : 'text-neutral-400'
                         }`}>
-                          Recorded By
+                          Daily Production
                         </span>
-                        <p className={`text-sm font-medium truncate ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                          {record.recordedBy}
-                        </p>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div className="text-center">
+                            <span className={`text-xs font-medium block mb-1 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                              Morning
+                            </span>
+                            <p className={`text-xl font-bold ${spaceGrotesk.className}`}>
+                              {record.morning}
+                            </p>
+                          </div>
+                          <div className="text-center">
+                            <span className={`text-xs font-medium block mb-1 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                              Afternoon
+                            </span>
+                            <p className={`text-xl font-bold ${spaceGrotesk.className}`}>
+                              {record.afternoon}
+                            </p>
+                          </div>
+                          <div className="text-center">
+                            <span className={`text-xs font-medium block mb-1 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                              Evening
+                            </span>
+                            <p className={`text-xl font-bold ${spaceGrotesk.className}`}>
+                              {record.evening}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Production Breakdown */}
-                    <div className={`p-4 border ${isDark ? 'bg-neutral-800/30 border-white/5' : 'bg-neutral-50 border-neutral-200'}`}>
-                      <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-3 ${
-                        isDark ? 'text-neutral-600' : 'text-neutral-400'
+                      {/* Total Production Banner */}
+                      <div className={`relative p-4 border ${
+                        isDark 
+                          ? 'bg-green-500/10 border-green-500/20' 
+                          : 'bg-green-50 border-green-200'
                       }`}>
-                        Daily Production
-                      </span>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="text-center">
-                          <span className={`text-xs font-medium block mb-1 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                            Morning
+                        <div className="flex items-center justify-between">
+                          <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] ${
+                            isDark ? 'text-green-400/70' : 'text-green-600/70'
+                          }`}>
+                            Total Production
                           </span>
-                          <p className={`text-xl font-bold ${spaceGrotesk.className}`}>
-                            {record.morning}
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <span className={`text-xs font-medium block mb-1 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                            Afternoon
-                          </span>
-                          <p className={`text-xl font-bold ${spaceGrotesk.className}`}>
-                            {record.afternoon}
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <span className={`text-xs font-medium block mb-1 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                            Evening
-                          </span>
-                          <p className={`text-xl font-bold ${spaceGrotesk.className}`}>
-                            {record.evening}
-                          </p>
+                          <div className="text-right">
+                            <p className={`text-3xl font-bold ${spaceGrotesk.className} ${
+                              isDark ? 'text-green-400' : 'text-green-700'
+                            }`}>
+                              {record.total}
+                            </p>
+                            <span className={`text-xs font-medium ${isDark ? 'text-green-400/70' : 'text-green-600/70'}`}>
+                              liters/day
+                            </span>
+                          </div>
                         </div>
                       </div>
+
+                      {/* Quality Metrics */}
+                      {(record.fatPercentage || record.proteinPercentage || record.scc) && (
+                        <div className="grid grid-cols-3 gap-3">
+                          <div>
+                            <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-1 ${
+                              isDark ? 'text-neutral-600' : 'text-neutral-400'
+                            }`}>
+                              Fat %
+                            </span>
+                            <p className={`text-sm font-bold ${spaceGrotesk.className}`}>
+                              {record.fatPercentage || 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-1 ${
+                              isDark ? 'text-neutral-600' : 'text-neutral-400'
+                            }`}>
+                              Protein %
+                            </span>
+                            <p className={`text-sm font-bold ${spaceGrotesk.className}`}>
+                              {record.proteinPercentage || 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-1 ${
+                              isDark ? 'text-neutral-600' : 'text-neutral-400'
+                            }`}>
+                              SCC
+                            </span>
+                            <p className={`text-sm font-bold ${spaceGrotesk.className}`}>
+                              {record.scc || 'N/A'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    {/* Total Production Banner */}
-                    <div className={`relative p-4 border ${
-                      isDark 
-                        ? 'bg-green-500/10 border-green-500/20' 
-                        : 'bg-green-50 border-green-200'
-                    }`}>
-                      <div className="flex items-center justify-between">
-                        <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] ${
-                          isDark ? 'text-green-400/70' : 'text-green-600/70'
-                        }`}>
-                          Total Production
-                        </span>
-                        <div className="text-right">
-                          <p className={`text-3xl font-bold ${spaceGrotesk.className} ${
-                            isDark ? 'text-green-400' : 'text-green-700'
-                          }`}>
-                            {record.total}
-                          </p>
-                          <span className={`text-xs font-medium ${isDark ? 'text-green-400/70' : 'text-green-600/70'}`}>
-                            liters/day
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Quality Metrics */}
-                    {(record.fatPercentage || record.proteinPercentage || record.scc) && (
-                      <div className="grid grid-cols-3 gap-3">
-                        <div>
-                          <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-1 ${
-                            isDark ? 'text-neutral-600' : 'text-neutral-400'
-                          }`}>
-                            Fat %
-                          </span>
-                          <p className={`text-sm font-bold ${spaceGrotesk.className}`}>
-                            {record.fatPercentage || 'N/A'}
-                          </p>
-                        </div>
-                        <div>
-                          <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-1 ${
-                            isDark ? 'text-neutral-600' : 'text-neutral-400'
-                          }`}>
-                            Protein %
-                          </span>
-                          <p className={`text-sm font-bold ${spaceGrotesk.className}`}>
-                            {record.proteinPercentage || 'N/A'}
-                          </p>
-                        </div>
-                        <div>
-                          <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.25em] block mb-1 ${
-                            isDark ? 'text-neutral-600' : 'text-neutral-400'
-                          }`}>
-                            SCC
-                          </span>
-                          <p className={`text-sm font-bold ${spaceGrotesk.className}`}>
-                            {record.scc || 'N/A'}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                    <CornerBrackets />
                   </div>
-
-                  <CornerBrackets />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Empty State */}
-            {paginatedRecords.length === 0 && (
+            {!loading && paginatedRecords.length === 0 && (
               <div className={`relative p-16 border text-center ${
                 isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
               }`}>
@@ -579,7 +784,7 @@ export default function DailyProductionRecords() {
             )}
 
             {/* Pagination */}
-            {paginatedRecords.length > 0 && (
+            {!loading && paginatedRecords.length > 0 && (
               <div className={`flex flex-col md:flex-row items-center justify-between gap-4 p-6 border ${
                 isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
               }`}>
@@ -591,7 +796,7 @@ export default function DailyProductionRecords() {
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    className={`p-2 border transition-all ${
+                    className={`cursor-pointer p-2 border transition-all ${
                       currentPage === 1
                         ? 'opacity-50 cursor-not-allowed'
                         : isDark
@@ -604,7 +809,7 @@ export default function DailyProductionRecords() {
                   <button
                     onClick={() => setCurrentPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`p-2 border transition-all ${
+                    className={`cursor-pointer p-2 border transition-all ${
                       currentPage === 1
                         ? 'opacity-50 cursor-not-allowed'
                         : isDark
@@ -626,7 +831,7 @@ export default function DailyProductionRecords() {
                   <button
                     onClick={() => setCurrentPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`p-2 border transition-all ${
+                    className={`cursor-pointer p-2 border transition-all ${
                       currentPage === totalPages
                         ? 'opacity-50 cursor-not-allowed'
                         : isDark
@@ -639,7 +844,7 @@ export default function DailyProductionRecords() {
                   <button
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
-                    className={`p-2 border transition-all ${
+                    className={`cursor-pointer p-2 border transition-all ${
                       currentPage === totalPages
                         ? 'opacity-50 cursor-not-allowed'
                         : isDark
@@ -660,7 +865,7 @@ export default function DailyProductionRecords() {
                         setRowsPerPage(Number(e.target.value));
                         setCurrentPage(1);
                       }}
-                      className={`px-3 py-2 border outline-none text-sm font-medium ${
+                      className={`cursor-pointer px-3 py-2 border outline-none text-sm font-medium ${
                         isDark 
                           ? 'bg-neutral-900 border-white/10 text-white'
                           : 'bg-white border-neutral-300 text-neutral-900'
@@ -707,11 +912,12 @@ export default function DailyProductionRecords() {
             </div>
             <button
               onClick={handleCloseForm}
-              className={`p-2.5 border transition-all ${
+              className={`cursor-pointer p-2.5 border transition-all ${
                 isDark 
                   ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                   : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
               }`}
+              disabled={submitting}
             >
               <X className="w-5 h-5" />
             </button>
@@ -737,6 +943,7 @@ export default function DailyProductionRecords() {
                     ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
                     : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                 }`}
+                disabled={submitting}
               />
             </div>
 
@@ -757,6 +964,7 @@ export default function DailyProductionRecords() {
                     ? 'bg-neutral-900 border-white/10 focus:border-green-500' 
                     : 'bg-neutral-50 border-neutral-300 focus:border-green-500'
                 }`}
+                disabled={submitting}
               />
             </div>
 
@@ -778,6 +986,7 @@ export default function DailyProductionRecords() {
                     ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
                     : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                 }`}
+                disabled={submitting}
               />
             </div>
 
@@ -800,6 +1009,7 @@ export default function DailyProductionRecords() {
                       ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
                       : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                   }`}
+                  disabled={submitting}
                 />
               </div>
               <div>
@@ -819,6 +1029,7 @@ export default function DailyProductionRecords() {
                       ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
                       : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                   }`}
+                  disabled={submitting}
                 />
               </div>
               <div>
@@ -838,6 +1049,7 @@ export default function DailyProductionRecords() {
                       ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
                       : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                   }`}
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -861,6 +1073,7 @@ export default function DailyProductionRecords() {
                       ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
                       : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                   }`}
+                  disabled={submitting}
                 />
               </div>
               <div>
@@ -880,6 +1093,7 @@ export default function DailyProductionRecords() {
                       ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
                       : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                   }`}
+                  disabled={submitting}
                 />
               </div>
               <div>
@@ -898,6 +1112,7 @@ export default function DailyProductionRecords() {
                       ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
                       : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
                   }`}
+                  disabled={submitting}
                 />
               </div>
             </div>
@@ -912,14 +1127,20 @@ export default function DailyProductionRecords() {
                     ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
                     : 'bg-white hover:bg-neutral-50 border-neutral-300'
                 }`}
+                disabled={submitting}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all"
+                disabled={submitting}
+                className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                  submitting
+                    ? 'bg-green-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'
+                } text-white border-green-600`}
               >
-                {editingRecord ? 'Update' : 'Add'}
+                {submitting ? 'Saving...' : editingRecord ? 'Update' : 'Add'}
               </button>
             </div>
           </form>
@@ -942,7 +1163,7 @@ export default function DailyProductionRecords() {
                 Delete Record?
               </h3>
               <p className={`text-sm font-medium mb-8 ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                Are you sure you want to delete this production record? This action cannot be undone.
+                Are you sure you want to delete this production record for "{deleteConfirm.animalName}"? This action cannot be undone.
               </p>
               <div className="flex gap-3">
                 <button
@@ -956,7 +1177,7 @@ export default function DailyProductionRecords() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleDelete(deleteConfirm.id)}
+                  onClick={() => handleDelete(deleteConfirm.id || deleteConfirm._id)}
                   className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-red-600 hover:bg-red-700 text-white border-red-600 transition-all"
                 >
                   Delete
@@ -967,6 +1188,7 @@ export default function DailyProductionRecords() {
           </div>
         </div>
       )}
+      
       {/* VIEW RECORD MODAL */}
       {viewingRecord && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">

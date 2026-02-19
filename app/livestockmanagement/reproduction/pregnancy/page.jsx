@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
+import axios from 'axios';
+import Cookies from 'js-cookie';  // ✅ Import Cookies
 import { 
   Heart, Plus, Search, X, Calendar, Activity, Edit, Trash2
 } from 'lucide-react';
@@ -12,6 +14,9 @@ import { usePathname } from 'next/navigation';
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
+// API Base URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/pregnancy";
+
 export default function PregnancyTracking() {
   const [isDark, setIsDark] = useState(false); 
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -19,8 +24,17 @@ export default function PregnancyTracking() {
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [pregnancyRecords, setPregnancyRecords] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const pathname = usePathname();
+
+  // ✅ Helper to get headers with token
+  const getHeaders = () => ({
+    Authorization: `Bearer ${Cookies.get('accessToken')}`
+  });
 
   const [formData, setFormData] = useState({
     animalName: '',
@@ -33,45 +47,141 @@ export default function PregnancyTracking() {
     milestones: []
   });
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('pregnancyRecords');
-    if (stored) {
-      setPregnancyRecords(JSON.parse(stored));
+  // Fetch Data from Backend
+  const fetchRecords = async () => {
+    try {
+      setLoading(true);
+      // ✅ Add withCredentials and headers
+      const response = await axios.get(API_URL, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data && response.data.success) {
+        setPregnancyRecords(response.data.data);
+        // Save to localStorage as backup
+        localStorage.setItem('pregnancyRecords', JSON.stringify(response.data.data));
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        // Fallback to localStorage
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      // Fallback to localStorage if API fails
+      loadFromLocalStorage();
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Load from localStorage as fallback
+  const loadFromLocalStorage = () => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('pregnancyRecords');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setPregnancyRecords(parsed);
+        } catch (e) {
+          console.error('Error parsing stored records:', e);
+          setPregnancyRecords([]);
+        }
+      } else {
+        setPregnancyRecords([]);
+      }
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchRecords();
   }, []);
 
-  // Save to localStorage whenever records change
+  // Save to localStorage whenever pregnancyRecords change (backup)
   useEffect(() => {
-    localStorage.setItem('pregnancyRecords', JSON.stringify(pregnancyRecords));
+    if (pregnancyRecords.length > 0 && typeof window !== 'undefined') {
+      localStorage.setItem('pregnancyRecords', JSON.stringify(pregnancyRecords));
+    }
   }, [pregnancyRecords]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
+  // Submit Data (Create or Update)
+  const handleSubmit = async () => {
     if (!formData.animalName || !formData.animalId || !formData.breedingDate || !formData.dueDate) {
-      alert('Please fill in all required fields');
-      return;
+      return; // No alert
     }
     
-    if (editingRecord) {
-      const updatedRecords = pregnancyRecords.map(record => 
-        record.id === editingRecord.id 
-          ? { ...formData, id: editingRecord.id, milestones: record.milestones }
-          : record
-      );
-      setPregnancyRecords(updatedRecords);
-    } else {
+    setSubmitting(true);
+    
+    try {
+      if (editingRecord) {
+        // Update logic - Include all record data including id
+        const updateData = {
+          ...formData,
+          id: editingRecord.id || editingRecord._id,
+          milestones: editingRecord.milestones || formData.milestones
+        };
+        // ✅ Use PATCH instead of PUT
+        const response = await axios.patch(`${API_URL}/${editingRecord.id || editingRecord._id}`, updateData, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
+        if (response.data && response.data.success) {
+          await fetchRecords();
+        }
+      } else {
+        // Create logic
+        const newRecord = {
+          ...formData,
+          milestones: [
+            { name: 'Pregnancy Confirmation (Day 30)', completed: false },
+            { name: 'Fetal Sexing (Day 60)', completed: false },
+            { name: 'Nutritional Adjustment (Day 90)', completed: false },
+            { name: 'Mid-term Check (Day 150)', completed: false },
+            { name: 'Pre-calving Vaccination (Day 210)', completed: false },
+            { name: 'Close-up Period (Day 250)', completed: false },
+            { name: 'Due Date (Day 280)', completed: false }
+          ]
+        };
+        const response = await axios.post(API_URL, newRecord, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
+        if (response.data && response.data.success) {
+          await fetchRecords();
+        }
+      }
+      
+      setShowModal(false);
+      setEditingRecord(null);
+      // Reset search query when new record is added or updated
+      setSearchQuery('');
+      setStatusFilter('All Status');
+      // Reset form data
+      setFormData({
+        animalName: '',
+        animalId: '',
+        breedingDate: '',
+        dueDate: '',
+        status: 'monitoring',
+        method: 'Blood Test',
+        veterinarian: '',
+        milestones: []
+      });
+    } catch (error) {
+      console.error("API Error, saving locally:", error);
+      console.log("Error details:", error.response?.data);
+      
+      // Fallback to localStorage if API fails
       const newRecord = {
         ...formData,
-        id: Date.now(),
-        milestones: [
+        id: editingRecord ? (editingRecord.id || editingRecord._id) : Date.now(),
+        milestones: editingRecord ? editingRecord.milestones : [
           { name: 'Pregnancy Confirmation (Day 30)', completed: false },
           { name: 'Fetal Sexing (Day 60)', completed: false },
           { name: 'Nutritional Adjustment (Day 90)', completed: false },
@@ -81,73 +191,99 @@ export default function PregnancyTracking() {
           { name: 'Due Date (Day 280)', completed: false }
         ]
       };
-      setPregnancyRecords([...pregnancyRecords, newRecord]);
+      
+      let updatedRecords;
+      if (editingRecord) {
+        updatedRecords = pregnancyRecords.map(record => 
+          (record.id || record._id) === (editingRecord.id || editingRecord._id) ? newRecord : record
+        );
+      } else {
+        updatedRecords = [...pregnancyRecords, newRecord];
+      }
+      
+      setPregnancyRecords(updatedRecords);
+      localStorage.setItem('pregnancyRecords', JSON.stringify(updatedRecords));
+      setShowModal(false);
+      setEditingRecord(null);
+      // Reset search query when new record is added or updated
+      setSearchQuery('');
+      setStatusFilter('All Status');
+      setFormData({
+        animalName: '',
+        animalId: '',
+        breedingDate: '',
+        dueDate: '',
+        status: 'monitoring',
+        method: 'Blood Test',
+        veterinarian: '',
+        milestones: []
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Open Delete Confirmation Modal
+  const openDeleteConfirmation = (id) => {
+    setRecordToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  // Close Delete Confirmation Modal
+  const closeDeleteConfirmation = () => {
+    setShowDeleteModal(false);
+    setRecordToDelete(null);
+  };
+
+  // Delete Record - Now with Modal Confirmation
+  const confirmDelete = async () => {
+    if (!recordToDelete) return;
+    
+    try {
+      await axios.delete(`${API_URL}/${recordToDelete}`, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      await fetchRecords();
+    } catch (error) {
+      console.error("Delete failed, deleting locally:", error);
+      const updatedRecords = pregnancyRecords.filter(record => 
+        (record.id || record._id) !== recordToDelete
+      );
+      setPregnancyRecords(updatedRecords);
+      localStorage.setItem('pregnancyRecords', JSON.stringify(updatedRecords));
     }
     
-    setFormData({
-      animalName: '',
-      animalId: '',
-      breedingDate: '',
-      dueDate: '',
-      status: 'monitoring',
-      method: 'Blood Test',
-      veterinarian: '',
-      milestones: []
-    });
-    setEditingRecord(null);
-    setShowModal(false);
+    closeDeleteConfirmation();
   };
 
-  const handleAddNew = () => {
-    setEditingRecord(null);
-    setFormData({
-      animalName: '',
-      animalId: '',
-      breedingDate: '',
-      dueDate: '',
-      status: 'monitoring',
-      method: 'Blood Test',
-      veterinarian: '',
-      milestones: []
-    });
-    setShowModal(true);
-  };
+  // Toggle Milestone (Patch Request)
+  const toggleMilestone = async (recordId, milestoneIndex) => {
+    const record = pregnancyRecords.find(r => (r.id || r._id) === recordId);
+    if (!record) return;
 
-  const handleEdit = (record) => {
-    setEditingRecord(record);
-    setFormData({
-      animalName: record.animalName,
-      animalId: record.animalId,
-      breedingDate: record.breedingDate,
-      dueDate: record.dueDate,
-      status: record.status,
-      method: record.method,
-      veterinarian: record.veterinarian,
-      milestones: record.milestones
-    });
-    setShowModal(true);
-  };
+    const updatedMilestones = [...record.milestones];
+    updatedMilestones[milestoneIndex].completed = !updatedMilestones[milestoneIndex].completed;
 
-  const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this pregnancy record?')) {
-      const updatedRecords = pregnancyRecords.filter(record => record.id !== id);
+    try {
+      await axios.patch(`${API_URL}/${recordId}/milestones`, {
+        milestones: updatedMilestones
+      }, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      const updatedRecords = pregnancyRecords.map(r => 
+        (r.id || r._id) === recordId ? { ...r, milestones: updatedMilestones } : r
+      );
       setPregnancyRecords(updatedRecords);
+    } catch (error) {
+      console.error("Milestone update failed, updating locally:", error);
+      const updatedRecords = pregnancyRecords.map(r => 
+        (r.id || r._id) === recordId ? { ...r, milestones: updatedMilestones } : r
+      );
+      setPregnancyRecords(updatedRecords);
+      localStorage.setItem('pregnancyRecords', JSON.stringify(updatedRecords));
     }
-  };
-
-  const toggleMilestone = (recordId, milestoneIndex) => {
-    const updatedRecords = pregnancyRecords.map(record => {
-      if (record.id === recordId) {
-        const updatedMilestones = [...record.milestones];
-        updatedMilestones[milestoneIndex] = {
-          ...updatedMilestones[milestoneIndex],
-          completed: !updatedMilestones[milestoneIndex].completed
-        };
-        return { ...record, milestones: updatedMilestones };
-      }
-      return record;
-    });
-    setPregnancyRecords(updatedRecords);
   };
 
   const calculateDaysPregnant = (breedingDate) => {
@@ -194,6 +330,57 @@ export default function PregnancyTracking() {
     return Math.min((daysPregnant / totalDays) * 100, 100);
   };
 
+  const handleAddNew = () => {
+    // Reset search and filter when adding new record
+    setSearchQuery('');
+    setStatusFilter('All Status');
+    setEditingRecord(null);
+    setFormData({
+      animalName: '',
+      animalId: '',
+      breedingDate: '',
+      dueDate: '',
+      status: 'monitoring',
+      method: 'Blood Test',
+      veterinarian: '',
+      milestones: []
+    });
+    setShowModal(true);
+  };
+
+  const handleEdit = (record) => {
+    setEditingRecord(record);
+    setFormData({
+      animalName: record.animalName,
+      animalId: record.animalId,
+      breedingDate: record.breedingDate,
+      dueDate: record.dueDate,
+      status: record.status,
+      method: record.method,
+      veterinarian: record.veterinarian,
+      milestones: record.milestones
+    });
+    setShowModal(true);
+  };
+
+  // Clear search when clicking on Add button
+  const handleAddNewWithClearSearch = () => {
+    setSearchQuery(''); // Clear search query
+    handleAddNew(); // Open modal
+  };
+
+  // Clear search input
+  const handleClearSearch = () => {
+    setSearchQuery('');
+  };
+
+  const filteredRecords = pregnancyRecords.filter(record => {
+    const matchesSearch = (record.animalName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (record.animalId || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === 'All Status' || record.status === statusFilter.toLowerCase();
+    return matchesSearch && matchesStatus;
+  });
+
   const CornerBrackets = () => {
     const borderColor = isDark ? "border-green-500/20" : "border-neutral-300";
     return (
@@ -207,13 +394,6 @@ export default function PregnancyTracking() {
   };
 
   const isActive = (path) => pathname === path;
-
-  const filteredRecords = pregnancyRecords.filter(record => {
-    const matchesSearch = record.animalName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         record.animalId.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'All Status' || record.status === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
-  });
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${inter.className} ${
@@ -235,6 +415,23 @@ export default function PregnancyTracking() {
         )}
       </div>
 
+      {/* OVERLAY FOR MODALS */}
+      {(showModal || showDeleteModal) && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          onClick={() => {
+            if (showModal) {
+              setShowModal(false);
+              setEditingRecord(null);
+            }
+            if (showDeleteModal) {
+              setShowDeleteModal(false);
+              setRecordToDelete(null);
+            }
+          }}
+        />
+      )}
+
       {/* NAVBAR WITH SIDEBAR */}
       <Navbar 
         isDark={isDark} 
@@ -245,14 +442,20 @@ export default function PregnancyTracking() {
       />
 
       {/* MAIN CONTENT */}
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
+      <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
           {/* MODERNIZED TITLE & TABS */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-3">
-               
+                <div className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className="font-mono text-[10px] text-green-500/80 uppercase tracking-[0.3em]">
+                  [PREGNANCY_TRACKING]
+                </span>
               </div>
               <h1 className={`${spaceGrotesk.className} text-4xl md:text-5xl font-bold uppercase tracking-tighter leading-[0.9] mb-2`}>
                 Pregnancy <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Tracking</span>
@@ -260,6 +463,9 @@ export default function PregnancyTracking() {
               <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Monitor pregnancy progress and upcoming milestones
               </p>
+              {loading && (
+                <span className="text-xs text-green-500 font-mono mt-2">SYNCING_DATA...</span>
+              )}
             </div>
             
             {/* Enhanced Tab Navigation */}
@@ -268,7 +474,7 @@ export default function PregnancyTracking() {
             }`}>
               <Link href="/livestockmanagement/reproduction/dashboard">
                 <button 
-                  className={`cursor-pointer w-[110px] py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dashboard')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -283,7 +489,7 @@ export default function PregnancyTracking() {
               </Link>
               <Link href="/livestockmanagement/reproduction/breeding">
                 <button 
-                  className={`cursor-pointer w-[110px] py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/breeding')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -298,7 +504,7 @@ export default function PregnancyTracking() {
               </Link>
               <Link href="/livestockmanagement/reproduction/pregnancy">
                 <button 
-                  className={`cursor-pointer w-[110px] py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/pregnancy')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -313,7 +519,7 @@ export default function PregnancyTracking() {
               </Link>
               <Link href="/livestockmanagement/reproduction/dryoff">
                 <button 
-                  className={`cursor-pointer w-[110px] py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
+                  className={`px-6 py-2.5 text-[11px] font-bold uppercase tracking-wider transition-all ${
                     isActive('/livestockmanagement/reproduction/dryoff')
                       ? isDark
                         ? 'bg-green-500/10 text-green-400 border border-green-500/20' 
@@ -361,15 +567,16 @@ export default function PregnancyTracking() {
                 </p>
               </div>
               <button 
-                onClick={handleAddNew}
-                className={`cursor-pointer px-6 py-3 border font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 transition-all ${
+                onClick={handleAddNewWithClearSearch}
+                disabled={submitting}
+                className={`px-6 py-3 border font-bold text-[11px] uppercase tracking-widest flex items-center gap-2 transition-all ${
                   isDark 
                     ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
                     : 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600 shadow-sm'
                 }`}
               >
                 <Plus className="w-4 h-4" />
-                Add Pregnancy Record
+                {submitting ? 'Saving...' : 'Add Pregnancy Record'}
               </button>
             </div>
             <CornerBrackets />
@@ -388,10 +595,21 @@ export default function PregnancyTracking() {
                 placeholder="Search by animal name or ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full pl-12 pr-4 py-3 bg-transparent ${
+                className={`w-full pl-12 pr-12 py-3 bg-transparent ${
                   isDark ? 'text-white placeholder-neutral-600' : 'text-neutral-900 placeholder-neutral-400'
                 } focus:outline-none`}
               />
+              {/* Clear search button (X) - appears when there's text */}
+              {searchQuery && (
+                <button
+                  onClick={handleClearSearch}
+                  className={`absolute right-4 top-1/2 -translate-y-1/2 p-1 ${
+                    isDark ? 'text-neutral-400 hover:text-white' : 'text-neutral-500 hover:text-neutral-900'
+                  }`}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
             <select
               value={statusFilter}
@@ -406,20 +624,46 @@ export default function PregnancyTracking() {
               <option value="monitoring">Monitoring</option>
               <option value="aborted">Aborted</option>
             </select>
+            {loading && <span className="animate-pulse text-green-500 font-mono text-xs self-center">SYNCING_DB...</span>}
           </div>
 
           {/* PREGNANCY CARDS */}
-          {filteredRecords.length === 0 ? (
+          {loading && pregnancyRecords.length === 0 ? (
+            <div className={`relative border p-12 text-center ${
+              isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
+            }`}>
+              <div className="animate-spin w-12 h-12 border-3 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <p className={`${spaceGrotesk.className} text-lg font-bold mb-2 uppercase tracking-tight`}>
+                Loading records...
+              </p>
+              <CornerBrackets />
+            </div>
+          ) : filteredRecords.length === 0 ? (
             <div className={`relative border p-12 text-center ${
               isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
             }`}>
               <Activity className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-neutral-800' : 'text-neutral-200'}`} />
               <p className={`${spaceGrotesk.className} text-lg font-bold mb-2 uppercase tracking-tight`}>
-                No pregnancy records found
+                {searchQuery || statusFilter !== 'All Status' ? 'No records found for your search' : 'No pregnancy records found'}
               </p>
               <p className={`text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                Click "Add Pregnancy Record" to start tracking
+                {searchQuery || statusFilter !== 'All Status' ? 'Try a different search term or clear the filters' : 'Click "Add Pregnancy Record" to start tracking'}
               </p>
+              {(searchQuery || statusFilter !== 'All Status') && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('');
+                    setStatusFilter('All Status');
+                  }}
+                  className={`mt-4 px-4 py-2 border text-xs font-bold uppercase tracking-wider transition-all ${
+                    isDark 
+                      ? 'bg-neutral-800 hover:bg-neutral-700 border-white/10 hover:border-white/20' 
+                      : 'bg-white hover:bg-neutral-50 border-neutral-300 hover:border-neutral-400'
+                  }`}
+                >
+                  Clear Filters
+                </button>
+              )}
               <CornerBrackets />
             </div>
           ) : (
@@ -432,7 +676,7 @@ export default function PregnancyTracking() {
                 
                 return (
                   <div 
-                    key={record.id}
+                    key={record.id || record._id}
                     className={`relative border p-6 ${
                       isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
                     }`}
@@ -442,7 +686,7 @@ export default function PregnancyTracking() {
                       <div>
                         <h3 className={`text-lg font-bold ${spaceGrotesk.className}`}>{record.animalName}</h3>
                         <p className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
-                          {record.animalName} • ID: {record.animalId}
+                          ID: {record.animalId}
                         </p>
                       </div>
                       <span className={`px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${
@@ -506,11 +750,11 @@ export default function PregnancyTracking() {
                     <div>
                       <h4 className="text-sm font-bold mb-3">Milestones</h4>
                       <div className="flex flex-wrap gap-2">
-                        {record.milestones.map((milestone, idx) => (
+                        {record.milestones && record.milestones.map((milestone, idx) => (
                           <button
                             key={idx}
-                            onClick={() => toggleMilestone(record.id, idx)}
-                            className={`cursor-pointer px-2 py-1 text-xs font-medium transition-all border ${
+                            onClick={() => toggleMilestone(record.id || record._id, idx)}
+                            className={`px-2 py-1 text-xs font-medium transition-all border ${
                               milestone.completed
                                 ? isDark
                                   ? 'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30'
@@ -541,7 +785,7 @@ export default function PregnancyTracking() {
                       <div className="flex gap-1">
                         <button 
                           onClick={() => handleEdit(record)}
-                          className={`cursor-pointer p-2.5 border transition-colors ${
+                          className={`p-2.5 border transition-colors ${
                             isDark 
                               ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                               : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
@@ -550,8 +794,8 @@ export default function PregnancyTracking() {
                           <Edit className="w-4 h-4" />
                         </button>
                         <button 
-                          onClick={() => handleDelete(record.id)}
-                          className={`cursor-pointer p-2.5 border transition-colors ${
+                          onClick={() => openDeleteConfirmation(record.id || record._id)}
+                          className={`p-2.5 border transition-colors ${
                             isDark 
                               ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
                               : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
@@ -571,9 +815,9 @@ export default function PregnancyTracking() {
         </main>
       </div>
 
-      {/* MODAL */}
+      {/* ADD/EDIT RECORD MODAL */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
           <div className={`w-full max-w-2xl border ${
             isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-300'
           } shadow-2xl max-h-[90vh] overflow-y-auto`}>
@@ -599,11 +843,12 @@ export default function PregnancyTracking() {
                   setShowModal(false);
                   setEditingRecord(null);
                 }}
-                className={`cursor-pointer p-2.5 border transition-colors ${
+                className={`p-2.5 border transition-colors ${
                   isDark 
                     ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
                     : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                 }`}
+                disabled={submitting}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -616,7 +861,7 @@ export default function PregnancyTracking() {
                   <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
                     isDark ? 'text-neutral-500' : 'text-neutral-400'
                   }`}>
-                    Animal Name
+                    Animal Name *
                   </label>
                   <input
                     type="text"
@@ -629,6 +874,8 @@ export default function PregnancyTracking() {
                         : 'bg-neutral-50 border-neutral-300 focus:border-purple-500 placeholder:text-neutral-400'
                     }`}
                     placeholder="Enter animal name"
+                    required
+                    disabled={submitting}
                   />
                 </div>
 
@@ -636,7 +883,7 @@ export default function PregnancyTracking() {
                   <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
                     isDark ? 'text-neutral-500' : 'text-neutral-400'
                   }`}>
-                    Animal ID
+                    Animal ID *
                   </label>
                   <input
                     type="text"
@@ -649,6 +896,8 @@ export default function PregnancyTracking() {
                         : 'bg-neutral-50 border-neutral-300 focus:border-purple-500 placeholder:text-neutral-400'
                     }`}
                     placeholder="Enter ID"
+                    required
+                    disabled={submitting}
                   />
                 </div>
               </div>
@@ -658,7 +907,7 @@ export default function PregnancyTracking() {
                   <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
                     isDark ? 'text-neutral-500' : 'text-neutral-400'
                   }`}>
-                    Breeding Date
+                    Breeding Date *
                   </label>
                   <input
                     type="date"
@@ -670,6 +919,8 @@ export default function PregnancyTracking() {
                         ? 'bg-neutral-900 border-white/10 focus:border-purple-500' 
                         : 'bg-neutral-50 border-neutral-300 focus:border-purple-500'
                     }`}
+                    required
+                    disabled={submitting}
                   />
                 </div>
 
@@ -677,7 +928,7 @@ export default function PregnancyTracking() {
                   <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
                     isDark ? 'text-neutral-500' : 'text-neutral-400'
                   }`}>
-                    Due Date
+                    Due Date *
                   </label>
                   <input
                     type="date"
@@ -689,6 +940,8 @@ export default function PregnancyTracking() {
                         ? 'bg-neutral-900 border-white/10 focus:border-purple-500' 
                         : 'bg-neutral-50 border-neutral-300 focus:border-purple-500'
                     }`}
+                    required
+                    disabled={submitting}
                   />
                 </div>
               </div>
@@ -709,6 +962,7 @@ export default function PregnancyTracking() {
                         ? 'bg-neutral-900 border-white/10 focus:border-purple-500' 
                         : 'bg-neutral-50 border-neutral-300 focus:border-purple-500'
                     }`}
+                    disabled={submitting}
                   >
                     <option value="Blood Test">Blood Test</option>
                     <option value="Ultrasound">Ultrasound</option>
@@ -730,6 +984,7 @@ export default function PregnancyTracking() {
                         ? 'bg-neutral-900 border-white/10 focus:border-purple-500' 
                         : 'bg-neutral-50 border-neutral-300 focus:border-purple-500'
                     }`}
+                    disabled={submitting}
                   >
                     <option value="monitoring">Monitoring</option>
                     <option value="aborted">Aborted</option>
@@ -754,6 +1009,7 @@ export default function PregnancyTracking() {
                       : 'bg-neutral-50 border-neutral-300 focus:border-purple-500 placeholder:text-neutral-400'
                   }`}
                   placeholder="Enter veterinarian name"
+                  disabled={submitting}
                 />
               </div>
 
@@ -765,7 +1021,87 @@ export default function PregnancyTracking() {
                     setShowModal(false);
                     setEditingRecord(null);
                   }}
-                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                  className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                    isDark 
+                      ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
+                      : 'bg-white hover:bg-neutral-50 border-neutral-300'
+                  }`}
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest ${
+                    submitting
+                      ? 'bg-purple-400 cursor-not-allowed'
+                      : 'bg-purple-600 hover:bg-purple-700'
+                  } text-white border-purple-600 transition-all`}
+                >
+                  {submitting ? 'Saving...' : editingRecord ? 'Update' : 'Add Record'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md border ${
+            isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-300'
+          } shadow-2xl`}>
+            {/* Modal Header */}
+            <div className={`flex items-center justify-between p-6 border-b ${
+              isDark ? 'border-white/10' : 'border-neutral-200'
+            }`}>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`h-[2px] w-6 ${isDark ? 'bg-red-500' : 'bg-red-600'}`} />
+                  <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.3em] ${
+                    isDark ? 'text-red-400' : 'text-red-600'
+                  }`}>
+                    DELETE_CONFIRMATION
+                  </span>
+                </div>
+                <h2 className={`${spaceGrotesk.className} text-xl font-bold uppercase tracking-tight`}>
+                  Confirm Deletion
+                </h2>
+              </div>
+              <button 
+                onClick={closeDeleteConfirmation}
+                className={`p-2.5 border transition-colors ${
+                  isDark 
+                    ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                    : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                }`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6">
+              <div className="flex items-center justify-center mb-6">
+                <div className={`p-4 border ${
+                  isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200'
+                }`}>
+                  <Trash2 className="w-8 h-8 text-red-500" />
+                </div>
+              </div>
+              <p className={`text-center mb-6 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                Are you sure you want to delete this pregnancy record? This action cannot be undone.
+              </p>
+              
+              {/* Modal Footer */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={closeDeleteConfirmation}
+                  className={`flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                     isDark 
                       ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
                       : 'bg-white hover:bg-neutral-50 border-neutral-300'
@@ -775,10 +1111,10 @@ export default function PregnancyTracking() {
                 </button>
                 <button
                   type="button"
-                  onClick={handleSubmit}
-                  className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-purple-600 hover:bg-purple-700 text-white border-purple-600 transition-all"
+                  onClick={confirmDelete}
+                  className="flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-red-600 hover:bg-red-700 text-white border-red-600 transition-all"
                 >
-                  {editingRecord ? 'Update' : 'Add Record'}
+                  Delete
                 </button>
               </div>
             </div>

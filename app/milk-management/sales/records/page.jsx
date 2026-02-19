@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import {
   BarChart3, FileText, TrendingUp, Plus, Search, Filter,
   Eye, Edit, Trash2, X, ChevronDown, ShoppingCart
@@ -30,6 +32,10 @@ const SEED = [
   { id:4, customerName:'Amena Glover',  customerType:'Shop',       quantity:4,  pricePerLiter:785, total:3140, status:'Unpaid', date:'2025-11-05', notes:'' },
   { id:5, customerName:'Jeremy Savage', customerType:'House',      quantity:4,  pricePerLiter:593, total:2372, status:'Unpaid', date:'2025-11-04', notes:'Weekly delivery' },
 ];
+
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+const API_URL = `${API_BASE_URL}/milk/sales`;
 
 function emptyForm() {
   return {
@@ -68,32 +74,109 @@ export default function SalesRecords() {
   const [viewingRecord, setViewingRecord] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [formData, setFormData]           = useState(emptyForm());
+  const [loading, setLoading]             = useState(false);
+  const [submitting, setSubmitting]       = useState(false);
+  const [error, setError]                 = useState(null);
   const pathname = usePathname();
 
-  const [records, setRecords] = useState(() => {
+  const [records, setRecords] = useState([]);
+
+  // Helper to get headers with token
+  const getHeaders = () => ({
+    Authorization: `Bearer ${Cookies.get('accessToken')}`
+  });
+
+  // Normalize record to handle different field names
+  const normalizeRecord = (record) => {
+    return {
+      id: record.id || record._id,
+      customerName: record.customerName || '',
+      customerType: record.customerType || 'Shop',
+      quantity: record.quantity || 0,
+      pricePerLiter: record.pricePerLiter || record.price || 0,
+      total: record.total || 0,
+      status: record.status || record.paymentStatus || 'Unpaid',
+      date: record.date || '',
+      notes: record.notes || '',
+    };
+  };
+
+  // Fetch Records from API
+  const fetchRecords = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Build query params
+      const params = {};
+      if (searchTerm) params.search = searchTerm;
+      if (filterType !== 'All') params.customerType = filterType;
+      if (filterPayment !== 'All Payments') params.paymentStatus = filterPayment;
+      
+      const response = await axios.get(API_URL, {
+        params,
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data && response.data.success) {
+        const fetchedRecords = (response.data.data || []).map(normalizeRecord);
+        setRecords(fetchedRecords);
+        // Save to localStorage as backup
+        localStorage.setItem(LS_KEY, JSON.stringify(fetchedRecords));
+      } else if (Array.isArray(response.data)) {
+        const fetchedRecords = response.data.map(normalizeRecord);
+        setRecords(fetchedRecords);
+        localStorage.setItem(LS_KEY, JSON.stringify(fetchedRecords));
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        // Fallback to localStorage
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error("❌ Error fetching records:", error);
+      setError('Failed to fetch records');
+      // Fallback to localStorage
+      loadFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load from localStorage as fallback
+  const loadFromLocalStorage = () => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(LS_KEY);
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          setRecords(parsed);
         } catch (e) {
           console.error('Error parsing stored records:', e);
+          setRecords(SEED);
         }
+      } else {
+        setRecords(SEED);
       }
     }
-    return SEED;
-  });
+  };
 
+  // Initial data fetch
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    fetchRecords();
+  }, []);
+
+  // Save to localStorage whenever records change (backup)
+  useEffect(() => {
+    if (records.length > 0 && typeof window !== 'undefined') {
       localStorage.setItem(LS_KEY, JSON.stringify(records));
     }
   }, [records]);
 
+  // Filter (client-side as backup, but API already filters)
   const filtered = records.filter(r => {
     const q = searchTerm.toLowerCase();
-    const matchSearch  = r.customerName.toLowerCase().includes(q) ||
+    const matchSearch  = (r.customerName || '').toLowerCase().includes(q) ||
                          (r.notes || '').toLowerCase().includes(q);
     const matchType    = filterType    === 'All'          || r.customerType === filterType;
     const matchPayment = filterPayment === 'All Payments' || r.status       === filterPayment;
@@ -106,12 +189,12 @@ export default function SalesRecords() {
     if (record) {
       setEditingRecord(record);
       setFormData({
-        customerName:  record.customerName,
-        customerType:  record.customerType,
-        quantity:      record.quantity.toString(),
-        pricePerLiter: record.pricePerLiter.toString(),
-        status:        record.status,
-        date:          record.date,
+        customerName:  record.customerName || '',
+        customerType:  record.customerType || 'Shop',
+        quantity:      (record.quantity || 0).toString(),
+        pricePerLiter: (record.pricePerLiter || 0).toString(),
+        status:        record.status || 'Unpaid',
+        date:          record.date || '',
         notes:         record.notes || '',
       });
     } else {
@@ -127,41 +210,130 @@ export default function SalesRecords() {
     setFormData(emptyForm());
   };
 
-  const handleSubmit = (e) => {
+  // Submit Handler - API Integration
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.customerName || !formData.quantity || !formData.pricePerLiter || !formData.date) {
+      return;
+    }
+    
+    setSubmitting(true);
+    setError(null);
+    
     const qty   = parseFloat(formData.quantity)      || 0;
     const price = parseFloat(formData.pricePerLiter) || 0;
     const total = parseFloat((qty * price).toFixed(2));
-
-    if (editingRecord) {
-      setRecords(prev => prev.map(r =>
-        r.id === editingRecord.id
-          ? { ...r, customerName: formData.customerName, customerType: formData.customerType,
-              quantity: qty, pricePerLiter: price, total,
-              status: formData.status, date: formData.date, notes: formData.notes }
-          : r
-      ));
-    } else {
-      const newId = records.length > 0 ? Math.max(...records.map(r => r.id)) + 1 : 1;
-      setRecords(prev => [{
-        id: newId,
-        customerName:  formData.customerName,
-        customerType:  formData.customerType,
-        quantity:      qty,
+    
+    const apiData = {
+      customerName: formData.customerName,
+      customerType: formData.customerType,
+      quantity: qty,
+      pricePerLiter: price,
+      status: formData.status,
+      date: formData.date,
+      notes: formData.notes || ''
+    };
+    
+    try {
+      if (editingRecord) {
+        // Update existing record
+        const response = await axios.patch(`${API_URL}/${editingRecord.id || editingRecord._id}`, apiData, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
+        
+        if (response.data && response.data.success) {
+          await fetchRecords();
+          // Reset search and filters to show all records
+          setSearchTerm('');
+          setFilterType('All');
+          setFilterPayment('All Payments');
+        }
+      } else {
+        // Add new record
+        const response = await axios.post(API_URL, apiData, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
+        
+        if (response.data && response.data.success) {
+          await fetchRecords();
+          // Reset search and filters to show all records
+          setSearchTerm('');
+          setFilterType('All');
+          setFilterPayment('All Payments');
+        }
+      }
+      
+      closeForm();
+      
+    } catch (error) {
+      console.error("❌ API Error, saving locally:", error);
+      
+      // Fallback to localStorage if API fails
+      const newRecord = {
+        id: editingRecord ? (editingRecord.id || editingRecord._id) : (records.length > 0 ? Math.max(...records.map(r => r.id)) + 1 : 1),
+        customerName: formData.customerName,
+        customerType: formData.customerType,
+        quantity: qty,
         pricePerLiter: price,
         total,
-        status:        formData.status,
-        date:          formData.date,
-        notes:         formData.notes,
-      }, ...prev]);
+        status: formData.status,
+        date: formData.date,
+        notes: formData.notes || ''
+      };
+      
+      let updatedRecords;
+      if (editingRecord) {
+        updatedRecords = records.map(r => (r.id || r._id) === (editingRecord.id || editingRecord._id) ? newRecord : r);
+      } else {
+        updatedRecords = [newRecord, ...records];
+      }
+      
+      setRecords(updatedRecords);
+      localStorage.setItem(LS_KEY, JSON.stringify(updatedRecords));
+      
+      // Reset search and filters
+      setSearchTerm('');
+      setFilterType('All');
+      setFilterPayment('All Payments');
+      closeForm();
+      
+    } finally {
+      setSubmitting(false);
     }
-    closeForm();
   };
 
-  const handleDelete = (id) => {
-    setRecords(prev => prev.filter(r => r.id !== id));
-    setDeleteConfirm(null);
+  // Delete Handler - API Integration
+  const handleDelete = async (id) => {
+    try {
+      setSubmitting(true);
+      await axios.delete(`${API_URL}/${id}`, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      await fetchRecords();
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error("❌ Delete failed, deleting locally:", error);
+      const updatedRecords = records.filter(r => (r.id || r._id) !== id);
+      setRecords(updatedRecords);
+      localStorage.setItem(LS_KEY, JSON.stringify(updatedRecords));
+      setDeleteConfirm(null);
+    } finally {
+      setSubmitting(false);
+    }
   };
+
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchRecords();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchTerm, filterType, filterPayment]);
 
   const liveTotal = formData.quantity && formData.pricePerLiter
     ? (parseFloat(formData.quantity) * parseFloat(formData.pricePerLiter)).toFixed(2)
@@ -216,7 +388,7 @@ export default function SalesRecords() {
       />
 
       {/* MAIN CONTENT — original sidebar margin logic */}
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
+      <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
 
           {/* TITLE & TABS */}
@@ -231,6 +403,12 @@ export default function SalesRecords() {
               <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 All milk sales to individual customers
               </p>
+              {loading && (
+                <span className="text-xs text-green-500 font-mono mt-2">SYNCING_DATA...</span>
+              )}
+              {error && (
+                <span className="text-xs text-red-500 font-mono mt-2">{error}</span>
+              )}
             </div>
 
             {/* Tab Navigation */}
@@ -273,13 +451,29 @@ export default function SalesRecords() {
                   All milk sales to individual customers
                 </p>
               </div>
-              <button
-                onClick={() => openForm()}
-                className="cursor-pointer flex items-center gap-2 px-5 py-3 border font-bold text-[11px] uppercase tracking-widest transition-all bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Record Sale
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={fetchRecords}
+                  disabled={loading}
+                  className={`cursor-pointer px-4 py-2 border font-bold text-[10px] uppercase tracking-widest transition-all ${
+                    loading
+                      ? 'opacity-50 cursor-not-allowed'
+                      : isDark
+                        ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                        : 'bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm'
+                  }`}
+                >
+                  {loading ? '⟳' : '⟲ Refresh'}
+                </button>
+                <button
+                  onClick={() => openForm()}
+                  disabled={submitting}
+                  className="cursor-pointer flex items-center gap-2 px-5 py-3 border font-bold text-[11px] uppercase tracking-widest transition-all bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  {submitting ? 'Saving...' : 'Record Sale'}
+                </button>
+              </div>
             </div>
           </section>
 
@@ -297,11 +491,21 @@ export default function SalesRecords() {
                     type="text"
                     placeholder="Search by customer name or notes..."
                     value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
+                    onChange={e => { setSearchTerm(e.target.value); }}
                     className={`flex-1 bg-transparent outline-none text-sm font-medium ${
                       isDark ? 'placeholder:text-neutral-600' : 'placeholder:text-neutral-400'
                     }`}
                   />
+                  {searchTerm && (
+                    <button
+                      onClick={() => { setSearchTerm(''); }}
+                      className={`cursor-pointer p-1 transition-all ${
+                        isDark ? 'hover:text-white text-neutral-400' : 'hover:text-neutral-900 text-neutral-500'
+                      }`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover/search:w-full transition-all duration-500 ${
                   isDark ? 'bg-green-500' : 'bg-green-600'
@@ -418,41 +622,50 @@ export default function SalesRecords() {
               </div>
 
               {/* Rows */}
-              {filtered.length > 0 ? filtered.map(record => (
-                <div key={record.id} className={`grid grid-cols-12 gap-4 px-5 py-4 border-b items-center transition-colors ${
-                  isDark ? 'border-white/5 hover:bg-white/5' : 'border-neutral-100 hover:bg-neutral-50'
-                }`}>
-                  <div className="col-span-2 flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDark ? 'bg-green-400' : 'bg-green-600'}`} />
-                    <span className="text-sm font-semibold truncate">{record.customerName}</span>
-                  </div>
-                  <div className="col-span-2 text-sm font-medium">{record.customerType}</div>
-                  <div className="col-span-2 text-sm font-medium">{record.quantity.toFixed(2)} gal</div>
-                  <div className="col-span-2 text-sm font-medium">PKR {record.pricePerLiter.toFixed(2)}</div>
-                  <div className="col-span-1 text-sm font-bold">PKR {record.total.toFixed(2)}</div>
-                  <div className="col-span-1">
-                    <span className={`inline-flex items-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${
-                      record.status === 'Paid'
-                        ? isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'
-                        : isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-700'
-                    }`}>{record.status}</span>
-                  </div>
-                  <div className={`col-span-1 text-[11px] font-mono ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                    {record.date}
-                  </div>
-                  <div className="col-span-1 flex items-center justify-end gap-1">
-                    <button onClick={() => setViewingRecord(record)}
-                      className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10' : 'hover:bg-neutral-50 border-neutral-200'}`}
-                      title="View"><Eye className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => openForm(record)}
-                      className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10' : 'hover:bg-neutral-50 border-neutral-200'}`}
-                      title="Edit"><Edit className="w-3.5 h-3.5" /></button>
-                    <button onClick={() => setDeleteConfirm(record)}
-                      className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-red-500/20 text-red-400 border-white/10' : 'hover:bg-red-50 text-red-600 border-neutral-200'}`}
-                      title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
-                  </div>
+              {loading && records.length === 0 ? (
+                <div className="p-16 text-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className={`text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Loading records...
+                  </p>
                 </div>
-              )) : (
+              ) : filtered.length > 0 ? (
+                filtered.map(record => (
+                  <div key={record.id || record._id} className={`grid grid-cols-12 gap-4 px-5 py-4 border-b items-center transition-colors ${
+                    isDark ? 'border-white/5 hover:bg-white/5' : 'border-neutral-100 hover:bg-neutral-50'
+                  }`}>
+                    <div className="col-span-2 flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isDark ? 'bg-green-400' : 'bg-green-600'}`} />
+                      <span className="text-sm font-semibold truncate">{record.customerName}</span>
+                    </div>
+                    <div className="col-span-2 text-sm font-medium">{record.customerType}</div>
+                    <div className="col-span-2 text-sm font-medium">{record.quantity.toFixed(2)} gal</div>
+                    <div className="col-span-2 text-sm font-medium">PKR {record.pricePerLiter.toFixed(2)}</div>
+                    <div className="col-span-1 text-sm font-bold">PKR {record.total.toFixed(2)}</div>
+                    <div className="col-span-1">
+                      <span className={`inline-flex items-center px-2 py-1 text-[10px] font-bold uppercase tracking-wider ${
+                        record.status === 'Paid'
+                          ? isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700'
+                          : isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-700'
+                      }`}>{record.status}</span>
+                    </div>
+                    <div className={`col-span-1 text-[11px] font-mono ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                      {record.date}
+                    </div>
+                    <div className="col-span-1 flex items-center justify-end gap-1">
+                      <button onClick={() => setViewingRecord(record)}
+                        className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10' : 'hover:bg-neutral-50 border-neutral-200'}`}
+                        title="View"><Eye className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => openForm(record)}
+                        className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10' : 'hover:bg-neutral-50 border-neutral-200'}`}
+                        title="Edit"><Edit className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setDeleteConfirm(record)}
+                        className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-red-500/20 text-red-400 border-white/10' : 'hover:bg-red-50 text-red-600 border-neutral-200'}`}
+                        title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
+                  </div>
+                ))
+              ) : (
                 <div className="relative p-16 text-center">
                   <ShoppingCart className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-neutral-800' : 'text-neutral-200'}`} />
                   <h3 className={`${spaceGrotesk.className} text-2xl font-bold mb-2 uppercase tracking-tight`}>
@@ -494,7 +707,8 @@ export default function SalesRecords() {
               </p>
             </div>
             <button onClick={closeForm}
-              className={`cursor-pointer p-2.5 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10 hover:border-white/20' : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'}`}>
+              className={`cursor-pointer p-2.5 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10 hover:border-white/20' : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'}`}
+              disabled={submitting}>
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -507,14 +721,16 @@ export default function SalesRecords() {
               <input type="text" required placeholder="Enter customer name"
                 value={formData.customerName}
                 onChange={e => setFormData(f => ({ ...f, customerName: e.target.value }))}
-                className={inputCls} />
+                className={inputCls}
+                disabled={submitting} />
             </div>
 
             <div>
               <label className={labelCls}>Customer Type *</label>
               <select value={formData.customerType}
                 onChange={e => setFormData(f => ({ ...f, customerType: e.target.value }))}
-                className={inputCls}>
+                className={inputCls}
+                disabled={submitting}>
                 <option>Shop</option>
                 <option>Big Farmer</option>
                 <option>House</option>
@@ -528,14 +744,16 @@ export default function SalesRecords() {
                 <input type="number" step="0.01" required placeholder="0.00"
                   value={formData.quantity}
                   onChange={e => setFormData(f => ({ ...f, quantity: e.target.value }))}
-                  className={inputCls} />
+                  className={inputCls}
+                  disabled={submitting} />
               </div>
               <div>
                 <label className={labelCls}>Price/Liter (PKR) *</label>
                 <input type="number" step="0.01" required placeholder="0.00"
                   value={formData.pricePerLiter}
                   onChange={e => setFormData(f => ({ ...f, pricePerLiter: e.target.value }))}
-                  className={inputCls} />
+                  className={inputCls}
+                  disabled={submitting} />
               </div>
             </div>
 
@@ -555,7 +773,8 @@ export default function SalesRecords() {
               <label className={labelCls}>Payment Status *</label>
               <select value={formData.status}
                 onChange={e => setFormData(f => ({ ...f, status: e.target.value }))}
-                className={inputCls}>
+                className={inputCls}
+                disabled={submitting}>
                 <option>Paid</option>
                 <option>Unpaid</option>
               </select>
@@ -566,7 +785,8 @@ export default function SalesRecords() {
               <input type="date" required
                 value={formData.date}
                 onChange={e => setFormData(f => ({ ...f, date: e.target.value }))}
-                className={inputCls} />
+                className={inputCls}
+                disabled={submitting} />
             </div>
 
             <div>
@@ -574,17 +794,26 @@ export default function SalesRecords() {
               <textarea rows={3} placeholder="Enter any additional notes"
                 value={formData.notes}
                 onChange={e => setFormData(f => ({ ...f, notes: e.target.value }))}
-                className={`${inputCls} resize-none`} />
+                className={`${inputCls} resize-none`}
+                disabled={submitting} />
             </div>
 
             <div className="flex gap-3 pt-6">
               <button type="button" onClick={closeForm}
                 className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                   isDark ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' : 'bg-white hover:bg-neutral-50 border-neutral-300'
-                }`}>Cancel</button>
+                }`}
+                disabled={submitting}>
+                Cancel
+              </button>
               <button type="submit"
-                className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all">
-                {editingRecord ? 'Update' : 'Record'}
+                disabled={submitting}
+                className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                  submitting
+                    ? 'bg-green-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'
+                } text-white border-green-600`}>
+                {submitting ? 'Saving...' : (editingRecord ? 'Update' : 'Record')}
               </button>
             </div>
           </form>
@@ -614,10 +843,18 @@ export default function SalesRecords() {
                 <button onClick={() => setDeleteConfirm(null)}
                   className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                     isDark ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' : 'bg-white hover:bg-neutral-50 border-neutral-300'
-                  }`}>Cancel</button>
-                <button onClick={() => handleDelete(deleteConfirm.id)}
-                  className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-red-600 hover:bg-red-700 text-white border-red-600 transition-all">
-                  Delete
+                  }`}
+                  disabled={submitting}>
+                  Cancel
+                </button>
+                <button onClick={() => handleDelete(deleteConfirm.id || deleteConfirm._id)}
+                  disabled={submitting}
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                    submitting
+                      ? 'bg-red-400 cursor-not-allowed'
+                      : 'bg-red-600 hover:bg-red-700'
+                  } text-white border-red-600`}>
+                  {submitting ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>

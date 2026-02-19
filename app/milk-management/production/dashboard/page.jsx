@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import { 
   BarChart3, Calendar, TrendingUp, Droplet, Award, Activity
 } from 'lucide-react';
@@ -16,34 +18,114 @@ import { usePathname } from 'next/navigation';
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+const API_URL = `${API_BASE_URL}/milk/production/daily-records/dashboard/stats`;
+
 export default function MilkProductionDashboard() {
   const [isDark, setIsDark] = useState(false); 
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [dashboardStats, setDashboardStats] = useState({
+    todayTotal: 0,
+    animalCount: 0,
+    averagePerAnimal: 0,
+    yesterdayTotal: 0,
+    percentageChange: 0,
+    weeklyTrend: [],
+    topPerformers: []
+  });
   const pathname = usePathname();
 
-  // Debug: Log the current pathname
-  React.useEffect(() => {
-    console.log('Current pathname:', pathname);
-  }, [pathname]);
+  // Helper to get headers with token
+  const getHeaders = () => ({
+    Authorization: `Bearer ${Cookies.get('accessToken')}`
+  });
+
+  // Fetch Dashboard Stats
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('Fetching dashboard stats from:', API_URL);
+      
+      const response = await axios.get(API_URL, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      console.log('Dashboard API Response:', response.data);
+      
+      if (response.data && response.data.success) {
+        // Ensure all required fields exist
+        const stats = {
+          todayTotal: response.data.data?.todayTotal || 0,
+          animalCount: response.data.data?.animalCount || 0,
+          averagePerAnimal: response.data.data?.averagePerAnimal || 0,
+          yesterdayTotal: response.data.data?.yesterdayTotal || 0,
+          percentageChange: response.data.data?.percentageChange || 0,
+          weeklyTrend: response.data.data?.weeklyTrend || [],
+          topPerformers: response.data.data?.topPerformers || []
+        };
+        
+        setDashboardStats(stats);
+        // Save to localStorage as backup
+        localStorage.setItem('milkProductionDashboard', JSON.stringify(stats));
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        setError('Invalid response format from server');
+        // Fallback to localStorage
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error("❌ Error fetching dashboard stats:", error);
+      setError(error.message || 'Failed to fetch dashboard data');
+      // Fallback to localStorage
+      loadFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load from localStorage as fallback
+  const loadFromLocalStorage = () => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('milkProductionDashboard');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setDashboardStats(parsed);
+        } catch (e) {
+          console.error('Error parsing stored dashboard:', e);
+        }
+      }
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
 
   const isActive = (path) => {
     return pathname === path;
   };
 
-  // --- MOCK DATA ---
-  const productionTrendData = [
-    { day: 'Mon', volume: 0 },
-    { day: 'Tue', volume: 0 },
-    { day: 'Wed', volume: 0 },
-    { day: 'Thu', volume: 0 },
-    { day: 'Fri', volume: 0 },
-    { day: 'Sat', volume: 0 },
-    { day: 'Sun', volume: 0 },
-  ];
+  // Format weekly trend data for chart
+  const productionTrendData = dashboardStats.weeklyTrend.length > 0 
+    ? dashboardStats.weeklyTrend 
+    : [
+        { day: 'Mon', volume: 0 },
+        { day: 'Tue', volume: 0 },
+        { day: 'Wed', volume: 0 },
+        { day: 'Thu', volume: 0 },
+        { day: 'Fri', volume: 0 },
+        { day: 'Sat', volume: 0 },
+        { day: 'Sun', volume: 0 },
+      ];
 
-  const topPerformers = [
-    // Empty for now - will show when data is available
-  ];
+  const topPerformers = dashboardStats.topPerformers || [];
 
   const CornerBrackets = () => {
     const borderColor = isDark ? "border-green-500/20" : "border-neutral-300";
@@ -70,7 +152,7 @@ export default function MilkProductionDashboard() {
           }`}>{label}</p>
           {payload.map((entry, index) => (
             <p key={index} className={`text-sm font-bold ${spaceGrotesk.className}`} style={{ color: entry.color }}>
-              {entry.name}: {entry.value}
+              {entry.name}: {entry.value} gallons
             </p>
           ))}
         </div>
@@ -109,7 +191,7 @@ export default function MilkProductionDashboard() {
       />
 
       {/* MAIN CONTENT WRAPPER WITH DYNAMIC MARGIN */}
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
+      <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
           {/* MODERNIZED TITLE & TABS */}
@@ -121,6 +203,12 @@ export default function MilkProductionDashboard() {
               <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Visual insights and performance metrics for your milk production
               </p>
+              {loading && (
+                <span className="text-xs text-green-500 font-mono mt-2">SYNCING_DATA...</span>
+              )}
+              {error && (
+                <span className="text-xs text-red-500 font-mono mt-2">ERROR: {error}</span>
+              )}
             </div>
             
             {/* Enhanced Tab Navigation */}
@@ -184,6 +272,20 @@ export default function MilkProductionDashboard() {
               }`}>
                 Production Metrics
               </h2>
+              <button
+                onClick={fetchDashboardStats}
+                disabled={loading}
+                className={`cursor-pointer ml-2 text-xs font-mono px-2 py-1 border transition-all ${
+                  loading 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : isDark 
+                      ? 'hover:bg-white/5 border-white/10 hover:border-green-500/20' 
+                      : 'hover:bg-neutral-50 border-neutral-200 hover:border-green-300'
+                }`}
+                title="Refresh Data"
+              >
+                {loading ? '...' : '⟲'}
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -213,18 +315,24 @@ export default function MilkProductionDashboard() {
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className={`${spaceGrotesk.className} text-4xl font-bold tracking-tight`}>0.00 gallons</h3>
+                  <h3 className={`${spaceGrotesk.className} text-4xl font-bold tracking-tight`}>
+                    {loading ? '...' : dashboardStats.todayTotal.toFixed(2)} <span className="text-lg">gal</span>
+                  </h3>
                   <p className={`text-[10px] uppercase tracking-[0.2em] font-bold font-mono ${
                     isDark ? 'text-neutral-500' : 'text-neutral-400'
                   }`}>Total Today</p>
                   <div className="flex items-center gap-2 mt-3">
                     <span className={`text-xs ${isDark ? 'text-neutral-600' : 'text-neutral-500'}`}>
-                      Milking Animals: 0
+                      Milking Animals: {loading ? '...' : dashboardStats.animalCount}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 mt-2">
                     <Activity className="w-3 h-3 text-green-500" />
-                    <span className="text-xs font-bold text-green-500">0.0% from yesterday</span>
+                    <span className={`text-xs font-bold ${
+                      dashboardStats.percentageChange >= 0 ? 'text-green-500' : 'text-red-500'
+                    }`}>
+                      {dashboardStats.percentageChange.toFixed(1)}% from yesterday
+                    </span>
                   </div>
                 </div>
               </div>
@@ -263,7 +371,9 @@ export default function MilkProductionDashboard() {
                 </div>
                 
                 <div className="space-y-2">
-                  <h3 className={`${spaceGrotesk.className} text-4xl font-bold tracking-tight`}>0.00 gallons</h3>
+                  <h3 className={`${spaceGrotesk.className} text-4xl font-bold tracking-tight`}>
+                    {loading ? '...' : dashboardStats.averagePerAnimal.toFixed(2)} <span className="text-lg">gal</span>
+                  </h3>
                   <p className={`text-[10px] uppercase tracking-[0.2em] font-bold font-mono ${
                     isDark ? 'text-neutral-500' : 'text-neutral-400'
                   }`}>Average Per Animal</p>
@@ -308,7 +418,14 @@ export default function MilkProductionDashboard() {
                     isDark ? 'text-neutral-500' : 'text-neutral-400'
                   }`}>Top Performers</p>
                   
-                  {topPerformers.length === 0 ? (
+                  {loading ? (
+                    <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                      <div className="animate-spin w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                      <p className={`text-xs ${isDark ? 'text-neutral-600' : 'text-neutral-400'}`}>
+                        Loading...
+                      </p>
+                    </div>
+                  ) : topPerformers.length === 0 ? (
                     <div className="border-2 border-dashed rounded-lg p-8 text-center" style={{
                       borderColor: isDark ? 'rgba(115, 115, 115, 0.2)' : 'rgba(212, 212, 212, 0.5)'
                     }}>
@@ -318,8 +435,15 @@ export default function MilkProductionDashboard() {
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
-                      {/* Will show top performers when data is available */}
+                    <div className="space-y-3">
+                      {topPerformers.map((performer, idx) => (
+                        <div key={idx} className="flex items-center justify-between border-b border-dashed pb-2 last:border-0" style={{
+                          borderColor: isDark ? 'rgba(115, 115, 115, 0.2)' : 'rgba(212, 212, 212, 0.5)'
+                        }}>
+                          <span className="text-sm font-medium">{performer.animalName}</span>
+                          <span className="text-sm font-bold text-amber-500">{performer.total} gal</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -366,7 +490,16 @@ export default function MilkProductionDashboard() {
                 </p>
               </div>
 
-              {productionTrendData.every(d => d.volume === 0) ? (
+              {loading ? (
+                <div className="h-[400px] min-h-[400px] flex items-center justify-center border-2 border-dashed rounded-lg">
+                  <div className="text-center">
+                    <div className="animate-spin w-12 h-12 border-3 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <p className={`text-sm ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                      Loading trend data...
+                    </p>
+                  </div>
+                </div>
+              ) : productionTrendData.every(d => d.volume === 0) ? (
                 <div className="h-[400px] min-h-[400px] flex items-center justify-center border-2 border-dashed rounded-lg" style={{
                   borderColor: isDark ? 'rgba(115, 115, 115, 0.2)' : 'rgba(212, 212, 212, 0.5)'
                 }}>
@@ -383,7 +516,7 @@ export default function MilkProductionDashboard() {
               ) : (
                 <div className="h-[400px] min-h-[400px] w-full">
                   <ResponsiveContainer width="100%" height="100%" minHeight={400}>
-                    <AreaChart data={productionTrendData}>
+                    <AreaChart data={productionTrendData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                       <defs>
                         <linearGradient id="colorProduction" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor="#3b82f6" stopOpacity={isDark ? 0.3 : 0.2}/>
@@ -425,7 +558,7 @@ export default function MilkProductionDashboard() {
                         fill="url(#colorProduction)" 
                         dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
                         activeDot={{ r: 6, strokeWidth: 0 }}
-                        name="Volume (gallons)"
+                        name="Volume"
                       />
                     </AreaChart>
                   </ResponsiveContainer>

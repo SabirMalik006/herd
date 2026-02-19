@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import { 
   BarChart3, FileText, TrendingUp, Milk, DollarSign, AlertCircle
 } from 'lucide-react';
@@ -12,18 +14,167 @@ import { usePathname } from 'next/navigation';
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+const API_URL = `${API_BASE_URL}/milk/sales/dashboard/stats`;
+
 export default function SalesDashboard() {
   const [isDark, setIsDark] = useState(false); 
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [dashboardData, setDashboardData] = useState({
+    todaysSalesVolume: 0,
+    todaysRevenue: 0,
+    pendingPayments: 0,
+    unpaidInvoices: 0,
+    recentActivity: []
+  });
   const pathname = usePathname();
 
-  // Sample data - replace with actual data from your backend/storage
-  const dashboardData = {
-    todaysSalesVolume: 245.50,
-    todaysRevenue: 38250.75,
-    pendingPayments: 9437.00,
-    unpaidInvoices: 3
+  // Helper to get headers with token
+  const getHeaders = () => ({
+    Authorization: `Bearer ${Cookies.get('accessToken')}`
+  });
+
+  // Debug function to log API response
+  const logResponse = (data) => {
+    console.log('🔍 API Response:', data);
+    if (data && data.data) {
+      console.log('🔍 Data object:', data.data);
+      console.log('🔍 Available fields:', Object.keys(data.data));
+    }
   };
+
+  // Normalize stats to handle different field names
+  const normalizeStats = (data) => {
+    console.log('🔍 Normalizing data:', data);
+    
+    if (!data) {
+      console.log('🔍 No data provided, using defaults');
+      return {
+        todaysSalesVolume: 0,
+        todaysRevenue: 0,
+        pendingPayments: 0,
+        unpaidInvoices: 0,
+        recentActivity: []
+      };
+    }
+
+    // Try to find the actual data - it might be nested
+    const sourceData = data.data || data;
+    
+    // Log all possible field names
+    console.log('🔍 Source data fields:', Object.keys(sourceData));
+    
+    // Try multiple possible field names for each value
+    const todaysSalesVolume = 
+      sourceData.todaysSalesVolume || 
+      sourceData.todaySalesVolume || 
+      sourceData.todays_volume || 
+      sourceData.salesVolume || 
+      sourceData.volume ||
+      0;
+
+    const todaysRevenue = 
+      sourceData.todaysRevenue || 
+      sourceData.todayRevenue || 
+      sourceData.todays_revenue || 
+      sourceData.revenue ||
+      0;
+
+    const pendingPayments = 
+      sourceData.pendingPayments || 
+      sourceData.pending_payments || 
+      sourceData.pendingAmount ||
+      0;
+
+    const unpaidInvoices = 
+      sourceData.unpaidInvoices || 
+      sourceData.unpaid_invoices || 
+      sourceData.pendingCount ||
+      0;
+
+    const result = {
+      todaysSalesVolume: parseFloat(todaysSalesVolume) || 0,
+      todaysRevenue: parseFloat(todaysRevenue) || 0,
+      pendingPayments: parseFloat(pendingPayments) || 0,
+      unpaidInvoices: parseInt(unpaidInvoices) || 0,
+      recentActivity: sourceData.recentActivity || sourceData.recent_activity || []
+    };
+
+    console.log('🔍 Normalized result:', result);
+    return result;
+  };
+
+  // Fetch Dashboard Stats from API
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      console.log('🔍 Fetching from:', API_URL);
+      const response = await axios.get(API_URL, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      console.log('🔍 Full response:', response);
+      logResponse(response.data);
+      
+      if (response.data) {
+        // Handle different response structures
+        let stats;
+        if (response.data.success && response.data.data) {
+          // Standard format: { success: true, data: {...} }
+          stats = normalizeStats(response.data.data);
+        } else if (response.data.data) {
+          // Format: { data: {...} }
+          stats = normalizeStats(response.data.data);
+        } else {
+          // Assume the response itself is the data
+          stats = normalizeStats(response.data);
+        }
+        
+        setDashboardData(stats);
+        // Save to localStorage as backup
+        localStorage.setItem('salesDashboardStats', JSON.stringify(stats));
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        setError('Invalid response format from server');
+        // Fallback to localStorage
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error("❌ Error fetching dashboard stats:", error);
+      setError(error.message || 'Failed to fetch dashboard data');
+      // Fallback to localStorage
+      loadFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load from localStorage as fallback
+  const loadFromLocalStorage = () => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('salesDashboardStats');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          console.log('🔍 Loaded from localStorage:', parsed);
+          setDashboardData(parsed);
+        } catch (e) {
+          console.error('Error parsing stored dashboard:', e);
+        }
+      }
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
 
   const isActive = (path) => pathname === path;
 
@@ -69,7 +220,7 @@ export default function SalesDashboard() {
       />
 
       {/* MAIN CONTENT WRAPPER WITH DYNAMIC MARGIN */}
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
+      <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
           {/* MODERNIZED TITLE & TABS */}
@@ -81,6 +232,12 @@ export default function SalesDashboard() {
               <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Track total milk sold, revenue, and unpaid invoices
               </p>
+              {loading && (
+                <span className="text-xs text-green-500 font-mono mt-2">SYNCING_DATA...</span>
+              )}
+              {error && (
+                <span className="text-xs text-red-500 font-mono mt-2">{error}</span>
+              )}
             </div>
             
             {/* Enhanced Tab Navigation */}
@@ -137,13 +294,29 @@ export default function SalesDashboard() {
 
           {/* HEADER SECTION */}
           <section className="space-y-6">
-            <div className="flex items-center gap-3">
-              <div className={`h-[2px] w-8 ${isDark ? 'bg-green-500/50' : 'bg-green-500'}`} />
-              <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
-                isDark ? 'text-neutral-400' : 'text-neutral-500'
-              }`}>
-                Today's Overview
-              </h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`h-[2px] w-8 ${isDark ? 'bg-green-500/50' : 'bg-green-500'}`} />
+                <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
+                  isDark ? 'text-neutral-400' : 'text-neutral-500'
+                }`}>
+                  Today's Overview
+                </h2>
+                <button
+                  onClick={fetchDashboardStats}
+                  disabled={loading}
+                  className={`cursor-pointer ml-2 text-xs font-mono px-2 py-1 border transition-all ${
+                    loading 
+                      ? 'opacity-50 cursor-not-allowed' 
+                      : isDark 
+                        ? 'hover:bg-white/5 border-white/10 hover:border-green-500/20' 
+                        : 'hover:bg-neutral-50 border-neutral-200 hover:border-green-300'
+                  }`}
+                  title="Refresh Data"
+                >
+                  {loading ? '...' : '⟲'}
+                </button>
+              </div>
             </div>
           </section>
 
@@ -171,7 +344,7 @@ export default function SalesDashboard() {
                   <h2 className={`${spaceGrotesk.className} text-5xl font-bold mb-1 ${
                     isDark ? 'text-green-400' : 'text-green-600'
                   }`}>
-                    {dashboardData.todaysSalesVolume.toFixed(2)}
+                    {loading ? '...' : dashboardData.todaysSalesVolume.toFixed(2)}
                   </h2>
                   <p className={`text-xs font-medium ${isDark ? 'text-green-400/70' : 'text-green-600/70'}`}>
                     gallons
@@ -210,7 +383,7 @@ export default function SalesDashboard() {
                   <h2 className={`${spaceGrotesk.className} text-5xl font-bold mb-1 ${
                     isDark ? 'text-blue-400' : 'text-blue-600'
                   }`}>
-                    {dashboardData.todaysRevenue.toFixed(2)}
+                    {loading ? '...' : dashboardData.todaysRevenue.toFixed(2)}
                   </h2>
                   <p className={`text-xs font-medium ${isDark ? 'text-blue-400/70' : 'text-blue-600/70'}`}>
                     PKR
@@ -249,7 +422,7 @@ export default function SalesDashboard() {
                   <h2 className={`${spaceGrotesk.className} text-5xl font-bold mb-1 ${
                     isDark ? 'text-orange-400' : 'text-orange-600'
                   }`}>
-                    {dashboardData.pendingPayments.toFixed(2)}
+                    {loading ? '...' : dashboardData.pendingPayments.toFixed(2)}
                   </h2>
                   <p className={`text-xs font-medium ${isDark ? 'text-orange-400/70' : 'text-orange-600/70'}`}>
                     PKR

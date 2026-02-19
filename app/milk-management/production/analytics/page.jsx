@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import { 
   BarChart3, Calendar, TrendingUp, Search, Filter, ChevronLeft, ChevronRight,
-  ChevronsLeft, ChevronsRight, ChevronDown, Edit, Trash2
+  ChevronsLeft, ChevronsRight, ChevronDown, Edit, Trash2, X
 } from 'lucide-react';
 import { Space_Grotesk, Inter } from "next/font/google";
 import Link from 'next/link';
@@ -13,99 +15,161 @@ import { usePathname } from 'next/navigation';
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+const ANALYTICS_URL = `${API_BASE_URL}/milk/production/daily-records/analytics`;
+const RECORDS_URL = `${API_BASE_URL}/milk/production/daily-records`;
+
 export default function ProductionAnalytics() {
   const [isDark, setIsDark] = useState(false); 
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [startDate, setStartDate] = useState('2025-11-01');
-  const [endDate, setEndDate] = useState('2025-11-12');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [analyticsData, setAnalyticsData] = useState({ dailyAnalytics: [], summary: {} });
   const pathname = usePathname();
 
-  // Load records from localStorage
-  const [records, setRecords] = useState(() => {
+  // Helper to get headers with token
+  const getHeaders = () => ({
+    Authorization: `Bearer ${Cookies.get('accessToken')}`
+  });
+
+  // Fetch Analytics from API - WITHOUT date filters by default
+  const fetchAnalytics = async (withDateFilter = false) => {
+    try {
+      setLoading(true);
+      
+      // Only include date params if they are explicitly set and withDateFilter is true
+      const params = {};
+      if (withDateFilter && startDate && endDate) {
+        params.startDate = startDate;
+        params.endDate = endDate;
+      }
+      
+      const response = await axios.get(ANALYTICS_URL, {
+        params,
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data && response.data.success) {
+        setAnalyticsData(response.data.data);
+        // Save to localStorage as backup
+        localStorage.setItem('milkProductionAnalytics', JSON.stringify(response.data.data));
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        // Fallback to localStorage
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error("❌ Error fetching analytics:", error);
+      // Fallback to localStorage
+      loadFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load from localStorage as fallback
+  const loadFromLocalStorage = () => {
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('milkProductionRecords');
+      const stored = localStorage.getItem('milkProductionAnalytics');
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          if (parsed.length > 0) return parsed;
+          setAnalyticsData(parsed);
         } catch (e) {
-          console.error('Error parsing stored records:', e);
+          console.error('Error parsing stored analytics:', e);
+          setAnalyticsData({ dailyAnalytics: [], summary: {} });
         }
+      } else {
+        setAnalyticsData({ dailyAnalytics: [], summary: {} });
       }
     }
-    // Dummy data for UI demonstration
-    return [
-      { id: 1, animalName: 'Bessie', dateRecorded: '2025-11-01', recordedBy: 'John Smith', morning: '8.5', afternoon: '7.2', evening: '6.8', total: 22.5, fatPercentage: '3.8', proteinPercentage: '3.2', scc: '150000' },
-      { id: 2, animalName: 'Daisy', dateRecorded: '2025-11-01', recordedBy: 'John Smith', morning: '9.1', afternoon: '8.0', evening: '7.5', total: 24.6, fatPercentage: '4.0', proteinPercentage: '3.4', scc: '120000' },
-      { id: 3, animalName: 'Molly', dateRecorded: '2025-11-01', recordedBy: 'Sarah Johnson', morning: '7.8', afternoon: '6.9', evening: '6.2', total: 20.9, fatPercentage: '3.6', proteinPercentage: '3.1', scc: '180000' },
-      { id: 4, animalName: 'Bessie', dateRecorded: '2025-11-02', recordedBy: 'John Smith', morning: '8.7', afternoon: '7.5', evening: '7.0', total: 23.2, fatPercentage: '3.9', proteinPercentage: '3.3', scc: '145000' },
-      { id: 5, animalName: 'Daisy', dateRecorded: '2025-11-02', recordedBy: 'Sarah Johnson', morning: '9.3', afternoon: '8.2', evening: '7.8', total: 25.3, fatPercentage: '4.1', proteinPercentage: '3.5', scc: '115000' },
-      { id: 6, animalName: 'Molly', dateRecorded: '2025-11-02', recordedBy: 'John Smith', morning: '8.0', afternoon: '7.1', evening: '6.5', total: 21.6, fatPercentage: '3.7', proteinPercentage: '3.2', scc: '175000' },
-      { id: 7, animalName: 'Luna', dateRecorded: '2025-11-02', recordedBy: 'Sarah Johnson', morning: '7.5', afternoon: '6.8', evening: '6.0', total: 20.3, fatPercentage: '3.5', proteinPercentage: '3.0', scc: '190000' },
-      { id: 8, animalName: 'Bessie', dateRecorded: '2025-11-03', recordedBy: 'Mike Brown', morning: '8.3', afternoon: '7.3', evening: '6.9', total: 22.5, fatPercentage: '3.8', proteinPercentage: '3.2', scc: '150000' },
-      { id: 9, animalName: 'Daisy', dateRecorded: '2025-11-03', recordedBy: 'Mike Brown', morning: '9.0', afternoon: '7.9', evening: '7.6', total: 24.5, fatPercentage: '4.0', proteinPercentage: '3.4', scc: '118000' },
-      { id: 10, animalName: 'Molly', dateRecorded: '2025-11-03', recordedBy: 'Sarah Johnson', morning: '7.9', afternoon: '7.0', evening: '6.4', total: 21.3, fatPercentage: '3.6', proteinPercentage: '3.1', scc: '178000' },
-      { id: 11, animalName: 'Luna', dateRecorded: '2025-11-03', recordedBy: 'John Smith', morning: '7.6', afternoon: '6.9', evening: '6.2', total: 20.7, fatPercentage: '3.5', proteinPercentage: '3.0', scc: '185000' },
-      { id: 12, animalName: 'Bella', dateRecorded: '2025-11-03', recordedBy: 'Mike Brown', morning: '8.8', afternoon: '7.7', evening: '7.2', total: 23.7, fatPercentage: '3.9', proteinPercentage: '3.3', scc: '140000' },
-      { id: 13, animalName: 'Bessie', dateRecorded: '2025-11-04', recordedBy: 'John Smith', morning: '8.6', afternoon: '7.4', evening: '6.9', total: 22.9, fatPercentage: '3.8', proteinPercentage: '3.2', scc: '148000' },
-      { id: 14, animalName: 'Daisy', dateRecorded: '2025-11-04', recordedBy: 'Sarah Johnson', morning: '9.2', afternoon: '8.1', evening: '7.7', total: 25.0, fatPercentage: '4.0', proteinPercentage: '3.4', scc: '119000' },
-      { id: 15, animalName: 'Molly', dateRecorded: '2025-11-04', recordedBy: 'Mike Brown', morning: '7.7', afternoon: '6.8', evening: '6.3', total: 20.8, fatPercentage: '3.6', proteinPercentage: '3.1', scc: '177000' },
-      { id: 16, animalName: 'Luna', dateRecorded: '2025-11-04', recordedBy: 'John Smith', morning: '7.7', afternoon: '7.0', evening: '6.3', total: 21.0, fatPercentage: '3.5', proteinPercentage: '3.0', scc: '183000' },
-      { id: 17, animalName: 'Bella', dateRecorded: '2025-11-04', recordedBy: 'Sarah Johnson', morning: '8.9', afternoon: '7.8', evening: '7.3', total: 24.0, fatPercentage: '3.9', proteinPercentage: '3.3', scc: '138000' },
-      { id: 18, animalName: 'Rosie', dateRecorded: '2025-11-04', recordedBy: 'Mike Brown', morning: '8.2', afternoon: '7.2', evening: '6.7', total: 22.1, fatPercentage: '3.7', proteinPercentage: '3.2', scc: '160000' },
-      { id: 19, animalName: 'Bessie', dateRecorded: '2025-11-05', recordedBy: 'John Smith', morning: '8.4', afternoon: '7.2', evening: '6.8', total: 22.4, fatPercentage: '3.8', proteinPercentage: '3.2', scc: '151000' },
-      { id: 20, animalName: 'Daisy', dateRecorded: '2025-11-05', recordedBy: 'Mike Brown', morning: '9.1', afternoon: '8.0', evening: '7.6', total: 24.7, fatPercentage: '4.0', proteinPercentage: '3.4', scc: '117000' },
-      { id: 21, animalName: 'Molly', dateRecorded: '2025-11-05', recordedBy: 'Sarah Johnson', morning: '7.8', afternoon: '6.9', evening: '6.4', total: 21.1, fatPercentage: '3.6', proteinPercentage: '3.1', scc: '176000' },
-      { id: 22, animalName: 'Luna', dateRecorded: '2025-11-05', recordedBy: 'John Smith', morning: '7.5', afternoon: '6.8', evening: '6.1', total: 20.4, fatPercentage: '3.5', proteinPercentage: '3.0', scc: '188000' },
-      { id: 23, animalName: 'Bella', dateRecorded: '2025-11-05', recordedBy: 'Mike Brown', morning: '8.7', afternoon: '7.6', evening: '7.1', total: 23.4, fatPercentage: '3.9', proteinPercentage: '3.3', scc: '142000' },
-      { id: 24, animalName: 'Rosie', dateRecorded: '2025-11-05', recordedBy: 'Sarah Johnson', morning: '8.1', afternoon: '7.1', evening: '6.6', total: 21.8, fatPercentage: '3.7', proteinPercentage: '3.2', scc: '162000' },
-    ];
+  };
+
+  // Initial data fetch - NO date filters
+  useEffect(() => {
+    fetchAnalytics(false); // false = no date filters
+  }, []);
+
+  // Filter analytics data based on search term (client-side filtering)
+  const filteredAnalytics = (analyticsData.dailyAnalytics || []).filter(item => {
+    return (item.date || '').includes(searchTerm) || 
+           (item.notes || '').toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  // Calculate analytics data
-  const filteredRecords = records.filter(record => {
-    const recordDate = new Date(record.dateRecorded);
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const matchesDate = recordDate >= start && recordDate <= end;
-    const matchesSearch = record.animalName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          record.recordedBy.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesDate && matchesSearch;
-  });
-
-  // Group by date for analytics
-  const analyticsData = filteredRecords.reduce((acc, record) => {
-    const date = record.dateRecorded;
-    if (!acc[date]) {
-      acc[date] = {
-        date,
-        totalMilk: 0,
-        animals: new Set(),
-        records: []
-      };
-    }
-    acc[date].totalMilk += parseFloat(record.total) || 0;
-    acc[date].animals.add(record.animalName);
-    acc[date].records.push(record);
-    return acc;
-  }, {});
-
-  const analyticsArray = Object.values(analyticsData).map(day => ({
-    date: day.date,
-    totalMilk: day.totalMilk.toFixed(2),
-    milkingCows: day.animals.size,
-    averagePerCow: day.animals.size > 0 ? (day.totalMilk / day.animals.size).toFixed(2) : '0.00',
-    notes: `${day.records.length} records`
-  })).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-  const totalPages = Math.ceil(analyticsArray.length / rowsPerPage);
+  const totalPages = Math.ceil(filteredAnalytics.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedData = analyticsArray.slice(startIndex, startIndex + rowsPerPage);
+  const paginatedData = filteredAnalytics.slice(startIndex, startIndex + rowsPerPage);
 
   const isActive = (path) => pathname === path;
+
+  // Apply filter - now with date parameters
+  const handleFilter = () => {
+    if (!startDate || !endDate) {
+      alert('Please select both start and end dates');
+      return;
+    }
+    fetchAnalytics(true); // true = use date filters
+    setCurrentPage(1);
+  };
+
+  // Reset filters - show all records
+  const handleReset = () => {
+    setStartDate('');
+    setEndDate('');
+    setSearchTerm('');
+    fetchAnalytics(false); // false = no date filters
+    setCurrentPage(1);
+  };
+
+  // Delete all records for a specific date
+  const handleDelete = async (date) => {
+    setSubmitting(true);
+    
+    try {
+      // First, get all records for this date
+      const response = await axios.get(RECORDS_URL, {
+        params: { 
+          startDate: date,
+          endDate: date 
+        },
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data && response.data.success && response.data.data) {
+        const recordsToDelete = response.data.data;
+        
+        // Delete each record
+        const deletePromises = recordsToDelete.map(record => 
+          axios.delete(`${RECORDS_URL}/${record.id || record._id}`, {
+            withCredentials: true,
+            headers: getHeaders()
+          })
+        );
+        
+        await Promise.all(deletePromises);
+        
+        // Refresh analytics
+        await fetchAnalytics(false);
+        
+        // Close modal
+        setDeleteConfirm(null);
+      }
+    } catch (error) {
+      console.error("❌ Error deleting records:", error);
+      alert("Failed to delete records. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const CornerBrackets = () => {
     const borderColor = isDark ? "border-green-500/20" : "border-neutral-300";
@@ -139,6 +203,14 @@ export default function ProductionAnalytics() {
         )}
       </div>
 
+      {/* OVERLAY FOR MODALS */}
+      {deleteConfirm && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+          onClick={() => !submitting && setDeleteConfirm(null)}
+        />
+      )}
+
       {/* NAVBAR WITH SIDEBAR */}
       <Navbar 
         isDark={isDark} 
@@ -149,7 +221,7 @@ export default function ProductionAnalytics() {
       />
 
       {/* MAIN CONTENT WRAPPER WITH DYNAMIC MARGIN */}
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
+      <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
           {/* MODERNIZED TITLE & TABS */}
@@ -161,6 +233,9 @@ export default function ProductionAnalytics() {
               <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Comprehensive view of milk production performance and trends
               </p>
+              {loading && (
+                <span className="text-xs text-purple-500 font-mono mt-2">SYNCING_DATA...</span>
+              )}
             </div>
             
             {/* Enhanced Tab Navigation */}
@@ -228,10 +303,11 @@ export default function ProductionAnalytics() {
                   Overall Production Analytics
                 </h2>
                 <p className={`text-sm font-medium ${isDark ? 'text-purple-300' : 'text-purple-700'}`}>
-                  Comprehensive view of milk production performance and trends
+                  {analyticsData.summary?.totalRecords || 0} total records • {analyticsData.summary?.totalMilk || 0} gallons total milk • {analyticsData.summary?.uniqueAnimals || 0} unique animals
                 </p>
               </div>
             </div>
+            <CornerBrackets />
           </section>
 
           {/* SEARCH AND FILTER BAR */}
@@ -247,11 +323,24 @@ export default function ProductionAnalytics() {
                     type="text"
                     placeholder="Search by date or notes..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className={`flex-1 bg-transparent outline-none text-sm font-medium ${
                       isDark ? 'placeholder:text-neutral-600' : 'placeholder:text-neutral-400'
                     }`}
                   />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className={`cursor-pointer p-1 transition-all ${
+                        isDark ? 'hover:text-white text-neutral-400' : 'hover:text-neutral-900 text-neutral-500'
+                      }`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <CornerBrackets />
               </div>
@@ -261,7 +350,7 @@ export default function ProductionAnalytics() {
                 isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
               }`}>
                 <Calendar className={`w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
-                <span className={`text-xs font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>Start Date</span>
+                <span className={`text-xs font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>From</span>
                 <input
                   type="date"
                   value={startDate}
@@ -277,7 +366,7 @@ export default function ProductionAnalytics() {
                 isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
               }`}>
                 <Calendar className={`w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
-                <span className={`text-xs font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>End Date</span>
+                <span className={`text-xs font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>To</span>
                 <input
                   type="date"
                   value={endDate}
@@ -290,13 +379,28 @@ export default function ProductionAnalytics() {
               </div>
 
               {/* Filter Button */}
-              <button className={`px-6 py-5 border font-bold text-[11px] uppercase tracking-widest transition-all flex items-center gap-2 ${
-                isDark 
-                  ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
-                  : 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600 shadow-sm'
-              }`}>
+              <button 
+                onClick={handleFilter}
+                className={`cursor-pointer px-6 py-5 border font-bold text-[11px] uppercase tracking-widest transition-all flex items-center gap-2 ${
+                  isDark 
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600' 
+                    : 'bg-purple-600 hover:bg-purple-700 text-white border-purple-600 shadow-sm'
+                }`}
+              >
                 <Filter className="w-4 h-4" />
                 Filter
+              </button>
+
+              {/* Reset Button */}
+              <button 
+                onClick={handleReset}
+                className={`cursor-pointer px-6 py-5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                  isDark 
+                    ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700' 
+                    : 'bg-white hover:bg-neutral-50 text-neutral-700 border-neutral-300'
+                }`}
+              >
+                Reset
               </button>
             </div>
           </section>
@@ -319,7 +423,14 @@ export default function ProductionAnalytics() {
               </div>
 
               {/* Table Body */}
-              {paginatedData.length > 0 ? (
+              {loading ? (
+                <div className="p-16 text-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className={`text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Loading analytics...
+                  </p>
+                </div>
+              ) : paginatedData.length > 0 ? (
                 paginatedData.map((row, index) => (
                   <div key={index} className={`grid grid-cols-6 gap-4 p-4 border-b transition-colors ${
                     isDark 
@@ -334,18 +445,27 @@ export default function ProductionAnalytics() {
                       {row.notes}
                     </div>
                     <div className="flex items-center justify-end gap-1">
-                      <button className={`p-2 border transition-all ${
-                        isDark 
-                          ? 'hover:bg-white/10 border-white/10' 
-                          : 'hover:bg-neutral-50 border-neutral-200'
-                      }`}>
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button className={`p-2 border transition-all ${
-                        isDark 
-                          ? 'hover:bg-red-500/20 text-red-400 border-white/10' 
-                          : 'hover:bg-red-50 text-red-600 border-neutral-200'
-                      }`}>
+                      <Link href={`/milk-management/production/daily-records?date=${row.date}`}>
+                        <button 
+                          className={`cursor-pointer p-2 border transition-all ${
+                            isDark 
+                              ? 'hover:bg-white/10 border-white/10' 
+                              : 'hover:bg-neutral-50 border-neutral-200'
+                          }`}
+                          title="View Daily Records"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      </Link>
+                      <button 
+                        onClick={() => setDeleteConfirm(row.date)}
+                        className={`cursor-pointer p-2 border transition-all ${
+                          isDark 
+                            ? 'hover:bg-red-500/20 text-red-400 border-white/10' 
+                            : 'hover:bg-red-50 text-red-600 border-neutral-200'
+                        }`}
+                        title="Delete Records for this Date"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
@@ -363,19 +483,19 @@ export default function ProductionAnalytics() {
             </div>
 
             {/* Pagination */}
-            {paginatedData.length > 0 && (
+            {!loading && paginatedData.length > 0 && (
               <div className={`flex items-center justify-between p-6 border ${
                 isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
               }`}>
                 <div className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                  Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, analyticsArray.length)} of {analyticsArray.length} results
+                  Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filteredAnalytics.length)} of {filteredAnalytics.length} results
                 </div>
                 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    className={`p-2 border transition-all ${
+                    className={`cursor-pointer p-2 border transition-all ${
                       currentPage === 1
                         ? 'opacity-50 cursor-not-allowed'
                         : isDark
@@ -388,7 +508,7 @@ export default function ProductionAnalytics() {
                   <button
                     onClick={() => setCurrentPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`p-2 border transition-all ${
+                    className={`cursor-pointer p-2 border transition-all ${
                       currentPage === 1
                         ? 'opacity-50 cursor-not-allowed'
                         : isDark
@@ -410,7 +530,7 @@ export default function ProductionAnalytics() {
                   <button
                     onClick={() => setCurrentPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`p-2 border transition-all ${
+                    className={`cursor-pointer p-2 border transition-all ${
                       currentPage === totalPages
                         ? 'opacity-50 cursor-not-allowed'
                         : isDark
@@ -423,7 +543,7 @@ export default function ProductionAnalytics() {
                   <button
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
-                    className={`p-2 border transition-all ${
+                    className={`cursor-pointer p-2 border transition-all ${
                       currentPage === totalPages
                         ? 'opacity-50 cursor-not-allowed'
                         : isDark
@@ -444,7 +564,7 @@ export default function ProductionAnalytics() {
                         setRowsPerPage(Number(e.target.value));
                         setCurrentPage(1);
                       }}
-                      className={`px-3 py-2 border outline-none text-sm font-medium ${
+                      className={`cursor-pointer px-3 py-2 border outline-none text-sm font-medium ${
                         isDark 
                           ? 'bg-neutral-900 border-white/10 text-white'
                           : 'bg-white border-neutral-300 text-neutral-900'
@@ -463,6 +583,56 @@ export default function ProductionAnalytics() {
 
         </main>
       </div>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          <div className={`relative max-w-md w-full p-8 border shadow-2xl ${
+            isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-300'
+          }`}>
+            <div className="text-center">
+              <div className={`inline-flex p-5 border mb-5 ${
+                isDark ? 'bg-red-500/10 border-red-500/20' : 'bg-red-50 border-red-200'
+              }`}>
+                <Trash2 className={`w-10 h-10 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
+              </div>
+              <h3 className={`${spaceGrotesk.className} text-2xl font-bold uppercase tracking-tight mb-3`}>
+                Delete All Records?
+              </h3>
+              <p className={`text-sm font-medium mb-8 ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                Are you sure you want to delete all production records for{' '}
+                <span className="font-bold">{deleteConfirm}</span>?<br />
+                This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  disabled={submitting}
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                    isDark 
+                      ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
+                      : 'bg-white hover:bg-neutral-50 border-neutral-300'
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleDelete(deleteConfirm)}
+                  disabled={submitting}
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                    submitting
+                      ? 'bg-red-400 cursor-not-allowed'
+                      : 'bg-red-600 hover:bg-red-700'
+                  } text-white border-red-600`}
+                >
+                  {submitting ? 'Deleting...' : 'Delete All'}
+                </button>
+              </div>
+            </div>
+            <CornerBrackets />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

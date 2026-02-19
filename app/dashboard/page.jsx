@@ -103,7 +103,7 @@ export default function FarmDashboard() {
         searchPlaceholder="Search orders..."
       />
 
-      {/* MAIN CONTENT WRAPPER WITH DYNAMIC MARGIN */}
+      {/* MAIN CONTENT WRAPPER WITH DYNAMIC MARGIN - FROM MAIN BRANCH */}
       <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
@@ -119,14 +119,23 @@ export default function FarmDashboard() {
                  : 'bg-gradient-to-br from-green-50/50 via-transparent to-transparent'
              }`} />
              
-             
+             {/* Scan line effect - FROM NEW BRANCH */}
+             <div className={`absolute top-0 left-0 w-full h-[2px] bg-green-500/30 ${
+               isDark ? 'shadow-[0_0_15px_rgba(34,197,94,0.5)]' : ''
+             }`} 
+             style={{
+               animation: 'scanLine 8s ease-in-out infinite'
+             }} />
              
              <div className="relative z-10 p-8 md:p-12 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
                 <div className="flex-1">
                     <div className="flex items-center gap-2 mb-4">
-                    
+                      <div className="flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </div>
                       <span className="font-mono text-[10px] text-green-500/80 uppercase tracking-[0.3em]">
-                         // {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                        [SYSTEM_ACTIVE] // {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                       </span>
                     </div>
                     
@@ -142,7 +151,7 @@ export default function FarmDashboard() {
                     </p>
                 </div>
                 
-                {/* Weather Widget */}
+                {/* Weather Widget - FROM NEW BRANCH (with cursor-pointer) */}
                 <div className={`relative cursor-pointer overflow-hidden border backdrop-blur-md group/weather ${
                   isDark 
                     ? 'bg-neutral-900/50 border-white/10' 

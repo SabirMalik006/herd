@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import {
   BarChart3, FileText, TrendingUp, Plus, Eye, Edit, Trash2, X,
   ChevronDown, ChevronLeft, ChevronRight, Droplets, Filter, Search
@@ -28,6 +30,10 @@ const SEED = [
   { id: 2, date: '2025-07-21', time: 'Morning',   unused: 3, forCalves: 8, forFarm: 2, sold: 12, wasted: 1 },
   { id: 3, date: '2025-07-21', time: 'Evening',   unused: 2, forCalves: 4, forFarm: 3, sold: 8,  wasted: 0 },
 ];
+
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+const API_URL = `${API_BASE_URL}/milk/usage`;
 
 function emptyForm() {
   return {
@@ -72,31 +78,123 @@ export default function MilkUsage() {
   const [currentPage, setCurrentPage]     = useState(1);
   const [rowsPerPage, setRowsPerPage]     = useState(10);
   const [rowsOpen, setRowsOpen]           = useState(false);
+  const [loading, setLoading]             = useState(false);
+  const [submitting, setSubmitting]       = useState(false);
+  const [error, setError]                 = useState(null);
   const pathname = usePathname();
 
-  const [records, setRecords] = useState(() => {
+  const [records, setRecords] = useState([]);
+
+  // Helper to get headers with token
+  const getHeaders = () => ({
+    Authorization: `Bearer ${Cookies.get('accessToken')}`
+  });
+
+  // Normalize record to handle different field names
+  const normalizeRecord = (record) => {
+    return {
+      id: record.id || record._id,
+      date: record.date || '',
+      time: record.time || 'Morning',
+      unused: record.unused || 0,
+      forCalves: record.forCalves || record.forCalves || 0,
+      forFarm: record.forFarm || record.forFarm || 0,
+      sold: record.sold || 0,
+      wasted: record.wasted || 0,
+    };
+  };
+
+  // ✅ FIXED: Fetch Records from API with better search handling
+  const fetchRecords = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Build query params - only send valid date format
+      const params = {};
+      
+      // ✅ FIX: Only send search if it's a valid date format (YYYY-MM-DD)
+      if (searchTerm && searchTerm.trim() !== '') {
+        const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+        if (datePattern.test(searchTerm)) {
+          params.search = searchTerm;
+        } else {
+          console.log("Search term ignored - not a valid date format:", searchTerm);
+        }
+      }
+      
+      if (filterTime !== 'All') {
+        params.timeFilter = filterTime;
+      }
+      
+      console.log("Fetching with params:", params);
+      
+      const response = await axios.get(API_URL, {
+        params,
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data && response.data.success) {
+        const fetchedRecords = (response.data.data || []).map(normalizeRecord);
+        setRecords(fetchedRecords);
+        // Save to localStorage as backup
+        localStorage.setItem(LS_KEY, JSON.stringify(fetchedRecords));
+      } else if (Array.isArray(response.data)) {
+        const fetchedRecords = response.data.map(normalizeRecord);
+        setRecords(fetchedRecords);
+        localStorage.setItem(LS_KEY, JSON.stringify(fetchedRecords));
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        // Fallback to localStorage
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error("❌ Error fetching records:", error);
+      setError('Failed to fetch records');
+      // Fallback to localStorage
+      loadFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load from localStorage as fallback
+  const loadFromLocalStorage = () => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(LS_KEY);
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        } catch (e) { console.error(e); }
+          setRecords(parsed);
+        } catch (e) {
+          console.error('Error parsing stored records:', e);
+          setRecords(SEED);
+        }
+      } else {
+        setRecords(SEED);
       }
     }
-    return SEED;
-  });
+  };
 
+  // Initial data fetch
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    fetchRecords();
+  }, []);
+
+  // Save to localStorage whenever records change (backup)
+  useEffect(() => {
+    if (records.length > 0 && typeof window !== 'undefined') {
       localStorage.setItem(LS_KEY, JSON.stringify(records));
     }
   }, [records]);
 
-  // Filter
+  // Filter (client-side as backup, but API already filters)
   const filtered = records.filter(r => {
     const matchTime   = filterTime === 'All' || r.time === filterTime;
-    const matchSearch = r.date.includes(searchTerm) || r.time.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchSearch = searchTerm === '' || 
+                       (r.date || '').includes(searchTerm) || 
+                       (r.time || '').toLowerCase().includes(searchTerm.toLowerCase());
     return matchTime && matchSearch;
   });
 
@@ -108,18 +206,27 @@ export default function MilkUsage() {
 
   const isActive = (path) => pathname === path;
 
+  // Handle search with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchRecords();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [searchTerm, filterTime]);
+
   // Form helpers
   const openForm = (record = null) => {
     if (record) {
       setEditingRecord(record);
       setFormData({
-        date:      record.date,
-        time:      record.time,
-        unused:    record.unused.toString(),
-        forCalves: record.forCalves.toString(),
-        forFarm:   record.forFarm.toString(),
-        sold:      record.sold.toString(),
-        wasted:    record.wasted.toString(),
+        date:      record.date || '',
+        time:      record.time || 'Morning',
+        unused:    (record.unused || 0).toString(),
+        forCalves: (record.forCalves || 0).toString(),
+        forFarm:   (record.forFarm || 0).toString(),
+        sold:      (record.sold || 0).toString(),
+        wasted:    (record.wasted || 0).toString(),
       });
     } else {
       setEditingRecord(null);
@@ -134,8 +241,17 @@ export default function MilkUsage() {
     setFormData(emptyForm());
   };
 
-  const handleSubmit = (e) => {
+  // Submit Handler - API Integration
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.date) {
+      return;
+    }
+    
+    setSubmitting(true);
+    setError(null);
+    
     const n = (v) => parseFloat(v) || 0;
     const payload = {
       date:      formData.date,
@@ -146,20 +262,88 @@ export default function MilkUsage() {
       sold:      n(formData.sold),
       wasted:    n(formData.wasted),
     };
-
-    if (editingRecord) {
-      setRecords(prev => prev.map(r => r.id === editingRecord.id ? { ...r, ...payload } : r));
-    } else {
-      const newId = records.length > 0 ? Math.max(...records.map(r => r.id)) + 1 : 1;
-      setRecords(prev => [{ id: newId, ...payload }, ...prev]);
+    
+    try {
+      if (editingRecord) {
+        // Update existing record
+        const response = await axios.patch(`${API_URL}/${editingRecord.id || editingRecord._id}`, payload, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
+        
+        if (response.data && response.data.success) {
+          await fetchRecords();
+          // Reset filters to show all records
+          setFilterTime('All');
+          setSearchTerm('');
+        }
+      } else {
+        // Add new record
+        const response = await axios.post(API_URL, payload, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
+        
+        if (response.data && response.data.success) {
+          await fetchRecords();
+          // Reset filters to show all records
+          setFilterTime('All');
+          setSearchTerm('');
+        }
+      }
+      
+      closeForm();
       setCurrentPage(1);
+      
+    } catch (error) {
+      console.error("❌ API Error, saving locally:", error);
+      
+      // Fallback to localStorage if API fails
+      const newRecord = {
+        id: editingRecord ? (editingRecord.id || editingRecord._id) : (records.length > 0 ? Math.max(...records.map(r => r.id)) + 1 : 1),
+        ...payload
+      };
+      
+      let updatedRecords;
+      if (editingRecord) {
+        updatedRecords = records.map(r => (r.id || r._id) === (editingRecord.id || editingRecord._id) ? newRecord : r);
+      } else {
+        updatedRecords = [newRecord, ...records];
+      }
+      
+      setRecords(updatedRecords);
+      localStorage.setItem(LS_KEY, JSON.stringify(updatedRecords));
+      
+      // Reset filters
+      setFilterTime('All');
+      setSearchTerm('');
+      closeForm();
+      setCurrentPage(1);
+      
+    } finally {
+      setSubmitting(false);
     }
-    closeForm();
   };
 
-  const handleDelete = (id) => {
-    setRecords(prev => prev.filter(r => r.id !== id));
-    setDeleteConfirm(null);
+  // Delete Handler - API Integration
+  const handleDelete = async (id) => {
+    try {
+      setSubmitting(true);
+      await axios.delete(`${API_URL}/${id}`, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      await fetchRecords();
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error("❌ Delete failed, deleting locally:", error);
+      const updatedRecords = records.filter(r => (r.id || r._id) !== id);
+      setRecords(updatedRecords);
+      localStorage.setItem(LS_KEY, JSON.stringify(updatedRecords));
+      setDeleteConfirm(null);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const modalOpen = showForm || !!deleteConfirm || !!viewingRecord;
@@ -214,7 +398,7 @@ export default function MilkUsage() {
       />
 
       {/* MAIN */}
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
+      <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
 
           {/* TITLE & TABS */}
@@ -229,6 +413,12 @@ export default function MilkUsage() {
               <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Monitor how produced milk is being utilized and distributed
               </p>
+              {loading && (
+                <span className="text-xs text-green-500 font-mono mt-2">SYNCING_DATA...</span>
+              )}
+              {error && (
+                <span className="text-xs text-red-500 font-mono mt-2">{error}</span>
+              )}
             </div>
 
             {/* Tabs */}
@@ -276,13 +466,29 @@ export default function MilkUsage() {
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => openForm()}
-                className="cursor-pointer flex items-center gap-2 px-5 py-3 border font-bold text-[11px] uppercase tracking-widest transition-all bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm"
-              >
-                <Plus className="w-4 h-4" />
-                Add Milk Usage
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={fetchRecords}
+                  disabled={loading}
+                  className={`cursor-pointer px-4 py-2 border font-bold text-[10px] uppercase tracking-widest transition-all ${
+                    loading
+                      ? 'opacity-50 cursor-not-allowed'
+                      : isDark
+                        ? 'bg-green-600 hover:bg-green-700 text-white border-green-600'
+                        : 'bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm'
+                  }`}
+                >
+                  {loading ? '⟳' : '⟲ Refresh'}
+                </button>
+                <button
+                  onClick={() => openForm()}
+                  disabled={submitting}
+                  className="cursor-pointer flex items-center gap-2 px-5 py-3 border font-bold text-[11px] uppercase tracking-widest transition-all bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  {submitting ? 'Saving...' : 'Add Milk Usage'}
+                </button>
+              </div>
             </div>
           </section>
 
@@ -297,13 +503,23 @@ export default function MilkUsage() {
                   <Search className={`w-5 h-5 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
                   <input
                     type="text"
-                    placeholder="Search by date or time..."
+                    placeholder="Search by date (YYYY-MM-DD) or time..."
                     value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
+                    onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                     className={`flex-1 bg-transparent outline-none text-sm font-medium ${
                       isDark ? 'placeholder:text-neutral-600' : 'placeholder:text-neutral-400'
                     }`}
                   />
+                  {searchTerm && (
+                    <button
+                      onClick={() => { setSearchTerm(''); }}
+                      className={`cursor-pointer p-1 transition-all ${
+                        isDark ? 'hover:text-white text-neutral-400' : 'hover:text-neutral-900 text-neutral-500'
+                      }`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover/search:w-full transition-all duration-500 ${isDark ? 'bg-green-500' : 'bg-green-600'}`} />
                 <CornerBrackets isDark={isDark} />
@@ -375,49 +591,58 @@ export default function MilkUsage() {
               </div>
 
               {/* Rows */}
-              {paginated.length > 0 ? paginated.map(record => {
-                const total = record.unused + record.forCalves + record.forFarm + record.sold + record.wasted;
-                return (
-                  <div key={record.id}
-                    className={`grid gap-2 px-5 py-4 border-b items-center transition-colors ${
-                      isDark ? 'border-white/5 hover:bg-white/5' : 'border-neutral-100 hover:bg-neutral-50'
-                    }`}
-                    style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 80px' }}
-                  >
-                    <div className={`text-sm font-mono font-medium ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                      {record.date.split('-').reverse().join('/')}
+              {loading && records.length === 0 ? (
+                <div className="p-16 text-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                  <p className={`text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Loading records...
+                  </p>
+                </div>
+              ) : paginated.length > 0 ? (
+                paginated.map(record => {
+                  const total = (record.unused || 0) + (record.forCalves || 0) + (record.forFarm || 0) + (record.sold || 0) + (record.wasted || 0);
+                  return (
+                    <div key={record.id || record._id}
+                      className={`grid gap-2 px-5 py-4 border-b items-center transition-colors ${
+                        isDark ? 'border-white/5 hover:bg-white/5' : 'border-neutral-100 hover:bg-neutral-50'
+                      }`}
+                      style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 80px' }}
+                    >
+                      <div className={`text-sm font-mono font-medium ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                        {record.date ? record.date.split('-').reverse().join('/') : ''}
+                      </div>
+                      <div>
+                        <span className={`text-[10px] font-bold font-mono uppercase px-2 py-1 border ${
+                          record.time === 'Morning'
+                            ? isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-700'
+                            : record.time === 'Afternoon'
+                            ? isDark ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' : 'bg-orange-50 border-orange-200 text-orange-700'
+                            : isDark ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-700'
+                        }`}>{record.time}</span>
+                      </div>
+                      <div className="text-sm font-medium">{(record.unused || 0).toFixed(2)}</div>
+                      <div className="text-sm font-medium">{(record.forCalves || 0).toFixed(2)}</div>
+                      <div className="text-sm font-medium">{(record.forFarm || 0).toFixed(2)}</div>
+                      <div className="text-sm font-medium">{(record.sold || 0).toFixed(2)}</div>
+                      <div className="text-sm font-medium">{(record.wasted || 0).toFixed(2)}</div>
+                      <div className={`text-sm font-bold ${isDark ? 'text-green-400' : 'text-green-700'}`}>
+                        {total.toFixed(2)}
+                      </div>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => setViewingRecord(record)}
+                          className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10' : 'hover:bg-neutral-50 border-neutral-200'}`}
+                          title="View"><Eye className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => openForm(record)}
+                          className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10' : 'hover:bg-neutral-50 border-neutral-200'}`}
+                          title="Edit"><Edit className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => setDeleteConfirm(record)}
+                          className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-red-500/20 text-red-400 border-white/10' : 'hover:bg-red-50 text-red-600 border-neutral-200'}`}
+                          title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
                     </div>
-                    <div>
-                      <span className={`text-[10px] font-bold font-mono uppercase px-2 py-1 border ${
-                        record.time === 'Morning'
-                          ? isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-700'
-                          : record.time === 'Afternoon'
-                          ? isDark ? 'bg-orange-500/10 border-orange-500/20 text-orange-400' : 'bg-orange-50 border-orange-200 text-orange-700'
-                          : isDark ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-700'
-                      }`}>{record.time}</span>
-                    </div>
-                    <div className="text-sm font-medium">{record.unused.toFixed(2)}</div>
-                    <div className="text-sm font-medium">{record.forCalves.toFixed(2)}</div>
-                    <div className="text-sm font-medium">{record.forFarm.toFixed(2)}</div>
-                    <div className="text-sm font-medium">{record.sold.toFixed(2)}</div>
-                    <div className="text-sm font-medium">{record.wasted.toFixed(2)}</div>
-                    <div className={`text-sm font-bold ${isDark ? 'text-green-400' : 'text-green-700'}`}>
-                      {total.toFixed(2)}
-                    </div>
-                    <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => setViewingRecord(record)}
-                        className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10' : 'hover:bg-neutral-50 border-neutral-200'}`}
-                        title="View"><Eye className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => openForm(record)}
-                        className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10' : 'hover:bg-neutral-50 border-neutral-200'}`}
-                        title="Edit"><Edit className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => setDeleteConfirm(record)}
-                        className={`cursor-pointer p-2 border transition-all ${isDark ? 'hover:bg-red-500/20 text-red-400 border-white/10' : 'hover:bg-red-50 text-red-600 border-neutral-200'}`}
-                        title="Delete"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
-                  </div>
-                );
-              }) : (
+                  );
+                })
+              ) : (
                 <div className="relative p-16 text-center">
                   <Droplets className={`w-16 h-16 mx-auto mb-4 ${isDark ? 'text-neutral-800' : 'text-neutral-200'}`} />
                   <h3 className={`${spaceGrotesk.className} text-2xl font-bold mb-2 uppercase tracking-tight`}>No usage records found</h3>
@@ -428,115 +653,115 @@ export default function MilkUsage() {
               )}
 
               {/* PAGINATION FOOTER */}
-              <div className={`flex items-center justify-between px-5 py-4 border-t ${
-                isDark ? 'border-white/5 bg-neutral-800/30' : 'border-neutral-100 bg-neutral-50'
-              }`}>
-                {/* Showing info */}
-                <p className={`text-[11px] font-mono ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                  Showing {filtered.length === 0 ? 0 : pageStart + 1} to {Math.min(pageStart + rowsPerPage, filtered.length)} of {filtered.length} results
-                </p>
+              {!loading && paginated.length > 0 && (
+                <div className={`flex items-center justify-between px-5 py-4 border-t ${
+                  isDark ? 'border-white/5 bg-neutral-800/30' : 'border-neutral-100 bg-neutral-50'
+                }`}>
+                  {/* Showing info */}
+                  <p className={`text-[11px] font-mono ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Showing {filtered.length === 0 ? 0 : pageStart + 1} to {Math.min(pageStart + rowsPerPage, filtered.length)} of {filtered.length} results
+                  </p>
 
-                {/* Pagination Controls */}
-                <div className="flex items-center gap-2">
-                  {/* First */}
-                  <button
-                    onClick={() => setCurrentPage(1)}
-                    disabled={safePage === 1}
-                    className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                      isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
-                    }`}>
-                    <ChevronLeft className="w-3 h-3 inline" /><ChevronLeft className="w-3 h-3 inline -ml-1.5" />
-                  </button>
-                  {/* Prev */}
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={safePage === 1}
-                    className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                      isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
-                    }`}>
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-
-                  {/* Page numbers */}
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
-                    .reduce((acc, p, idx, arr) => {
-                      if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
-                      acc.push(p);
-                      return acc;
-                    }, [])
-                    .map((item, idx) =>
-                      item === '...'
-                        ? <span key={`ellipsis-${idx}`} className={`px-2 text-[11px] font-mono ${isDark ? 'text-neutral-600' : 'text-neutral-400'}`}>…</span>
-                        : <button key={item}
-                            onClick={() => setCurrentPage(item)}
-                            className={`cursor-pointer w-8 h-8 border text-[11px] font-bold font-mono transition-all ${
-                              safePage === item
-                                ? isDark
-                                  ? 'bg-green-500/20 text-green-400 border-green-500/30'
-                                  : 'bg-green-600 text-white border-green-600'
-                                : isDark
-                                ? 'border-white/10 hover:bg-white/10'
-                                : 'border-neutral-200 hover:bg-neutral-100'
-                            }`}>{item}</button>
-                    )}
-
-                  {/* Next */}
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={safePage === totalPages}
-                    className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                      isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
-                    }`}>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                  {/* Last */}
-                  <button
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={safePage === totalPages}
-                    className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                      isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
-                    }`}>
-                    <ChevronRight className="w-3 h-3 inline" /><ChevronRight className="w-3 h-3 inline -ml-1.5" />
-                  </button>
-
-                  {/* Rows per page */}
-                  <div className="relative ml-4">
-                    <div
-                      className={`flex items-center gap-2 px-3 py-2 border cursor-pointer transition-all ${
-                        isDark ? 'border-white/10 hover:border-green-500/20 bg-neutral-800/50' : 'border-neutral-200 hover:border-green-500/30 bg-white'
-                      }`}
-                      onClick={() => setRowsOpen(o => !o)}
-                    >
-                      <span className="text-[11px] font-bold font-mono">Rows: {rowsPerPage}</span>
-                      <ChevronDown className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} />
-                    </div>
-                    {rowsOpen && (
-                      <div className={`absolute bottom-full mb-2 right-0 border shadow-xl overflow-hidden z-30 backdrop-blur-md ${
-                        isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-neutral-200'
+                  {/* Pagination Controls */}
+                  <div className="flex items-center gap-2">
+                    {/* First */}
+                    <button
+                      onClick={() => setCurrentPage(1)}
+                      disabled={safePage === 1}
+                      className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                        isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
                       }`}>
-                        {ROWS_PER_PAGE_OPTS.map(n => (
-                          <button key={n} onClick={() => { setRowsPerPage(n); setCurrentPage(1); setRowsOpen(false); }}
-                            className={`cursor-pointer w-full px-4 py-2.5 text-left text-[11px] font-bold font-mono transition-colors ${
-                              rowsPerPage === n
-                                ? isDark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700'
-                                : isDark ? 'hover:bg-white/5' : 'hover:bg-neutral-50'
-                            }`}>{n}</button>
-                        ))}
+                      <ChevronLeft className="w-3 h-3 inline" /><ChevronLeft className="w-3 h-3 inline -ml-1.5" />
+                    </button>
+                    {/* Prev */}
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={safePage === 1}
+                      className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                        isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
+                      }`}>
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Page numbers */}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                      .reduce((acc, p, idx, arr) => {
+                        if (idx > 0 && p - arr[idx - 1] > 1) acc.push('...');
+                        acc.push(p);
+                        return acc;
+                      }, [])
+                      .map((item, idx) =>
+                        item === '...'
+                          ? <span key={`ellipsis-${idx}`} className={`px-2 text-[11px] font-mono ${isDark ? 'text-neutral-600' : 'text-neutral-400'}`}>…</span>
+                          : <button key={item}
+                              onClick={() => setCurrentPage(item)}
+                              className={`cursor-pointer w-8 h-8 border text-[11px] font-bold font-mono transition-all ${
+                                safePage === item
+                                  ? isDark
+                                    ? 'bg-green-500/20 text-green-400 border-green-500/30'
+                                    : 'bg-green-600 text-white border-green-600'
+                                  : isDark
+                                  ? 'border-white/10 hover:bg-white/10'
+                                  : 'border-neutral-200 hover:bg-neutral-100'
+                              }`}>{item}</button>
+                      )}
+
+                    {/* Next */}
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={safePage === totalPages}
+                      className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                        isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
+                      }`}>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                    {/* Last */}
+                    <button
+                      onClick={() => setCurrentPage(totalPages)}
+                      disabled={safePage === totalPages}
+                      className={`cursor-pointer p-2 border text-[11px] font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                        isDark ? 'border-white/10 hover:bg-white/10' : 'border-neutral-200 hover:bg-neutral-100'
+                      }`}>
+                      <ChevronRight className="w-3 h-3 inline" /><ChevronRight className="w-3 h-3 inline -ml-1.5" />
+                    </button>
+
+                    {/* Rows per page */}
+                    <div className="relative ml-4">
+                      <div
+                        className={`flex items-center gap-2 px-3 py-2 border cursor-pointer transition-all ${
+                          isDark ? 'border-white/10 hover:border-green-500/20 bg-neutral-800/50' : 'border-neutral-200 hover:border-green-500/30 bg-white'
+                        }`}
+                        onClick={() => setRowsOpen(o => !o)}
+                      >
+                        <span className="text-[11px] font-bold font-mono">Rows: {rowsPerPage}</span>
+                        <ChevronDown className={`w-3 h-3 transition-transform ${rowsOpen ? 'rotate-180' : ''}`} />
                       </div>
-                    )}
+                      {rowsOpen && (
+                        <div className={`absolute bottom-full mb-2 right-0 border shadow-xl overflow-hidden z-30 backdrop-blur-md ${
+                          isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-neutral-200'
+                        }`}>
+                          {ROWS_PER_PAGE_OPTS.map(n => (
+                            <button key={n} onClick={() => { setRowsPerPage(n); setCurrentPage(1); setRowsOpen(false); }}
+                              className={`cursor-pointer w-full px-4 py-2.5 text-left text-[11px] font-bold font-mono transition-colors ${
+                                rowsPerPage === n
+                                  ? isDark ? 'bg-green-500/10 text-green-400' : 'bg-green-50 text-green-700'
+                                  : isDark ? 'hover:bg-white/5' : 'hover:bg-neutral-50'
+                              }`}>{n}</button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           </section>
 
         </main>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════
-          ADD / EDIT FORM SIDEBAR
-      ══════════════════════════════════════════════════════════ */}
+      {/* ADD / EDIT FORM SIDEBAR */}
       <div className={`fixed top-0 right-0 h-full w-full md:w-[520px] z-50 transform transition-transform duration-300 border-l shadow-2xl overflow-y-auto ${
         showForm ? 'translate-x-0' : 'translate-x-full'
       } ${isDark ? 'bg-neutral-950 border-white/10' : 'bg-white border-neutral-200'}`}>
@@ -558,7 +783,8 @@ export default function MilkUsage() {
               </p>
             </div>
             <button onClick={closeForm}
-              className={`cursor-pointer p-2.5 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10 hover:border-white/20' : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'}`}>
+              className={`cursor-pointer p-2.5 border transition-all ${isDark ? 'hover:bg-white/10 border-white/10 hover:border-white/20' : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'}`}
+              disabled={submitting}>
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -572,13 +798,15 @@ export default function MilkUsage() {
                 <input type="date" required
                   value={formData.date}
                   onChange={e => setFormData(f => ({ ...f, date: e.target.value }))}
-                  className={inputCls} />
+                  className={inputCls}
+                  disabled={submitting} />
               </div>
               <div>
                 <label className={labelCls}>Time of Day *</label>
                 <select value={formData.time}
                   onChange={e => setFormData(f => ({ ...f, time: e.target.value }))}
-                  className={inputCls}>
+                  className={inputCls}
+                  disabled={submitting}>
                   <option>Morning</option>
                   <option>Afternoon</option>
                   <option>Evening</option>
@@ -598,35 +826,40 @@ export default function MilkUsage() {
                   <input type="number" step="0.01" min="0" placeholder="0.00"
                     value={formData.unused}
                     onChange={e => setFormData(f => ({ ...f, unused: e.target.value }))}
-                    className={inputCls} />
+                    className={inputCls}
+                    disabled={submitting} />
                 </div>
                 <div>
                   <label className={labelCls}>For Calves</label>
                   <input type="number" step="0.01" min="0" placeholder="0.00"
                     value={formData.forCalves}
                     onChange={e => setFormData(f => ({ ...f, forCalves: e.target.value }))}
-                    className={inputCls} />
+                    className={inputCls}
+                    disabled={submitting} />
                 </div>
                 <div>
                   <label className={labelCls}>For Farm</label>
                   <input type="number" step="0.01" min="0" placeholder="0.00"
                     value={formData.forFarm}
                     onChange={e => setFormData(f => ({ ...f, forFarm: e.target.value }))}
-                    className={inputCls} />
+                    className={inputCls}
+                    disabled={submitting} />
                 </div>
                 <div>
                   <label className={labelCls}>Sold</label>
                   <input type="number" step="0.01" min="0" placeholder="0.00"
                     value={formData.sold}
                     onChange={e => setFormData(f => ({ ...f, sold: e.target.value }))}
-                    className={inputCls} />
+                    className={inputCls}
+                    disabled={submitting} />
                 </div>
                 <div className="col-span-2">
                   <label className={labelCls}>Wasted</label>
                   <input type="number" step="0.01" min="0" placeholder="0.00"
                     value={formData.wasted}
                     onChange={e => setFormData(f => ({ ...f, wasted: e.target.value }))}
-                    className={inputCls} />
+                    className={inputCls}
+                    disabled={submitting} />
                 </div>
               </div>
             </div>
@@ -647,19 +880,25 @@ export default function MilkUsage() {
               <button type="button" onClick={closeForm}
                 className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                   isDark ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' : 'bg-white hover:bg-neutral-50 border-neutral-300'
-                }`}>Cancel</button>
+                }`}
+                disabled={submitting}>
+                Cancel
+              </button>
               <button type="submit"
-                className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all">
-                {editingRecord ? 'Update' : 'Add Record'}
+                disabled={submitting}
+                className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                  submitting
+                    ? 'bg-green-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'
+                } text-white border-green-600`}>
+                {submitting ? 'Saving...' : (editingRecord ? 'Update' : 'Add Record')}
               </button>
             </div>
           </form>
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════
-          DELETE CONFIRMATION
-      ══════════════════════════════════════════════════════════ */}
+      {/* DELETE CONFIRMATION */}
       {deleteConfirm && (
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
           <div className={`relative max-w-md w-full p-8 border shadow-2xl ${
@@ -674,17 +913,25 @@ export default function MilkUsage() {
               </h3>
               <p className={`text-sm font-medium mb-8 ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
                 Are you sure you want to delete the usage record for{' '}
-                <span className="font-bold">{deleteConfirm.date.split('-').reverse().join('/')} ({deleteConfirm.time})</span>?
+                <span className="font-bold">{deleteConfirm.date ? deleteConfirm.date.split('-').reverse().join('/') : ''} ({deleteConfirm.time})</span>?
                 <br />This action cannot be undone.
               </p>
               <div className="flex gap-3">
                 <button onClick={() => setDeleteConfirm(null)}
                   className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
                     isDark ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' : 'bg-white hover:bg-neutral-50 border-neutral-300'
-                  }`}>Cancel</button>
-                <button onClick={() => handleDelete(deleteConfirm.id)}
-                  className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-red-600 hover:bg-red-700 text-white border-red-600 transition-all">
-                  Delete
+                  }`}
+                  disabled={submitting}>
+                  Cancel
+                </button>
+                <button onClick={() => handleDelete(deleteConfirm.id || deleteConfirm._id)}
+                  disabled={submitting}
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                    submitting
+                      ? 'bg-red-400 cursor-not-allowed'
+                      : 'bg-red-600 hover:bg-red-700'
+                  } text-white border-red-600`}>
+                  {submitting ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>
@@ -693,11 +940,9 @@ export default function MilkUsage() {
         </div>
       )}
 
-      {/* ═══════════════════════════════════════════════════════════
-          VIEW MODAL
-      ══════════════════════════════════════════════════════════ */}
+      {/* VIEW MODAL */}
       {viewingRecord && (() => {
-        const total = viewingRecord.unused + viewingRecord.forCalves + viewingRecord.forFarm + viewingRecord.sold + viewingRecord.wasted;
+        const total = (viewingRecord.unused || 0) + (viewingRecord.forCalves || 0) + (viewingRecord.forFarm || 0) + (viewingRecord.sold || 0) + (viewingRecord.wasted || 0);
         return (
           <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
             <div className={`relative max-w-2xl w-full p-8 border shadow-2xl ${
@@ -729,7 +974,7 @@ export default function MilkUsage() {
               <div className="grid grid-cols-2 gap-6 mb-6">
                 <div>
                   <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>Date</label>
-                  <p className={`${spaceGrotesk.className} text-lg font-bold`}>{viewingRecord.date.split('-').reverse().join('/')}</p>
+                  <p className={`${spaceGrotesk.className} text-lg font-bold`}>{viewingRecord.date ? viewingRecord.date.split('-').reverse().join('/') : ''}</p>
                 </div>
                 <div>
                   <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>Time</label>
@@ -750,11 +995,11 @@ export default function MilkUsage() {
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {[
-                    { label: 'Unused',     value: viewingRecord.unused },
-                    { label: 'For Calves', value: viewingRecord.forCalves },
-                    { label: 'For Farm',   value: viewingRecord.forFarm },
-                    { label: 'Sold',       value: viewingRecord.sold },
-                    { label: 'Wasted',     value: viewingRecord.wasted },
+                    { label: 'Unused',     value: viewingRecord.unused || 0 },
+                    { label: 'For Calves', value: viewingRecord.forCalves || 0 },
+                    { label: 'For Farm',   value: viewingRecord.forFarm || 0 },
+                    { label: 'Sold',       value: viewingRecord.sold || 0 },
+                    { label: 'Wasted',     value: viewingRecord.wasted || 0 },
                   ].map(({ label, value }) => (
                     <div key={label}>
                       <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-1 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>{label}</label>

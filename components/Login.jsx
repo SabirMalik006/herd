@@ -1,5 +1,7 @@
 "use client";
 import React, { useState } from "react";
+import axios from "axios";
+import Cookies from "js-cookie";
 import Link from "next/link";
 import {
   Eye,
@@ -20,18 +22,65 @@ import Image from "next/image";
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "600"] });
 
+// API Base URL from env
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+
 const Login = () => {
   const { isDark } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("AUTHENTICATION_REQUEST:", formData);
+    setError("");
+    setSuccess("");
+    setLoading(true);
+
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/login`,
+        formData
+      );
+
+      console.log("LOGIN_SUCCESS:", response.data);
+      setSuccess("Login successful! Redirecting...");
+      
+      // Store tokens in cookies
+      if (response.data.accessToken) {
+        Cookies.set("accessToken", response.data.accessToken, {
+          expires: 7,
+          secure: true,
+          sameSite: "Strict"
+        });
+      }
+      
+      if (response.data.refreshToken) {
+        Cookies.set("refreshToken", response.data.refreshToken, {
+          expires: 30,
+          secure: true,
+          sameSite: "Strict"
+        });
+      }
+      
+      // Redirect to home page after 1.5 seconds
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1500);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || "Login failed";
+      console.log("LOGIN_ERROR:", error.response?.data || error.message);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError("");
   };
 
   const systemMetrics = [
@@ -73,12 +122,34 @@ const Login = () => {
             <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-green-500/50" />
 
             <div>
-              
+              {/* Logo */}
+              <Link href="/" className="mb-12 block">
+                <Image 
+                  src="/erp-logo.png" 
+                  alt="AgriHerd Logo" 
+                  width={200} 
+                  height={100} 
+                  className="h-16 w-auto object-contain" 
+                />
+              </Link>
 
-            
+              {/* System Status Badge */}
+              <div className={`inline-flex items-center gap-2 px-3 py-1 border mb-8 ${
+                isDark 
+                  ? "bg-green-500/5 border-green-500/20" 
+                  : "bg-green-50 border-green-200"
+              }`}>
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-green-500/80">
+                  System_Active
+                </span>
+              </div>
 
               {/* Main Heading */}
-              <h1 className={`${spaceGrotesk.className} text-5xl w-max md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] mb-6 ${
+              <h1 className={`${spaceGrotesk.className} text-5xl md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] mb-6 ${
                 isDark ? "text-white" : "text-black"
               }`}>
                 Modern Livestock <br/>
@@ -160,6 +231,18 @@ const Login = () => {
                 Enter your credentials to continue
               </p>
             </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-red-500 text-sm">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded text-green-500 text-sm">
+                {success}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               
@@ -245,16 +328,17 @@ const Login = () => {
               </div>
 
               {/* Submit Button */}
-              <Link href={'/dashboard'} >
               <button
                 type="submit"
-                className="cursor-pointer group w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)] mt-8"
+                disabled={loading}
+                className={`cursor-pointer group w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)] mt-8 ${
+                  loading ? "opacity-70 cursor-not-allowed" : ""
+                }`}
               >
                 <Shield className="w-4 h-4" />
-                Login
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                {loading ? "Logging In..." : "Login"}
+                {!loading && <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
               </button>
-              </Link>
             </form>
 
             {/* Divider */}

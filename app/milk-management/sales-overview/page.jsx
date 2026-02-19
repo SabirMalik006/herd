@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import { 
   DollarSign, Droplet, AlertCircle, TrendingUp, Calendar,
   ChevronDown, Download, FileText
@@ -15,38 +17,191 @@ import { Space_Grotesk, Inter } from "next/font/google";
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+
+// ✅ FIXED: Correct API endpoints according to backend routes
+const OVERVIEW_API_URL = `${API_BASE_URL}/sales/overview`;
+const CUSTOMERS_API_URL = `${API_BASE_URL}/sales/overview/customers`;
+const PAYMENTS_API_URL = `${API_BASE_URL}/sales/overview/payments`;
+
 export default function SalesOverview() {
   const [isDark, setIsDark] = useState(false); 
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [startDate, setStartDate] = useState('2025-01-11');
-  const [endDate, setEndDate] = useState('2025-12-11');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [customerFilterOpen, setCustomerFilterOpen] = useState(false);
   const [paymentFilterOpen, setPaymentFilterOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState('all');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Data states - NO DUMMY DATA
+  const [overviewData, setOverviewData] = useState({
+    totalMilkSold: 0,
+    totalRevenue: 0,
+    unpaidInvoices: 0,
+    unpaidAmount: 0,
+    dailySales: [],
+    monthlySales: []
+  });
+  
+  const [customers, setCustomers] = useState(['all']);
+  const [payments, setPayments] = useState(['all']);
 
-  // --- MOCK DATA ---
-  const dailySalesData = [
-    { day: 'Mon', volume: 45, revenue: 4500 },
-    { day: 'Tue', volume: 52, revenue: 5200 },
-    { day: 'Wed', volume: 38, revenue: 3800 },
-    { day: 'Thu', volume: 65, revenue: 6500 },
-    { day: 'Fri', volume: 58, revenue: 5800 },
-    { day: 'Sat', volume: 48, revenue: 4800 },
-    { day: 'Sun', volume: 42, revenue: 4200 },
-  ];
+  // Helper to get headers with token
+  const getHeaders = () => ({
+    Authorization: `Bearer ${Cookies.get('accessToken')}`
+  });
 
-  const monthlySalesData = [
-    { month: 'Jul', volume: 450, revenue: 45000 },
-    { month: 'Aug', volume: 520, revenue: 52000 },
-    { month: 'Sep', volume: 480, revenue: 48000 },
-    { month: 'Oct', volume: 610, revenue: 61000 },
-    { month: 'Nov', volume: 550, revenue: 55000 },
-    { month: 'Dec', volume: 670, revenue: 67000 },
-  ];
+  // Normalize overview data to handle different field names
+  const normalizeOverviewData = (data) => {
+    if (!data) return {
+      totalMilkSold: 0,
+      totalRevenue: 0,
+      unpaidInvoices: 0,
+      unpaidAmount: 0,
+      dailySales: [],
+      monthlySales: []
+    };
 
-  const customers = ['All Customers', 'Customer A', 'Customer B', 'Customer C'];
-  const payments = ['All Payments', 'Cash', 'Bank Transfer', 'Cheque'];
+    return {
+      totalMilkSold: data.totalMilkSold || data.total_volume || 0,
+      totalRevenue: data.totalRevenue || data.total_revenue || 0,
+      unpaidInvoices: data.unpaidInvoices || data.unpaid_count || 0,
+      unpaidAmount: data.unpaidAmount || data.unpaid_amount || 0,
+      dailySales: data.dailySales || data.daily_sales || [],
+      monthlySales: data.monthlySales || data.monthly_sales || []
+    };
+  };
+
+  // Fetch Overview Data from API
+  const fetchOverviewData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Build query params
+      const params = {};
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      if (selectedCustomer !== 'all') params.customer = selectedCustomer;
+      if (selectedPayment !== 'all') params.payment = selectedPayment;
+      
+      console.log('Fetching from:', OVERVIEW_API_URL, 'with params:', params);
+      
+      const response = await axios.get(OVERVIEW_API_URL, {
+        params,
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      console.log('Overview API Response:', response.data);
+      
+      if (response.data && response.data.success) {
+        const normalized = normalizeOverviewData(response.data.data);
+        setOverviewData(normalized);
+        // Save to localStorage as backup
+        localStorage.setItem('salesOverview', JSON.stringify(normalized));
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        setError('Invalid response format from server');
+        // Fallback to localStorage
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error("❌ Error fetching overview data:", error);
+      setError('Failed to fetch data');
+      // Keep using empty data
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch Customers from API
+  const fetchCustomers = async () => {
+    try {
+      console.log('Fetching customers from:', CUSTOMERS_API_URL);
+      
+      const response = await axios.get(CUSTOMERS_API_URL, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      console.log('Customers API Response:', response.data);
+      
+      if (response.data && response.data.success) {
+        const customerList = response.data.data || [];
+        setCustomers(['all', ...customerList]);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching customers:", error);
+      setCustomers(['all']); // Only 'all' option
+    }
+  };
+
+  // Fetch Payment Options from API
+  const fetchPayments = async () => {
+    try {
+      console.log('Fetching payments from:', PAYMENTS_API_URL);
+      
+      const response = await axios.get(PAYMENTS_API_URL, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      console.log('Payments API Response:', response.data);
+      
+      if (response.data && response.data.success) {
+        const paymentList = response.data.data || [];
+        setPayments(['all', ...paymentList]);
+      }
+    } catch (error) {
+      console.error("❌ Error fetching payments:", error);
+      setPayments(['all']); // Only 'all' option
+    }
+  };
+
+  // Load from localStorage as fallback
+  const loadFromLocalStorage = () => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('salesOverview');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          setOverviewData(parsed);
+        } catch (e) {
+          console.error('Error parsing stored overview:', e);
+        }
+      }
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchCustomers();
+    fetchPayments();
+    fetchOverviewData();
+  }, []);
+
+  // Debounced fetch on filter changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchOverviewData();
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [startDate, endDate, selectedCustomer, selectedPayment]);
+
+  // Prepare chart data - use API data if available, otherwise empty array
+  const dailySalesData = overviewData.dailySales.length > 0 
+    ? overviewData.dailySales 
+    : [];  // ✅ Empty array instead of fallback
+
+  const monthlySalesData = overviewData.monthlySales.length > 0 
+    ? overviewData.monthlySales 
+    : [];  // ✅ Empty array instead of fallback
 
   const CornerBrackets = () => {
     const borderColor = isDark ? "border-green-500/20" : "border-neutral-300";
@@ -112,7 +267,7 @@ export default function SalesOverview() {
       />
 
       {/* MAIN CONTENT WRAPPER WITH DYNAMIC MARGIN */}
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
+      <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
           {/* MODERNIZED HERO HEADER */}
@@ -132,6 +287,12 @@ export default function SalesOverview() {
                 <span className="font-mono text-[10px] text-green-500/80 uppercase tracking-[0.3em]">
                   // SALES_ANALYTICS
                 </span>
+                {loading && (
+                  <span className="text-xs text-green-500 font-mono">SYNCING...</span>
+                )}
+                {error && (
+                  <span className="text-xs text-amber-500 font-mono">{error}</span>
+                )}
               </div>
               
               <h1 className={`${spaceGrotesk.className} text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] mb-4`}>
@@ -157,6 +318,20 @@ export default function SalesOverview() {
               }`}>
                 Filter Options
               </h2>
+              <button
+                onClick={fetchOverviewData}
+                disabled={loading}
+                className={`cursor-pointer ml-2 text-xs font-mono px-2 py-1 border transition-all ${
+                  loading 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : isDark 
+                      ? 'hover:bg-white/5 border-white/10 hover:border-green-500/20' 
+                      : 'hover:bg-neutral-50 border-neutral-200 hover:border-green-300'
+                }`}
+                title="Refresh Data"
+              >
+                {loading ? '...' : '⟲'}
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -229,14 +404,14 @@ export default function SalesOverview() {
                   <div className={`absolute top-full mt-2 right-0 w-full border shadow-xl overflow-hidden z-20 backdrop-blur-md ${
                     isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-neutral-200'
                   }`}>
-                    {['all', ...customers.slice(1)].map((customer) => (
+                    {customers.map((customer) => (
                       <button
                         key={customer}
                         onClick={() => {
                           setSelectedCustomer(customer);
                           setCustomerFilterOpen(false);
                         }}
-                        className={`w-full px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                        className={`cursor-pointer w-full px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
                           selectedCustomer === customer
                             ? isDark
                               ? 'bg-green-500/10 text-green-400 border-l-2 border-green-400'
@@ -276,14 +451,14 @@ export default function SalesOverview() {
                   <div className={`absolute top-full mt-2 right-0 w-full border shadow-xl overflow-hidden z-20 backdrop-blur-md ${
                     isDark ? 'bg-neutral-900/95 border-white/10' : 'bg-white/95 border-neutral-200'
                   }`}>
-                    {['all', ...payments.slice(1)].map((payment) => (
+                    {payments.map((payment) => (
                       <button
                         key={payment}
                         onClick={() => {
                           setSelectedPayment(payment);
                           setPaymentFilterOpen(false);
                         }}
-                        className={`w-full px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
+                        className={`cursor-pointer w-full px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
                           selectedPayment === payment
                             ? isDark
                               ? 'bg-green-500/10 text-green-400 border-l-2 border-green-400'
@@ -340,7 +515,9 @@ export default function SalesOverview() {
                   </div>
                   
                   <div className="space-y-2">
-                    <h3 className={`${spaceGrotesk.className} text-4xl font-bold tracking-tight`}>0 L</h3>
+                    <h3 className={`${spaceGrotesk.className} text-4xl font-bold tracking-tight`}>
+                      {loading ? '...' : overviewData.totalMilkSold.toFixed(2)} L
+                    </h3>
                     <p className={`text-[10px] uppercase tracking-[0.2em] font-bold font-mono ${
                       isDark ? 'text-neutral-500' : 'text-neutral-400'
                     }`}>Total Milk Sold</p>
@@ -381,7 +558,9 @@ export default function SalesOverview() {
                   </div>
                   
                   <div className="space-y-2">
-                    <h3 className={`${spaceGrotesk.className} text-4xl font-bold tracking-tight`}>$0</h3>
+                    <h3 className={`${spaceGrotesk.className} text-4xl font-bold tracking-tight`}>
+                      {loading ? '...' : `$${overviewData.totalRevenue.toFixed(2)}`}
+                    </h3>
                     <p className={`text-[10px] uppercase tracking-[0.2em] font-bold font-mono ${
                       isDark ? 'text-neutral-500' : 'text-neutral-400'
                     }`}>Total Revenue</p>
@@ -422,12 +601,14 @@ export default function SalesOverview() {
                   </div>
                   
                   <div className="space-y-2">
-                    <h3 className={`${spaceGrotesk.className} text-4xl font-bold tracking-tight`}>0</h3>
+                    <h3 className={`${spaceGrotesk.className} text-4xl font-bold tracking-tight`}>
+                      {loading ? '...' : overviewData.unpaidInvoices}
+                    </h3>
                     <p className={`text-[10px] uppercase tracking-[0.2em] font-bold font-mono ${
                       isDark ? 'text-neutral-500' : 'text-neutral-400'
                     }`}>Unpaid Invoices</p>
                     <p className={`text-xs ${isDark ? 'text-neutral-600' : 'text-neutral-500'}`}>
-                      Total unpaid: $0
+                      Total unpaid: ${overviewData.unpaidAmount.toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -468,59 +649,71 @@ export default function SalesOverview() {
                 </div>
               </div>
 
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={dailySalesData}>
-                    <defs>
-                      <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={isDark ? 0.3 : 0.2}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
-                      </linearGradient>
-                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22c55e" stopOpacity={isDark ? 0.3 : 0.2}/>
-                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid 
-                      strokeDasharray="3 3" 
-                      stroke={isDark ? "#262626" : "#e5e7eb"} 
-                      vertical={false} 
-                    />
-                    <XAxis 
-                      dataKey="day" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ 
-                        fill: isDark ? '#737373' : '#64748b', 
-                        fontSize: 11, 
-                        fontWeight: 600,
-                        fontFamily: 'monospace'
-                      }} 
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ 
-                        fill: isDark ? '#737373' : '#64748b', 
-                        fontSize: 11, 
-                        fontWeight: 600,
-                        fontFamily: 'monospace'
-                      }} 
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area 
-                      type="monotone" 
-                      dataKey="volume" 
-                      stroke="#3b82f6" 
-                      strokeWidth={2.5} 
-                      fill="url(#colorVolume)" 
-                      dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, strokeWidth: 0 }}
-                      name="Volume (L)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              {loading ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full"></div>
+                </div>
+              ) : dailySalesData.length > 0 ? (
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={dailySalesData}>
+                      <defs>
+                        <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={isDark ? 0.3 : 0.2}/>
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        </linearGradient>
+                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#22c55e" stopOpacity={isDark ? 0.3 : 0.2}/>
+                          <stop offset="95%" stopColor="#22c55e" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid 
+                        strokeDasharray="3 3" 
+                        stroke={isDark ? "#262626" : "#e5e7eb"} 
+                        vertical={false} 
+                      />
+                      <XAxis 
+                        dataKey="day" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ 
+                          fill: isDark ? '#737373' : '#64748b', 
+                          fontSize: 11, 
+                          fontWeight: 600,
+                          fontFamily: 'monospace'
+                        }} 
+                      />
+                      <YAxis 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ 
+                          fill: isDark ? '#737373' : '#64748b', 
+                          fontSize: 11, 
+                          fontWeight: 600,
+                          fontFamily: 'monospace'
+                        }} 
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Area 
+                        type="monotone" 
+                        dataKey="volume" 
+                        stroke="#3b82f6" 
+                        strokeWidth={2.5} 
+                        fill="url(#colorVolume)" 
+                        dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
+                        activeDot={{ r: 6, strokeWidth: 0 }}
+                        name="Volume (L)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center border-2 border-dashed rounded-lg">
+                  <p className={`text-sm ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    No daily sales data available
+                  </p>
+                </div>
+              )}
               <CornerBrackets />
             </div>
 
@@ -547,50 +740,62 @@ export default function SalesOverview() {
                 </div>
               </div>
 
-              <div className="h-[300px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthlySalesData}>
-                    <CartesianGrid 
-                      strokeDasharray="3 3" 
-                      stroke={isDark ? "#262626" : "#e5e7eb"} 
-                      vertical={false} 
-                    />
-                    <XAxis 
-                      dataKey="month" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ 
-                        fill: isDark ? '#737373' : '#64748b', 
-                        fontSize: 11, 
-                        fontWeight: 600,
-                        fontFamily: 'monospace'
-                      }} 
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ 
-                        fill: isDark ? '#737373' : '#64748b', 
-                        fontSize: 11, 
-                        fontWeight: 600,
-                        fontFamily: 'monospace'
-                      }} 
-                    />
-                    <Tooltip 
-                      content={<CustomTooltip />} 
-                      cursor={{ fill: isDark ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.05)' }}
-                    />
-                    <Bar 
-                      dataKey="revenue" 
-                      fill="#22c55e" 
-                      radius={[4, 4, 0, 0]}
-                      name="Revenue ($)"
-                      animationDuration={800}
-                      animationBegin={0}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              {loading ? (
+                <div className="h-[300px] flex items-center justify-center">
+                  <div className="animate-spin w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full"></div>
+                </div>
+              ) : monthlySalesData.length > 0 ? (
+                <div className="h-[300px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={monthlySalesData}>
+                      <CartesianGrid 
+                        strokeDasharray="3 3" 
+                        stroke={isDark ? "#262626" : "#e5e7eb"} 
+                        vertical={false} 
+                      />
+                      <XAxis 
+                        dataKey="month" 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ 
+                          fill: isDark ? '#737373' : '#64748b', 
+                          fontSize: 11, 
+                          fontWeight: 600,
+                          fontFamily: 'monospace'
+                        }} 
+                      />
+                      <YAxis 
+                        axisLine={false} 
+                        tickLine={false} 
+                        tick={{ 
+                          fill: isDark ? '#737373' : '#64748b', 
+                          fontSize: 11, 
+                          fontWeight: 600,
+                          fontFamily: 'monospace'
+                        }} 
+                      />
+                      <Tooltip 
+                        content={<CustomTooltip />} 
+                        cursor={{ fill: isDark ? 'rgba(34, 197, 94, 0.1)' : 'rgba(34, 197, 94, 0.05)' }}
+                      />
+                      <Bar 
+                        dataKey="revenue" 
+                        fill="#22c55e" 
+                        radius={[4, 4, 0, 0]}
+                        name="Revenue ($)"
+                        animationDuration={800}
+                        animationBegin={0}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <div className="h-[300px] flex items-center justify-center border-2 border-dashed rounded-lg">
+                  <p className={`text-sm ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    No monthly sales data available
+                  </p>
+                </div>
+              )}
               <CornerBrackets />
             </div>
           </div>

@@ -109,11 +109,12 @@ export default function HeroScroll() {
           </div>
 
           <div className="flex flex-wrap gap-4 justify-center items-center pt-4">
-            <button className="cursor-pointer group relative px-10 py-4 bg-green-600 text-white font-bold text-[11px] tracking-widest uppercase overflow-hidden transition-all hover:bg-green-700">
-              <span className="relative z-10">Explore Dashboard</span>
-              <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
-            </button>
-            
+            <a href="/dashboard" className="group">
+              <button className="cursor-pointer relative px-10 py-4 bg-green-600 text-white font-bold text-[11px] tracking-widest uppercase overflow-hidden transition-all hover:bg-green-700">
+                <span className="relative z-10">Explore Dashboard</span>
+                <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-12" />
+              </button>
+            </a>
             <button className={`cursor-pointer px-10 py-4 text-[11px] font-bold uppercase tracking-widest border transition-all backdrop-blur-sm ${
               isDark
                 ? "border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-600"

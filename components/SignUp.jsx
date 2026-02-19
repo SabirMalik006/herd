@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import axios from "axios";
 import {
   Terminal,
   Activity,
@@ -22,6 +23,9 @@ import Link from "next/link";
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "600"] });
 
+// API Base URL from env
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+
 export default function SignUp() {
   const { isDark } = useTheme();
   const [formData, setFormData] = useState({
@@ -33,13 +37,70 @@ export default function SignUp() {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const handleChange = (e) =>
+  const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError("");
+  };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("SYSTEM_ACCESS_REQUEST:", formData);
+    setError("");
+    setSuccess("");
+
+    const password = formData.password.trim();
+    const confirmPassword = formData.confirmPassword.trim();
+
+    // password validation
+    if (password !== confirmPassword) {
+      setError("Password and Confirm Password do not match");
+      return;
+    }
+
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const payload = {
+        name: formData.fullName,
+        farm_name: formData.farmName,
+        email: formData.email,
+        password: password,
+        confirmPassword: formData.confirmPassword,
+      };
+
+      const response = await axios.post(
+        `${API_BASE_URL}/auth/register`,
+        payload
+      );
+
+      console.log("REGISTER_SUCCESS:", response.data);
+      setSuccess("Signup successful! Redirecting...");
+      setFormData({
+        fullName: "",
+        farmName: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 2000);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || "Signup failed";
+      console.log("REGISTER_ERROR:", error.response?.data || error.message);
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const systemFeatures = [
@@ -91,12 +152,26 @@ export default function SignUp() {
             <div className="absolute top-0 left-0 w-3 h-3 border-l border-t border-green-500/50" />
             <div className="absolute bottom-0 right-0 w-3 h-3 border-r border-b border-green-500/50" />
 
-            
+            {/* Logo */}
+            <Link href="/" className="mb-3 m-0">
+              <Image
+                src="/erp-logo.png"
+                alt="AgriHerd Logo"
+                width={300}
+                height={200}
+                className="h-30 w-auto object-contain"
+              />
+            </Link>
 
             {/* System Header */}
             <div className="mb-10">
-              
-              
+              <div className="flex items-center gap-2 mb-6">
+                <Terminal className="w-4 h-4 text-green-500" />
+                <span className="font-mono text-[10px] uppercase tracking-[0.3em] text-green-500/80">
+                  Access_Protocol_v4.0
+                </span>
+              </div>
+
               <h1 className={`${spaceGrotesk.className} text-4xl md:text-5xl font-bold uppercase tracking-tighter leading-[0.9] mb-4 ${
                 isDark ? "text-white" : "text-black"
               }`}>
@@ -158,8 +233,15 @@ export default function SignUp() {
               isDark ? "border-white/5" : "border-neutral-200"
             }`}>
               <div className="flex items-center gap-3">
-               
-                
+                <div className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className={`font-mono text-[10px] uppercase tracking-widest ${
+                  isDark ? "text-neutral-500" : "text-neutral-400"
+                }`}>
+                  System Status: <span className="text-green-500">Operational</span>
+                </span>
               </div>
             </div>
           </div>
@@ -181,6 +263,18 @@ export default function SignUp() {
                 Sign up to get started with HerdErp
               </p>
             </div>
+
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded text-red-500 text-sm">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="mb-4 p-3 bg-green-500/10 border border-green-500/30 rounded text-green-500 text-sm">
+                {success}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               
@@ -328,11 +422,14 @@ export default function SignUp() {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="cursor-pointer group w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)] mt-8"
+                disabled={loading}
+                className={`cursor-pointer group w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-[0_0_30px_rgba(34,197,94,0.3)] hover:shadow-[0_0_40px_rgba(34,197,94,0.4)] mt-8 ${
+                  loading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 <Zap className="w-4 h-4" />
-                Create Account
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                {loading ? "Creating Account..." : "Create Account"}
+                {!loading && <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />}
               </button>
             </form>
 
