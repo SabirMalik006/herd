@@ -18,9 +18,10 @@ import { usePathname } from 'next/navigation';
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-// API Base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
-const API_URL = `${API_BASE_URL}/milk/production/daily-records/dashboard/stats`;
+// ✅ FIXED: API Base URL - Remove extra /milk/production
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+// ✅ CORRECT URL: Directly use the production route
+const API_URL = `${API_BASE_URL}/production/daily-records/dashboard/stats`;
 
 export default function MilkProductionDashboard() {
   const [isDark, setIsDark] = useState(false); 
@@ -80,7 +81,29 @@ export default function MilkProductionDashboard() {
       }
     } catch (error) {
       console.error("❌ Error fetching dashboard stats:", error);
-      setError(error.message || 'Failed to fetch dashboard data');
+      
+      // ✅ Better error message
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error("Response data:", error.response.data);
+        console.error("Response status:", error.response.status);
+        
+        if (error.response.status === 404) {
+          setError('API endpoint not found. Check backend routes.');
+        } else if (error.response.status === 401) {
+          setError('Unauthorized. Please login again.');
+        } else {
+          setError(error.response.data?.message || 'Server error');
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        setError('No response from server. Check if backend is running.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        setError(error.message);
+      }
+      
       // Fallback to localStorage
       loadFromLocalStorage();
     } finally {

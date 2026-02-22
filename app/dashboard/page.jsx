@@ -1,6 +1,8 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import { 
   Activity, Droplet, TrendingUp, Wallet, PiggyBank, 
   ThermometerSun, ArrowUpRight, ArrowDownRight
@@ -14,30 +16,143 @@ import { Space_Grotesk, Inter } from "next/font/google";
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const DASHBOARD_API = `${API_BASE_URL}/dashboard`;
+
+// Helper to get headers with token
+const getHeaders = () => ({
+  Authorization: `Bearer ${Cookies.get('accessToken')}`
+});
+
 export default function FarmDashboard() {
   const [isDark, setIsDark] = useState(false); 
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [user, setUser] = useState({ name: 'Farmer' }); // ✅ User state
+  const [stats, setStats] = useState({
+    totalLivestock: 0,
+    milkProductionToday: 0,
+    monthlyIncome: 0,
+    monthlyExpenses: 0,
+    netProfit: 0,
+    change: {
+      livestock: '0',
+      milk: '0',
+      income: '+0',
+      expenses: '-0',
+      profit: '+0'
+    }
+  });
+  const [milkProductionData, setMilkProductionData] = useState([]);
+  const [financeData, setFinanceData] = useState([]);
   
-  // --- MOCK DATA ---
-  const milkProductionData = [
-    { day: 'Mon', production: 2.5 }, { day: 'Tue', production: 3.2 },
-    { day: 'Wed', production: 2.8 }, { day: 'Thu', production: 3.5 },
-    { day: 'Fri', production: 3.0 }, { day: 'Sat', production: 2.9 },
-    { day: 'Sun', production: 3.1 },
-  ];
+  // ✅ Fetch user profile from backend
+  const fetchUserProfile = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/user/me`, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data?.success) {
+        setUser({
+          name: response.data.data.name || 'Farmer'
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+    }
+  };
+  
+  // Fetch all dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch all data in parallel
+      const [statsRes, milkRes, financeRes] = await Promise.all([
+        axios.get(`${DASHBOARD_API}/stats`, {
+          withCredentials: true,
+          headers: getHeaders()
+        }),
+        axios.get(`${DASHBOARD_API}/milk-production`, {
+          withCredentials: true,
+          headers: getHeaders()
+        }),
+        axios.get(`${DASHBOARD_API}/finance`, {
+          withCredentials: true,
+          headers: getHeaders()
+        })
+      ]);
+      
+      if (statsRes.data?.success) {
+        setStats(statsRes.data.data);
+      }
+      
+      if (milkRes.data?.success) {
+        setMilkProductionData(milkRes.data.data);
+      }
+      
+      if (financeRes.data?.success) {
+        setFinanceData(financeRes.data.data);
+      }
+      
+    } catch (error) {
+      console.error("❌ Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // ✅ Initial data fetch
+  useEffect(() => {
+    fetchUserProfile();    // Pehle user profile fetch karo
+    fetchDashboardData();  // Phir dashboard data fetch karo
+  }, []);
 
-  const financialData = [
-    { month: 'Jan', revenue: 45, expenses: 32 }, { month: 'Feb', revenue: 52, expenses: 35 },
-    { month: 'Mar', revenue: 48, expenses: 33 }, { month: 'Apr', revenue: 61, expenses: 38 },
-    { month: 'May', revenue: 55, expenses: 36 }, { month: 'Jun', revenue: 67, expenses: 40 },
-  ];
-
-  const stats = [
-    { title: 'Total Livestock', value: '13', subtitle: 'Heads', change: '+2', trend: 'up', icon: Activity },
-    { title: 'Milk Production', value: '0.00', subtitle: "Gallons Today", change: '0%', trend: 'neutral', icon: Droplet },
-    { title: 'Monthly Income', value: 'PKR 0', subtitle: 'Current Month', change: '+12%', trend: 'up', icon: TrendingUp },
-    { title: 'Monthly Expenses', value: 'PKR 0', subtitle: 'Current Month', change: '-5%', trend: 'down', icon: Wallet },
-    { title: 'Net Profit', value: 'PKR 0', subtitle: 'Current Month', change: '0%', trend: 'neutral', icon: PiggyBank },
+  // Format stats for display
+  const formattedStats = [
+    { 
+      title: 'Total Livestock', 
+      value: stats.totalLivestock.toString(), 
+      subtitle: 'Heads', 
+      change: stats.change.livestock, 
+      trend: stats.change.livestock.includes('+') ? 'up' : stats.change.livestock.includes('-') ? 'down' : 'neutral', 
+      icon: Activity 
+    },
+    { 
+      title: 'Milk Production', 
+      value: stats.milkProductionToday.toFixed(2), 
+      subtitle: "Gallons Today", 
+      change: stats.change.milk, 
+      trend: stats.change.milk.includes('+') ? 'up' : stats.change.milk.includes('-') ? 'down' : 'neutral', 
+      icon: Droplet 
+    },
+    { 
+      title: 'Monthly Income', 
+      value: `PKR ${stats.monthlyIncome.toLocaleString()}`, 
+      subtitle: 'Current Month', 
+      change: stats.change.income, 
+      trend: stats.change.income.includes('+') ? 'up' : 'down', 
+      icon: TrendingUp 
+    },
+    { 
+      title: 'Monthly Expenses', 
+      value: `PKR ${stats.monthlyExpenses.toLocaleString()}`, 
+      subtitle: 'Current Month', 
+      change: stats.change.expenses, 
+      trend: stats.change.expenses.includes('-') ? 'down' : 'up', 
+      icon: Wallet 
+    },
+    { 
+      title: 'Net Profit', 
+      value: `PKR ${stats.netProfit.toLocaleString()}`, 
+      subtitle: 'Current Month', 
+      change: stats.change.profit, 
+      trend: stats.netProfit > 0 ? 'up' : stats.netProfit < 0 ? 'down' : 'neutral', 
+      icon: PiggyBank 
+    },
   ];
 
   const CornerBrackets = () => {
@@ -65,7 +180,7 @@ export default function FarmDashboard() {
           }`}>{label}</p>
           {payload.map((entry, index) => (
             <p key={index} className={`text-sm font-bold ${spaceGrotesk.className}`} style={{ color: entry.color }}>
-              {entry.name}: {entry.value}
+              {entry.name}: {entry.value} {entry.name === 'production' ? 'gallons' : 'k PKR'}
             </p>
           ))}
         </div>
@@ -103,11 +218,11 @@ export default function FarmDashboard() {
         searchPlaceholder="Search orders..."
       />
 
-      {/* MAIN CONTENT WRAPPER WITH DYNAMIC MARGIN - FROM MAIN BRANCH */}
+      {/* MAIN CONTENT WRAPPER */}
       <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
-          {/* MODERNIZED WELCOME HERO */}
+          {/* MODERNIZED WELCOME HERO - With Real User Name */}
           <div className={`relative overflow-hidden border group ${
             isDark 
               ? 'border-white/10 bg-neutral-900/30' 
@@ -119,7 +234,7 @@ export default function FarmDashboard() {
                  : 'bg-gradient-to-br from-green-50/50 via-transparent to-transparent'
              }`} />
              
-             {/* Scan line effect - FROM NEW BRANCH */}
+             {/* Scan line effect */}
              <div className={`absolute top-0 left-0 w-full h-[2px] bg-green-500/30 ${
                isDark ? 'shadow-[0_0_15px_rgba(34,197,94,0.5)]' : ''
              }`} 
@@ -141,23 +256,25 @@ export default function FarmDashboard() {
                     
                     <h1 className={`${spaceGrotesk.className} text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] mb-4`}>
                       Good Morning, <br/>
-                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Hamza</span>
+                      {/* ✅ Real user name show hoga, agar nahi to 'Farmer' show hoga */}
+                      <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">
+                        {user.name}
+                      </span>
                     </h1>
                     
                     <p className={`text-sm max-w-xl font-light leading-relaxed ${
                       isDark ? 'text-neutral-400' : 'text-neutral-600'
                     }`}>
-                      Farm operations are running smoothly. You have <span className="text-green-600 font-bold">3 pending tasks</span> that require your attention today.
+                      Farm operations are running smoothly. {loading && <span className="text-green-500 ml-2">SYNCING...</span>}
                     </p>
                 </div>
                 
-                {/* Weather Widget - FROM NEW BRANCH (with cursor-pointer) */}
+                {/* Weather Widget */}
                 <div className={`relative cursor-pointer overflow-hidden border backdrop-blur-md group/weather ${
                   isDark 
                     ? 'bg-neutral-900/50 border-white/10' 
                     : 'bg-white border-neutral-300 shadow-sm'
                 }`}>
-                    {/* Background gradient */}
                     <div className={`absolute inset-0 ${
                       isDark
                         ? 'bg-gradient-to-br from-amber-900/10 via-transparent to-transparent'
@@ -217,7 +334,7 @@ export default function FarmDashboard() {
 
           {/* ENHANCED STATS GRID */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
-            {stats.map((stat, idx) => (
+            {formattedStats.map((stat, idx) => (
               <div key={idx} className={`relative p-6 border transition-all hover:-translate-y-1 overflow-hidden group/card ${
                 isDark 
                   ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' 
@@ -255,12 +372,16 @@ export default function FarmDashboard() {
                             : 'bg-neutral-100 text-neutral-600 border-neutral-200'
                     }`}>
                       {stat.change} 
-                      {stat.change !== '0%' && (stat.change.includes('+') ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />)}
+                      {stat.change !== '0' && stat.change !== '0%' && (
+                        stat.trend === 'up' ? <ArrowUpRight size={10} /> : <ArrowDownRight size={10} />
+                      )}
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <h3 className={`${spaceGrotesk.className} text-3xl font-bold tracking-tight`}>{stat.value}</h3>
+                    <h3 className={`${spaceGrotesk.className} text-3xl font-bold tracking-tight`}>
+                      {loading ? '...' : stat.value}
+                    </h3>
                     <p className={`text-[10px] uppercase tracking-[0.2em] font-bold font-mono ${
                       isDark ? 'text-neutral-500' : 'text-neutral-400'
                     }`}>{stat.title}</p>
@@ -312,13 +433,21 @@ export default function FarmDashboard() {
                       ? 'bg-green-500/10 border-green-500/20 text-green-400' 
                       : 'bg-green-50 border-green-200 text-green-600'
                   }`}>
-                    ACTIVE
+                    {loading ? 'LOADING...' : 'ACTIVE'}
                   </div>
                 </div>
 
                 <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={milkProductionData}>
+                        <AreaChart data={milkProductionData.length > 0 ? milkProductionData : [
+                          { day: 'Mon', production: 0 },
+                          { day: 'Tue', production: 0 },
+                          { day: 'Wed', production: 0 },
+                          { day: 'Thu', production: 0 },
+                          { day: 'Fri', production: 0 },
+                          { day: 'Sat', production: 0 },
+                          { day: 'Sun', production: 0 }
+                        ]}>
                             <defs>
                               <linearGradient id="colorProd" x1="0" y1="0" x2="0" y2="1">
                                 <stop offset="5%" stopColor="#22c55e" stopOpacity={isDark ? 0.3 : 0.2}/>
@@ -360,6 +489,7 @@ export default function FarmDashboard() {
                               fill="url(#colorProd)" 
                               dot={{ fill: '#22c55e', strokeWidth: 2, r: 4 }}
                               activeDot={{ r: 6, strokeWidth: 0 }}
+                              name="production"
                             />
                         </AreaChart>
                     </ResponsiveContainer>
@@ -405,7 +535,14 @@ export default function FarmDashboard() {
 
                 <div className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={financialData}>
+                        <LineChart data={financeData.length > 0 ? financeData : [
+                          { month: 'Jan', revenue: 0, expenses: 0 },
+                          { month: 'Feb', revenue: 0, expenses: 0 },
+                          { month: 'Mar', revenue: 0, expenses: 0 },
+                          { month: 'Apr', revenue: 0, expenses: 0 },
+                          { month: 'May', revenue: 0, expenses: 0 },
+                          { month: 'Jun', revenue: 0, expenses: 0 }
+                        ]}>
                             <CartesianGrid 
                               strokeDasharray="3 3" 
                               stroke={isDark ? "#262626" : "#e5e7eb"} 

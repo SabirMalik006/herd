@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
 import axios from 'axios';
+import Cookies from 'js-cookie';  // ✅ Import Cookies
 import { 
   Heart, Calendar, AlertTriangle, Bell, 
   Activity, TrendingUp, Eye
@@ -26,11 +27,20 @@ export default function ReproductionDashboard() {
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
   const OVERVIEW_API_URL = `${API_BASE_URL}/reproduction-overview/stats`;
 
+  // ✅ Helper to get headers with token
+  const getHeaders = () => ({
+    Authorization: `Bearer ${Cookies.get('accessToken')}`
+  });
+
   // Fetch reproduction overview data
   const fetchOverviewData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(OVERVIEW_API_URL);
+      // ✅ Add withCredentials and headers
+      const response = await axios.get(OVERVIEW_API_URL, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
       
       if (response.data && response.data.success) {
         const data = response.data.data;
@@ -52,7 +62,7 @@ export default function ReproductionDashboard() {
         loadFromLocalStorage();
       }
     } catch (error) {
-      console.error("Error fetching overview data:", error);
+      console.error("❌ Error fetching overview data:", error);
       // Set default values on error
       setStats({
         totalBreedings: 0,

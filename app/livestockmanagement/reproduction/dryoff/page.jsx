@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
 import axios from 'axios';
+import Cookies from 'js-cookie';  // ✅ Import Cookies
 import { 
   Power, Plus, Search, X, Edit, Calendar, Trash2
 } from 'lucide-react';
@@ -14,7 +15,13 @@ const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", 
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 // API Base URL
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/dryoff";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const API_URL = `${API_BASE_URL}/dryoff`;  // ✅ Full URL construction
+
+// ✅ Helper to get headers with token
+const getHeaders = () => ({
+  Authorization: `Bearer ${Cookies.get('accessToken')}`
+});
 
 export default function DryOffManagement() {
   const [isDark, setIsDark] = useState(false); 
@@ -48,7 +55,11 @@ export default function DryOffManagement() {
   const fetchRecords = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(API_URL);
+      // ✅ Add withCredentials and headers like reproduction dashboard
+      const response = await axios.get(API_URL, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
       
       // Check response format
       if (response.data && response.data.success && Array.isArray(response.data.data)) {
@@ -69,6 +80,11 @@ export default function DryOffManagement() {
       }
     } catch (error) {
       console.error("Error fetching data:", error);
+      // ✅ Log more details for debugging
+      if (error.response) {
+        console.error("Response status:", error.response.status);
+        console.error("Response data:", error.response.data);
+      }
       // Fallback to localStorage if API fails
       loadFromLocalStorage();
     } finally {
@@ -138,13 +154,21 @@ export default function DryOffManagement() {
 
       if (editingRecord) {
         // Update logic - PATCH request with correct ID field
-        const response = await axios.patch(`${API_URL}/${editingRecord.id || editingRecord._id}`, apiData);
+        // ✅ Add withCredentials and headers like reproduction dashboard
+        const response = await axios.patch(`${API_URL}/${editingRecord.id || editingRecord._id}`, apiData, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
         if (response.data && response.data.success) {
           await fetchRecords();
         }
       } else {
         // Create logic - POST request
-        const response = await axios.post(API_URL, apiData);
+        // ✅ Add withCredentials and headers like reproduction dashboard
+        const response = await axios.post(API_URL, apiData, {
+          withCredentials: true,
+          headers: getHeaders()
+        });
         if (response.data && response.data.success) {
           await fetchRecords();
         }
@@ -228,7 +252,11 @@ export default function DryOffManagement() {
     if (!recordToDelete) return;
     
     try {
-      await axios.delete(`${API_URL}/${recordToDelete}`);
+      // ✅ Add withCredentials and headers like reproduction dashboard
+      await axios.delete(`${API_URL}/${recordToDelete}`, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
       await fetchRecords();
     } catch (error) {
       console.error("Delete failed, deleting locally:", error);
@@ -276,10 +304,11 @@ export default function DryOffManagement() {
     setShowModal(true);
   };
 
+  // ✅ Updated: Reset search when adding new record
   const handleAddNewWithReset = () => {
-    setSearchQuery('');
-    setCurrentPage(1);
-    handleAddNew();
+    setSearchQuery('');  // Clear search query
+    setCurrentPage(1);    // Reset to first page
+    handleAddNew();       // Open modal
   };
 
   const handleClearSearch = () => {
@@ -563,7 +592,19 @@ export default function DryOffManagement() {
                 </button>
               )}
             </div>
-            {loading && <span className="animate-pulse text-cyan-500 font-mono text-xs self-center">SYNCING_DB...</span>}
+            <button
+              onClick={fetchRecords}
+              disabled={loading}
+              className={`px-6 py-3 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                loading
+                  ? 'opacity-50 cursor-not-allowed'
+                  : isDark
+                    ? 'bg-neutral-800 hover:bg-neutral-700 border-white/10 hover:border-cyan-500/20'
+                    : 'bg-white hover:bg-neutral-50 border-neutral-300 hover:border-cyan-300'
+              }`}
+            >
+              {loading ? 'REFRESHING...' : 'REFRESH'}
+            </button>
           </div>
 
           {/* TABLE */}
@@ -703,34 +744,25 @@ export default function DryOffManagement() {
                         </span>
                       </div>
 
-                      {/* Lactation End / Confirmed */}
+                      {/* ✅ Fixed: Lactation End / Confirmed - Now shows checkbox correctly */}
                       <div>
-                        {displayRecord.confirmed ? (
-                          <div>
-                            <div className="flex items-center gap-2 text-sm font-bold">
-                              <input 
-                                type="checkbox" 
-                                checked={displayRecord.confirmed} 
-                                readOnly
-                                className="w-4 h-4"
-                              />
-                              <span>Confirmed</span>
-                            </div>
-                            {displayRecord.lactationEnd && (
-                              <div className={`text-xs mt-1 font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                                Ended: {formatDate(displayRecord.lactationEnd)}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 text-sm font-medium">
-                            <input 
-                              type="checkbox" 
-                              checked={false} 
-                              readOnly
-                              className="w-4 h-4"
-                            />
-                            <span className={isDark ? 'text-neutral-500' : 'text-neutral-400'}>Confirmed</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <input 
+                            type="checkbox" 
+                            checked={displayRecord.confirmed} 
+                            readOnly
+                            className="w-4 h-4"
+                          />
+                          <span className={displayRecord.confirmed 
+                            ? (isDark ? 'text-neutral-300 font-bold' : 'text-neutral-700 font-bold')
+                            : (isDark ? 'text-neutral-500' : 'text-neutral-400')
+                          }>
+                            Confirmed
+                          </span>
+                        </div>
+                        {displayRecord.lactationEnd && (
+                          <div className={`text-xs mt-1 font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                            Ended: {formatDate(displayRecord.lactationEnd)}
                           </div>
                         )}
                       </div>
