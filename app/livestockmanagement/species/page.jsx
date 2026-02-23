@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import { 
   Search, Filter, Plus, Eye, Edit, Trash2, ChevronDown, X, Download,
   Beef, AlertCircle, TrendingUp, Activity
@@ -10,6 +12,15 @@ import { Space_Grotesk, Inter } from "next/font/google";
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const SPECIES_API = `${API_BASE_URL}/species`;
+
+// Helper to get headers with token
+const getHeaders = () => ({
+  Authorization: `Bearer ${Cookies.get('accessToken')}`
+});
 
 export default function SpeciesManagement() {
   const [isDark, setIsDark] = useState(false); 
@@ -21,6 +32,17 @@ export default function SpeciesManagement() {
   const [editingSpecies, setEditingSpecies] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [viewingSpecies, setViewingSpecies] = useState(null);
+  const [species, setSpecies] = useState([]);
+  const [stats, setStats] = useState({
+    totalSpecies: 0,
+    totalAnimals: 0,
+    cattleSpecies: 0,
+    avgHealthRate: 0
+  });
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(6); // For grid layout
   const [formData, setFormData] = useState({
     name: '',
     scientificName: '',
@@ -31,57 +53,237 @@ export default function SpeciesManagement() {
     characteristics: ''
   });
 
-  // --- SPECIES DATA WITH STORAGE (NO DUMMY DATA) ---
-  const [species, setSpecies] = useState(() => {
+  // ========== API FUNCTIONS ==========
+
+  // Fetch all species
+  const fetchSpecies = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(SPECIES_API, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data && response.data.success && Array.isArray(response.data.data)) {
+        setSpecies(response.data.data);
+        localStorage.setItem('livestockSpecies', JSON.stringify(response.data.data));
+      } else if (response.data && Array.isArray(response.data)) {
+        setSpecies(response.data);
+        localStorage.setItem('livestockSpecies', JSON.stringify(response.data));
+      } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        setSpecies(response.data.data);
+        localStorage.setItem('livestockSpecies', JSON.stringify(response.data.data));
+      } else {
+        console.warn("Unexpected API response format:", response.data);
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error("Error fetching species:", error);
+      loadFromLocalStorage();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch stats
+  const fetchStats = async () => {
+    try {
+      const response = await axios.get(`${SPECIES_API}/stats`, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data && response.data.success) {
+        setStats(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching stats:", error);
+      // Calculate stats from local data as fallback
+      calculateLocalStats();
+    }
+  };
+
+  // Calculate stats from local data
+  const calculateLocalStats = () => {
+    const totalSpecies = species.length;
+    const totalAnimals = species.reduce((sum, s) => sum + (s.totalAnimals || 0), 0);
+    const cattleSpecies = species.filter(s => s.category === 'Cattle').length;
+    const avgHealthRate = species.length > 0 
+      ? Math.round(species.reduce((sum, s) => sum + ((s.healthyCount || 0) / (s.totalAnimals || 1) * 100), 0) / species.length)
+      : 0;
+    
+    setStats({ totalSpecies, totalAnimals, cattleSpecies, avgHealthRate });
+  };
+
+  // Load from localStorage as fallback
+  const loadFromLocalStorage = () => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('livestockSpecies');
       if (stored) {
         try {
-          return JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          setSpecies(Array.isArray(parsed) ? parsed : []);
+          calculateLocalStats();
         } catch (e) {
-          console.error('Error parsing stored species:', e);
+          console.error("Error parsing localStorage data:", e);
+          setSpecies([]);
         }
+      } else {
+        setSpecies([]);
       }
     }
-    return [];
-  });
+  };
 
-  // Save to storage whenever species change
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
+  // Create new species
+  const createSpecies = async () => {
+    if (!formData.name || !formData.scientificName) {
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const response = await axios.post(SPECIES_API, formData, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data && response.data.success) {
+        await fetchSpecies();
+        await fetchStats();
+        handleCloseForm();
+      }
+    } catch (error) {
+      console.error("API Error, saving locally:", error);
+      
+      // Fallback to localStorage
+      const newSpecies = {
+        ...formData,
+        id: Date.now(),
+        totalAnimals: 0,
+        healthyCount: 0,
+        createdDate: new Date().toISOString().split('T')[0]
+      };
+      
+      const updatedSpecies = [newSpecies, ...species];
+      setSpecies(updatedSpecies);
+      localStorage.setItem('livestockSpecies', JSON.stringify(updatedSpecies));
+      calculateLocalStats();
+      handleCloseForm();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Update species
+  const updateSpecies = async () => {
+    if (!formData.name || !formData.scientificName || !editingSpecies) {
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const response = await axios.put(`${SPECIES_API}/${editingSpecies.id}`, formData, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      if (response.data && response.data.success) {
+        await fetchSpecies();
+        await fetchStats();
+        handleCloseForm();
+      }
+    } catch (error) {
+      console.error("API Error, updating locally:", error);
+      
+      // Fallback to localStorage
+      const updatedSpecies = species.map(s => 
+        s.id === editingSpecies.id 
+          ? { ...s, ...formData }
+          : s
+      );
+      
+      setSpecies(updatedSpecies);
+      localStorage.setItem('livestockSpecies', JSON.stringify(updatedSpecies));
+      calculateLocalStats();
+      handleCloseForm();
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Delete species
+  const deleteSpecies = async (id) => {
+    setSubmitting(true);
+
+    try {
+      await axios.delete(`${SPECIES_API}/${id}`, {
+        withCredentials: true,
+        headers: getHeaders()
+      });
+      
+      await fetchSpecies();
+      await fetchStats();
+      setDeleteConfirm(null);
+    } catch (error) {
+      console.error("Delete failed, deleting locally:", error);
+      
+      // Fallback to localStorage
+      const updatedSpecies = species.filter(s => s.id !== id);
+      setSpecies(updatedSpecies);
+      localStorage.setItem('livestockSpecies', JSON.stringify(updatedSpecies));
+      calculateLocalStats();
+      setDeleteConfirm(null);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchSpecies();
+    fetchStats();
+  }, []);
+
+  // Save to localStorage whenever species change (backup)
+  useEffect(() => {
+    if (species.length > 0 && typeof window !== 'undefined') {
       localStorage.setItem('livestockSpecies', JSON.stringify(species));
     }
   }, [species]);
 
+  // Filter species based on search and category
   const filteredSpecies = species.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         s.scientificName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (s.name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+                         (s.scientificName?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || s.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  // Calculate stats
-  const stats = {
-    totalSpecies: species.length,
-    totalAnimals: species.reduce((sum, s) => sum + (s.totalAnimals || 0), 0),
-    cattleSpecies: species.filter(s => s.category === 'Cattle').length,
-    avgHealthRate: species.length > 0 
-      ? Math.round(species.reduce((sum, s) => sum + ((s.healthyCount || 0) / (s.totalAnimals || 1) * 100), 0) / species.length)
-      : 0
-  };
+  // Pagination
+  const indexOfLastRecord = currentPage * rowsPerPage;
+  const indexOfFirstRecord = indexOfLastRecord - rowsPerPage;
+  const currentRecords = filteredSpecies.slice(indexOfFirstRecord, indexOfLastRecord);
+  const totalPages = Math.ceil(filteredSpecies.length / rowsPerPage);
+
+  const goToFirstPage = () => setCurrentPage(1);
+  const goToLastPage = () => setCurrentPage(totalPages);
+  const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
   // Handle Add/Edit Species
   const handleOpenForm = (speciesItem = null) => {
     if (speciesItem) {
       setEditingSpecies(speciesItem);
       setFormData({
-        name: speciesItem.name,
-        scientificName: speciesItem.scientificName,
-        category: speciesItem.category,
-        description: speciesItem.description,
-        averageWeight: speciesItem.averageWeight,
-        averageLifespan: speciesItem.averageLifespan,
-        characteristics: speciesItem.characteristics
+        name: speciesItem.name || '',
+        scientificName: speciesItem.scientificName || '',
+        category: speciesItem.category || 'Cattle',
+        description: speciesItem.description || '',
+        averageWeight: speciesItem.averageWeight || '',
+        averageLifespan: speciesItem.averageLifespan || '',
+        characteristics: speciesItem.characteristics || ''
       });
     } else {
       setEditingSpecies(null);
@@ -116,40 +318,37 @@ export default function SpeciesManagement() {
     e.preventDefault();
     
     if (editingSpecies) {
-      // Update existing species
-      const updatedSpecies = species.map(s => 
-        s.id === editingSpecies.id 
-          ? { ...s, ...formData }
-          : s
-      );
-      setSpecies(updatedSpecies);
+      updateSpecies();
     } else {
-      // Add new species
-      const newSpecies = {
-        id: species.length > 0 ? Math.max(...species.map(s => s.id)) + 1 : 1,
-        ...formData,
-        totalAnimals: 0,
-        healthyCount: 0,
-        createdDate: new Date().toISOString().split('T')[0]
-      };
-      setSpecies([newSpecies, ...species]);
+      createSpecies();
     }
-    
-    handleCloseForm();
   };
 
-  const handleDelete = (id) => {
-    const updatedSpecies = species.filter(s => s.id !== id);
-    setSpecies(updatedSpecies);
-    setDeleteConfirm(null);
+  const handleAddNewWithReset = () => {
+    setSearchTerm('');
+    setSelectedCategory('all');
+    setCurrentPage(1);
+    handleOpenForm();
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    setSelectedCategory('all');
+    setCurrentPage(1);
   };
 
   const handleExport = () => {
     const csv = [
       ['Name', 'Scientific Name', 'Category', 'Description', 'Avg Weight', 'Avg Lifespan', 'Total Animals', 'Healthy Count'],
       ...filteredSpecies.map(s => [
-        s.name, s.scientificName, s.category, s.description, 
-        s.averageWeight, s.averageLifespan, s.totalAnimals, s.healthyCount
+        s.name || '', 
+        s.scientificName || '', 
+        s.category || '', 
+        s.description || '', 
+        s.averageWeight || '', 
+        s.averageLifespan || '', 
+        s.totalAnimals || 0, 
+        s.healthyCount || 0
       ])
     ].map(row => row.join(',')).join('\n');
     
@@ -157,7 +356,7 @@ export default function SpeciesManagement() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'species-export.csv';
+    a.download = `species-export-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
 
@@ -202,7 +401,7 @@ export default function SpeciesManagement() {
             setDeleteConfirm(null);
             setViewingSpecies(null);
           }}
-        ></div>
+        />
       )}
 
       {/* NAVBAR WITH SIDEBAR */}
@@ -215,14 +414,20 @@ export default function SpeciesManagement() {
       />
 
       {/* MAIN CONTENT */}
-      <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
+      <div className={`${sidebarOpen ? 'lg:ml-72' : 'ml-0'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
           {/* MODERNIZED TITLE */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                
+                <div className="flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </div>
+                <span className="font-mono text-[10px] text-green-500/80 uppercase tracking-[0.3em]">
+                  [SPECIES_MANAGEMENT]
+                </span>
               </div>
               <h1 className={`${spaceGrotesk.className} text-4xl md:text-5xl font-bold uppercase tracking-tighter leading-[0.9] mb-2`}>
                 Species <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">Management</span>
@@ -230,72 +435,71 @@ export default function SpeciesManagement() {
               <p className={`text-sm font-light leading-relaxed ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
                 Manage livestock breeds, characteristics, and biological information for your herd.
               </p>
+              {loading && (
+                <span className="text-xs text-green-500 font-mono mt-2">SYNCING_DATA...</span>
+              )}
             </div>
           </div>
 
           {/* STATS OVERVIEW */}
           <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Total Species Card */}
             <div className={`relative p-6 border transition-all duration-300 hover:-translate-y-1 group ${
               isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
             }`}>
               <div className="flex justify-between items-start mb-4">
-                <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${
-                  isDark ? 'text-neutral-500' : 'text-neutral-400'
-                }`}>Total Species</span>
+                <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                  Total Species
+                </span>
                 <Beef className={`w-4 h-4 text-green-500 opacity-80`} />
               </div>
               <h3 className={`${spaceGrotesk.className} text-4xl font-bold`}>{stats.totalSpecies}</h3>
-              <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${
-                isDark ? 'bg-green-500' : 'bg-green-600'
-              }`} />
+              <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${isDark ? 'bg-green-500' : 'bg-green-600'}`} />
               <CornerBrackets />
             </div>
 
+            {/* Total Animals Card */}
             <div className={`relative p-6 border transition-all duration-300 hover:-translate-y-1 group ${
               isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
             }`}>
               <div className="flex justify-between items-start mb-4">
-                <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${
-                  isDark ? 'text-neutral-500' : 'text-neutral-400'
-                }`}>Total Animals</span>
+                <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                  Total Animals
+                </span>
                 <Activity className={`w-4 h-4 text-blue-500 opacity-80`} />
               </div>
               <h3 className={`${spaceGrotesk.className} text-4xl font-bold`}>{stats.totalAnimals}</h3>
-              <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${
-                isDark ? 'bg-green-500' : 'bg-green-600'
-              }`} />
+              <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${isDark ? 'bg-green-500' : 'bg-green-600'}`} />
               <CornerBrackets />
             </div>
 
+            {/* Cattle Breeds Card */}
             <div className={`relative p-6 border transition-all duration-300 hover:-translate-y-1 group ${
               isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
             }`}>
               <div className="flex justify-between items-start mb-4">
-                <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${
-                  isDark ? 'text-neutral-500' : 'text-neutral-400'
-                }`}>Cattle Breeds</span>
+                <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                  Cattle Breeds
+                </span>
                 <Beef className={`w-4 h-4 text-amber-500 opacity-80`} />
               </div>
               <h3 className={`${spaceGrotesk.className} text-4xl font-bold`}>{stats.cattleSpecies}</h3>
-              <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${
-                isDark ? 'bg-green-500' : 'bg-green-600'
-              }`} />
+              <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${isDark ? 'bg-green-500' : 'bg-green-600'}`} />
               <CornerBrackets />
             </div>
 
+            {/* Avg Health Rate Card */}
             <div className={`relative p-6 border transition-all duration-300 hover:-translate-y-1 group ${
               isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
             }`}>
               <div className="flex justify-between items-start mb-4">
-                <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${
-                  isDark ? 'text-neutral-500' : 'text-neutral-400'
-                }`}>Avg Health Rate</span>
+                <span className={`text-[10px] font-bold uppercase tracking-widest font-mono ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                  Avg Health Rate
+                </span>
                 <TrendingUp className={`w-4 h-4 text-emerald-500 opacity-80`} />
               </div>
               <h3 className={`${spaceGrotesk.className} text-4xl font-bold`}>{stats.avgHealthRate}%</h3>
-              <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${
-                isDark ? 'bg-green-500' : 'bg-green-600'
-              }`} />
+              <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${isDark ? 'bg-green-500' : 'bg-green-600'}`} />
               <CornerBrackets />
             </div>
           </section>
@@ -305,9 +509,7 @@ export default function SpeciesManagement() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className={`h-[2px] w-8 ${isDark ? 'bg-green-500/50' : 'bg-green-500'}`} />
-                <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
-                  isDark ? 'text-neutral-400' : 'text-neutral-500'
-                }`}>
+                <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
                   Species Records
                 </h2>
               </div>
@@ -317,10 +519,11 @@ export default function SpeciesManagement() {
                     ? 'bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700' 
                     : 'bg-green-600 hover:bg-green-700 text-white border-green-600 shadow-sm'
                 }`}
-                onClick={() => handleOpenForm()}
+                onClick={handleAddNewWithReset}
+                disabled={submitting}
               >
                 <Plus className="w-4 h-4" />
-                Add Species
+                {submitting ? 'Adding...' : 'Add Species'}
               </button>
             </div>
           </section>
@@ -336,17 +539,23 @@ export default function SpeciesManagement() {
                   <Search className={`w-5 h-5 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
                   <input
                     type="text"
-                    placeholder="Search species..."
+                    placeholder="Search by name or scientific name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className={`flex-1 bg-transparent outline-none text-sm font-medium ${
                       isDark ? 'placeholder:text-neutral-600' : 'placeholder:text-neutral-400'
                     }`}
                   />
+                  {searchTerm && (
+                    <button
+                      onClick={handleClearSearch}
+                      className={`p-1 transition-all ${isDark ? 'hover:text-white text-neutral-400' : 'hover:text-neutral-900 text-neutral-500'}`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
-                <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover/search:w-full transition-all duration-500 ${
-                  isDark ? 'bg-green-500' : 'bg-green-600'
-                }`} />
+                <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover/search:w-full transition-all duration-500 ${isDark ? 'bg-green-500' : 'bg-green-600'}`} />
                 <CornerBrackets />
               </div>
 
@@ -358,7 +567,9 @@ export default function SpeciesManagement() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Filter className={`w-4 h-4 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`} />
-                      <span className="text-[11px] font-bold uppercase tracking-wider">Category</span>
+                      <span className="text-[11px] font-bold uppercase tracking-wider">
+                        {selectedCategory === 'all' ? 'All Categories' : selectedCategory}
+                      </span>
                     </div>
                     <ChevronDown className={`w-4 h-4 transition-transform ${filterCategoryOpen ? 'rotate-180' : ''}`} />
                   </div>
@@ -375,6 +586,7 @@ export default function SpeciesManagement() {
                         onClick={() => {
                           setSelectedCategory(category);
                           setFilterCategoryOpen(false);
+                          setCurrentPage(1);
                         }}
                         className={`cursor-pointer w-full px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider transition-colors ${
                           selectedCategory === category
@@ -397,10 +609,7 @@ export default function SpeciesManagement() {
             {/* Actions Row */}
             <div className="flex items-center justify-end gap-3">
               <button 
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedCategory('all');
-                }}
+                onClick={handleClearSearch}
                 className={`flex cursor-pointer items-center gap-2 px-5 py-3 border transition-all font-bold text-[11px] uppercase tracking-widest ${
                   isDark 
                     ? 'bg-neutral-800 hover:bg-neutral-700 text-white border-neutral-700' 
@@ -408,7 +617,7 @@ export default function SpeciesManagement() {
                 }`}
               >
                 <AlertCircle className="w-4 h-4" />
-                Clear
+                Clear Filters
               </button>
               <button 
                 onClick={handleExport}
@@ -419,7 +628,7 @@ export default function SpeciesManagement() {
                 }`}
               >
                 <Download className="w-4 h-4" />
-                Export
+                Export CSV
               </button>
             </div>
           </section>
@@ -428,136 +637,139 @@ export default function SpeciesManagement() {
           <section className="space-y-6">
             <div className="flex items-center gap-3">
               <div className={`h-[2px] w-8 ${isDark ? 'bg-amber-500/50' : 'bg-amber-500'}`} />
-              <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${
-                isDark ? 'text-neutral-400' : 'text-neutral-500'
-              }`}>
+              <h2 className={`text-[10px] font-black uppercase tracking-[0.25em] font-mono ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
                 All Species
               </h2>
+              {loading && <span className="text-xs text-green-500 font-mono animate-pulse">SYNCING...</span>}
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredSpecies.map((speciesItem) => (
-                <div key={speciesItem.id} className={`relative p-6 border transition-all duration-300 hover:-translate-y-1 group ${
-                  isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
-                }`}>
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className={`${spaceGrotesk.className} text-2xl font-bold uppercase tracking-tight mb-1`}>
-                        {speciesItem.name}
-                      </h3>
-                      <p className={`text-[10px] font-mono uppercase tracking-wider ${
-                        isDark ? 'text-neutral-500' : 'text-neutral-400'
+            {loading && species.length === 0 ? (
+              <div className={`relative p-16 border text-center ${
+                isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
+              }`}>
+                <div className="animate-spin w-12 h-12 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                <h3 className={`${spaceGrotesk.className} text-2xl font-bold mb-2 uppercase tracking-tight`}>
+                  Loading species...
+                </h3>
+                <CornerBrackets />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {currentRecords.map((speciesItem) => (
+                  <div key={speciesItem.id || speciesItem._id} className={`relative p-6 border transition-all duration-300 hover:-translate-y-1 group ${
+                    isDark ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
+                  }`}>
+                    {/* Header */}
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className={`${spaceGrotesk.className} text-2xl font-bold uppercase tracking-tight mb-1`}>
+                          {speciesItem.name}
+                        </h3>
+                        <p className={`text-[10px] font-mono uppercase tracking-wider ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                          {speciesItem.scientificName}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1 border text-[9px] font-bold font-mono uppercase tracking-wider ${
+                        isDark
+                          ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                          : 'bg-green-50 text-green-700 border-green-200'
                       }`}>
-                        {speciesItem.scientificName}
-                      </p>
+                        {speciesItem.category}
+                      </span>
                     </div>
-                    <span className={`px-3 py-1 border text-[9px] font-bold font-mono uppercase tracking-wider ${
-                      isDark
-                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                        : 'bg-green-50 text-green-700 border-green-200'
-                    }`}>
-                      {speciesItem.category}
-                    </span>
+
+                    {/* Description */}
+                    {speciesItem.description && (
+                      <p className={`text-sm mb-4 line-clamp-2 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                        {speciesItem.description}
+                      </p>
+                    )}
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-2 gap-3 mb-4">
+                      <div>
+                        <span className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1 ${isDark ? 'text-neutral-600' : 'text-neutral-400'}`}>
+                          Weight
+                        </span>
+                        <p className={`text-sm font-bold ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                          {speciesItem.averageWeight || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1 ${isDark ? 'text-neutral-600' : 'text-neutral-400'}`}>
+                          Lifespan
+                        </span>
+                        <p className={`text-sm font-bold ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                          {speciesItem.averageLifespan || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <span className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1 ${isDark ? 'text-neutral-600' : 'text-neutral-400'}`}>
+                          Total
+                        </span>
+                        <p className={`${spaceGrotesk.className} text-xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                          {speciesItem.totalAnimals || 0}
+                        </p>
+                      </div>
+                      <div>
+                        <span className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1 ${isDark ? 'text-neutral-600' : 'text-neutral-400'}`}>
+                          Healthy
+                        </span>
+                        <p className={`${spaceGrotesk.className} text-xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                          {speciesItem.healthyCount || 0}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className={`flex items-center gap-1 pt-4 border-t ${isDark ? 'border-white/10' : 'border-neutral-200'}`}>
+                      <button 
+                        className={`flex-1 p-2.5 border transition-all ${
+                          isDark 
+                            ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                            : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                        }`} 
+                        title="View Details"
+                        onClick={() => setViewingSpecies(speciesItem)}
+                      >
+                        <Eye className="w-4 h-4 mx-auto" />
+                      </button>
+                      <button 
+                        className={`flex-1 p-2.5 border transition-all ${
+                          isDark 
+                            ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                            : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
+                        }`} 
+                        title="Edit"
+                        onClick={() => handleOpenForm(speciesItem)}
+                        disabled={submitting}
+                      >
+                        <Edit className="w-4 h-4 mx-auto" />
+                      </button>
+                      <button 
+                        className={`flex-1 p-2.5 border transition-all ${
+                          isDark 
+                            ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
+                            : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
+                        }`} 
+                        title="Delete"
+                        onClick={() => setDeleteConfirm(speciesItem)}
+                        disabled={submitting}
+                      >
+                        <Trash2 className="w-4 h-4 mx-auto" />
+                      </button>
+                    </div>
+
+                    {/* Hover Effect */}
+                    <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${isDark ? 'bg-green-500' : 'bg-green-600'}`} />
+                    <CornerBrackets />
                   </div>
-
-                  {/* Description */}
-                  <p className={`text-sm mb-4 line-clamp-2 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                    {speciesItem.description}
-                  </p>
-
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                      <span className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1 ${
-                        isDark ? 'text-neutral-600' : 'text-neutral-400'
-                      }`}>
-                        Weight
-                      </span>
-                      <p className={`text-sm font-bold ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                        {speciesItem.averageWeight}
-                      </p>
-                    </div>
-                    <div>
-                      <span className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1 ${
-                        isDark ? 'text-neutral-600' : 'text-neutral-400'
-                      }`}>
-                        Lifespan
-                      </span>
-                      <p className={`text-sm font-bold ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                        {speciesItem.averageLifespan}
-                      </p>
-                    </div>
-                    <div>
-                      <span className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1 ${
-                        isDark ? 'text-neutral-600' : 'text-neutral-400'
-                      }`}>
-                        Total
-                      </span>
-                      <p className={`${spaceGrotesk.className} text-xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-                        {speciesItem.totalAnimals}
-                      </p>
-                    </div>
-                    <div>
-                      <span className={`text-[9px] font-mono font-bold uppercase tracking-wider block mb-1 ${
-                        isDark ? 'text-neutral-600' : 'text-neutral-400'
-                      }`}>
-                        Healthy
-                      </span>
-                      <p className={`${spaceGrotesk.className} text-xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-                        {speciesItem.healthyCount}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className={`flex items-center gap-1 pt-4 border-t ${isDark ? 'border-white/10' : 'border-neutral-200'}`}>
-                    <button 
-                      className={`flex-1 p-2.5 border transition-all ${
-                        isDark 
-                          ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
-                          : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
-                      }`} 
-                      title="View Details"
-                      onClick={() => setViewingSpecies(speciesItem)}
-                    >
-                      <Eye className="w-4 h-4 mx-auto" />
-                    </button>
-                    <button 
-                      className={`flex-1 p-2.5 border transition-all ${
-                        isDark 
-                          ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
-                          : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
-                      }`} 
-                      title="Edit"
-                      onClick={() => handleOpenForm(speciesItem)}
-                    >
-                      <Edit className="w-4 h-4 mx-auto" />
-                    </button>
-                    <button 
-                      className={`flex-1 p-2.5 border transition-all ${
-                        isDark 
-                          ? 'hover:bg-red-500/20 text-red-400 border-white/10 hover:border-red-500/20' 
-                          : 'hover:bg-red-50 text-red-600 border-neutral-200 hover:border-red-200'
-                      }`} 
-                      title="Delete"
-                      onClick={() => setDeleteConfirm(speciesItem)}
-                    >
-                      <Trash2 className="w-4 h-4 mx-auto" />
-                    </button>
-                  </div>
-
-                  {/* Hover Effect */}
-                  <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover:w-full transition-all duration-500 ${
-                    isDark ? 'bg-green-500' : 'bg-green-600'
-                  }`} />
-                  <CornerBrackets />
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Empty State */}
-            {filteredSpecies.length === 0 && (
+            {!loading && filteredSpecies.length === 0 && (
               <div className={`relative p-16 border text-center ${
                 isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
               }`}>
@@ -571,219 +783,316 @@ export default function SpeciesManagement() {
                 <CornerBrackets />
               </div>
             )}
+
+            {/* Pagination */}
+            {filteredSpecies.length > 0 && (
+              <div className={`flex items-center justify-between p-6 border ${
+                isDark ? 'bg-neutral-900/50 border-white/5' : 'bg-white border-neutral-300 shadow-sm'
+              }`}>
+                <div className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                  Showing {indexOfFirstRecord + 1} to {Math.min(indexOfLastRecord, filteredSpecies.length)} of {filteredSpecies.length} results
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={goToFirstPage}
+                      disabled={currentPage === 1}
+                      className={`cursor-pointer p-2 border transition-all ${
+                        currentPage === 1
+                          ? 'opacity-50 cursor-not-allowed'
+                          : isDark
+                            ? 'hover:bg-white/10 border-white/10'
+                            : 'hover:bg-neutral-50 border-neutral-200'
+                      }`}
+                    >
+                      «
+                    </button>
+                    <button
+                      onClick={goToPrevPage}
+                      disabled={currentPage === 1}
+                      className={`cursor-pointer p-2 border transition-all ${
+                        currentPage === 1
+                          ? 'opacity-50 cursor-not-allowed'
+                          : isDark
+                            ? 'hover:bg-white/10 border-white/10'
+                            : 'hover:bg-neutral-50 border-neutral-200'
+                      }`}
+                    >
+                      ‹
+                    </button>
+                    
+                    <div className={`px-4 py-2 border font-bold text-sm ${
+                      isDark 
+                        ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                        : 'bg-green-50 border-green-200 text-green-700'
+                    }`}>
+                      {currentPage}
+                    </div>
+                    
+                    <button
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                      className={`cursor-pointer p-2 border transition-all ${
+                        currentPage === totalPages
+                          ? 'opacity-50 cursor-not-allowed'
+                          : isDark
+                            ? 'hover:bg-white/10 border-white/10'
+                            : 'hover:bg-neutral-50 border-neutral-200'
+                      }`}
+                    >
+                      ›
+                    </button>
+                    <button
+                      onClick={goToLastPage}
+                      disabled={currentPage === totalPages}
+                      className={`cursor-pointer p-2 border transition-all ${
+                        currentPage === totalPages
+                          ? 'opacity-50 cursor-not-allowed'
+                          : isDark
+                            ? 'hover:bg-white/10 border-white/10'
+                            : 'hover:bg-neutral-50 border-neutral-200'
+                      }`}
+                    >
+                      »
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className={`text-sm font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                      Rows per page:
+                    </span>
+                    <select
+                      value={rowsPerPage}
+                      onChange={(e) => {
+                        setRowsPerPage(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className={`cursor-pointer px-3 py-2 border outline-none text-sm font-medium ${
+                        isDark 
+                          ? 'bg-neutral-900 border-white/10 text-white'
+                          : 'bg-white border-neutral-300 text-neutral-900'
+                      }`}
+                    >
+                      <option value={3}>3</option>
+                      <option value={6}>6</option>
+                      <option value={9}>9</option>
+                      <option value={12}>12</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
 
         </main>
       </div>
 
-      {/* ADD/EDIT SPECIES FORM SIDEBAR */}
-      <div className={`fixed top-0 right-0 h-full w-full md:w-[500px] z-50 transform transition-transform duration-300 border-l ${
-        showSpeciesForm ? 'translate-x-0' : 'translate-x-full'
-      } ${
-        isDark ? 'bg-neutral-950 border-white/10' : 'bg-white border-neutral-200'
-      } shadow-2xl overflow-y-auto`}>
-        <div className="p-8">
-          {/* Header */}
-          <div className={`flex items-center justify-between mb-8 pb-6 border-b ${isDark ? 'border-white/10' : 'border-neutral-200'}`}>
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`h-[2px] w-6 ${isDark ? 'bg-green-500' : 'bg-green-600'}`} />
-                <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.3em] ${
-                  isDark ? 'text-green-400' : 'text-green-600'
-                }`}>
-                  {editingSpecies ? 'EDIT_MODE' : 'CREATE_MODE'}
-                </span>
+      {/* ADD/EDIT SPECIES FORM MODAL */}
+      {showSpeciesForm && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-2xl border ${
+            isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-300'
+          } shadow-2xl max-h-[90vh] overflow-y-auto`}>
+            {/* Modal Header */}
+            <div className={`flex items-center justify-between p-6 border-b ${
+              isDark ? 'border-white/10' : 'border-neutral-200'
+            }`}>
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className={`h-[2px] w-6 ${isDark ? 'bg-green-500' : 'bg-green-600'}`} />
+                  <span className={`text-[9px] font-mono font-bold uppercase tracking-[0.3em] ${
+                    isDark ? 'text-green-400' : 'text-green-600'
+                  }`}>
+                    {editingSpecies ? 'EDIT_MODE' : 'CREATE_MODE'}
+                  </span>
+                </div>
+                <h2 className={`${spaceGrotesk.className} text-2xl font-bold uppercase tracking-tight`}>
+                  {editingSpecies ? 'Edit Species' : 'Add New Species'}
+                </h2>
               </div>
-              <h2 className={`${spaceGrotesk.className} text-3xl font-bold uppercase tracking-tight mb-1`}>
-                {editingSpecies ? 'Edit Species' : 'Add Species'}
-              </h2>
-              <p className={`text-sm font-medium ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                {editingSpecies ? 'Update species information' : 'Register a new species'}
-              </p>
-            </div>
-            <button
-              onClick={handleCloseForm}
-              className={`p-2.5 border transition-all ${
-                isDark 
-                  ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
-                  : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
-              }`}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Species Name */}
-            <div>
-              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
-                isDark ? 'text-neutral-500' : 'text-neutral-400'
-              }`}>
-                Species Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                placeholder="e.g., Holstein"
-                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
-                  isDark 
-                    ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
-                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
-                }`}
-              />
-            </div>
-
-            {/* Scientific Name */}
-            <div>
-              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
-                isDark ? 'text-neutral-500' : 'text-neutral-400'
-              }`}>
-                Scientific Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={formData.scientificName}
-                onChange={(e) => setFormData({...formData, scientificName: e.target.value})}
-                placeholder="e.g., Bos taurus"
-                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
-                  isDark 
-                    ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
-                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
-                }`}
-              />
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
-                isDark ? 'text-neutral-500' : 'text-neutral-400'
-              }`}>
-                Category *
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
-                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
-                  isDark 
-                    ? 'bg-neutral-900 border-white/10 focus:border-green-500' 
-                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500'
-                }`}
-              >
-                <option value="Cattle">Cattle</option>
-                <option value="Sheep">Sheep</option>
-                <option value="Goat">Goat</option>
-                <option value="Poultry">Poultry</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
-                isDark ? 'text-neutral-500' : 'text-neutral-400'
-              }`}>
-                Description
-              </label>
-              <textarea
-                value={formData.description}
-                onChange={(e) => setFormData({...formData, description: e.target.value})}
-                placeholder="Brief description of the species"
-                rows={3}
-                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium resize-none ${
-                  isDark 
-                    ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
-                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
-                }`}
-              />
-            </div>
-
-            {/* Average Weight */}
-            <div>
-              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
-                isDark ? 'text-neutral-500' : 'text-neutral-400'
-              }`}>
-                Average Weight
-              </label>
-              <input
-                type="text"
-                value={formData.averageWeight}
-                onChange={(e) => setFormData({...formData, averageWeight: e.target.value})}
-                placeholder="e.g., 680 kg"
-                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
-                  isDark 
-                    ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
-                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
-                }`}
-              />
-            </div>
-
-            {/* Average Lifespan */}
-            <div>
-              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
-                isDark ? 'text-neutral-500' : 'text-neutral-400'
-              }`}>
-                Average Lifespan
-              </label>
-              <input
-                type="text"
-                value={formData.averageLifespan}
-                onChange={(e) => setFormData({...formData, averageLifespan: e.target.value})}
-                placeholder="e.g., 6-8 years"
-                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
-                  isDark 
-                    ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
-                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
-                }`}
-              />
-            </div>
-
-            {/* Characteristics */}
-            <div>
-              <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${
-                isDark ? 'text-neutral-500' : 'text-neutral-400'
-              }`}>
-                Key Characteristics
-              </label>
-              <textarea
-                value={formData.characteristics}
-                onChange={(e) => setFormData({...formData, characteristics: e.target.value})}
-                placeholder="Distinctive features and traits"
-                rows={3}
-                className={`w-full px-4 py-3.5 border outline-none transition-all font-medium resize-none ${
-                  isDark 
-                    ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
-                    : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
-                }`}
-              />
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-3 pt-6">
               <button
-                type="button"
                 onClick={handleCloseForm}
-                className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                className={`p-2.5 border transition-colors ${
                   isDark 
-                    ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
-                    : 'bg-white hover:bg-neutral-50 border-neutral-300'
+                    ? 'hover:bg-white/10 border-white/10 hover:border-white/20' 
+                    : 'hover:bg-neutral-50 border-neutral-200 hover:border-neutral-300'
                 }`}
+                disabled={submitting}
               >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-green-600 hover:bg-green-700 text-white border-green-600 transition-all"
-              >
-                {editingSpecies ? 'Update' : 'Add'}
+                <X className="w-5 h-5" />
               </button>
             </div>
-          </form>
+
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Form fields same as before... */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Species Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
+                      isDark 
+                        ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
+                        : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
+                    }`}
+                    placeholder="e.g., Holstein"
+                    required
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Scientific Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.scientificName}
+                    onChange={(e) => setFormData({...formData, scientificName: e.target.value})}
+                    className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
+                      isDark 
+                        ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
+                        : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
+                    }`}
+                    placeholder="e.g., Bos taurus"
+                    required
+                    disabled={submitting}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                  Category *
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
+                    isDark 
+                      ? 'bg-neutral-900 border-white/10 focus:border-green-500' 
+                      : 'bg-neutral-50 border-neutral-300 focus:border-green-500'
+                  }`}
+                  disabled={submitting}
+                >
+                  <option value="Cattle">Cattle</option>
+                  <option value="Sheep">Sheep</option>
+                  <option value="Goat">Goat</option>
+                  <option value="Poultry">Poultry</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                  Description
+                </label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  rows="3"
+                  className={`w-full px-4 py-3.5 border outline-none transition-all font-medium resize-none ${
+                    isDark 
+                      ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
+                      : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
+                  }`}
+                  placeholder="Brief description of the species..."
+                  disabled={submitting}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Average Weight
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.averageWeight}
+                    onChange={(e) => setFormData({...formData, averageWeight: e.target.value})}
+                    className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
+                      isDark 
+                        ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
+                        : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
+                    }`}
+                    placeholder="e.g., 680 kg"
+                    disabled={submitting}
+                  />
+                </div>
+
+                <div>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                    Average Lifespan
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.averageLifespan}
+                    onChange={(e) => setFormData({...formData, averageLifespan: e.target.value})}
+                    className={`w-full px-4 py-3.5 border outline-none transition-all font-medium ${
+                      isDark 
+                        ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
+                        : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
+                    }`}
+                    placeholder="e.g., 6-8 years"
+                    disabled={submitting}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-3 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                  Key Characteristics
+                </label>
+                <textarea
+                  value={formData.characteristics}
+                  onChange={(e) => setFormData({...formData, characteristics: e.target.value})}
+                  rows="3"
+                  className={`w-full px-4 py-3.5 border outline-none transition-all font-medium resize-none ${
+                    isDark 
+                      ? 'bg-neutral-900 border-white/10 focus:border-green-500 placeholder:text-neutral-600' 
+                      : 'bg-neutral-50 border-neutral-300 focus:border-green-500 placeholder:text-neutral-400'
+                  }`}
+                  placeholder="Distinctive features and traits..."
+                  disabled={submitting}
+                />
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={handleCloseForm}
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest transition-all ${
+                    isDark 
+                      ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
+                      : 'bg-white hover:bg-neutral-50 border-neutral-300'
+                  }`}
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest ${
+                    submitting
+                      ? 'bg-green-400 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700'
+                  } text-white border-green-600 transition-all`}
+                >
+                  {submitting ? 'Saving...' : editingSpecies ? 'Update Species' : 'Add Species'}
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* DELETE CONFIRMATION MODAL */}
       {deleteConfirm && (
@@ -811,14 +1120,20 @@ export default function SpeciesManagement() {
                       ? 'bg-neutral-800 hover:bg-neutral-700 border-neutral-700' 
                       : 'bg-white hover:bg-neutral-50 border-neutral-300'
                   }`}
+                  disabled={submitting}
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleDelete(deleteConfirm.id)}
-                  className="cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest bg-red-600 hover:bg-red-700 text-white border-red-600 transition-all"
+                  onClick={() => deleteSpecies(deleteConfirm.id || deleteConfirm._id)}
+                  className={`cursor-pointer flex-1 px-6 py-3.5 border font-bold text-[11px] uppercase tracking-widest ${
+                    submitting
+                      ? 'bg-red-400 cursor-not-allowed'
+                      : 'bg-red-600 hover:bg-red-700'
+                  } text-white border-red-600 transition-all`}
+                  disabled={submitting}
                 >
-                  Delete
+                  {submitting ? 'Deleting...' : 'Delete'}
                 </button>
               </div>
             </div>
@@ -867,9 +1182,7 @@ export default function SpeciesManagement() {
               {/* Details Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="md:col-span-2">
-                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
-                    isDark ? 'text-neutral-500' : 'text-neutral-400'
-                  }`}>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
                     Category
                   </label>
                   <span className={`inline-flex items-center px-3 py-1 border text-[10px] font-bold font-mono uppercase tracking-wider ${
@@ -881,63 +1194,55 @@ export default function SpeciesManagement() {
                   </span>
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
-                    isDark ? 'text-neutral-500' : 'text-neutral-400'
-                  }`}>
-                    Description
-                  </label>
-                  <p className="text-sm font-medium">{viewingSpecies.description}</p>
-                </div>
+                {viewingSpecies.description && (
+                  <div className="md:col-span-2">
+                    <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                      Description
+                    </label>
+                    <p className="text-sm font-medium">{viewingSpecies.description}</p>
+                  </div>
+                )}
 
                 <div>
-                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
-                    isDark ? 'text-neutral-500' : 'text-neutral-400'
-                  }`}>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
                     Average Weight
                   </label>
-                  <p className={`text-lg font-bold ${spaceGrotesk.className}`}>{viewingSpecies.averageWeight}</p>
+                  <p className={`text-lg font-bold ${spaceGrotesk.className}`}>{viewingSpecies.averageWeight || '-'}</p>
                 </div>
 
                 <div>
-                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
-                    isDark ? 'text-neutral-500' : 'text-neutral-400'
-                  }`}>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
                     Average Lifespan
                   </label>
-                  <p className={`text-lg font-bold ${spaceGrotesk.className}`}>{viewingSpecies.averageLifespan}</p>
+                  <p className={`text-lg font-bold ${spaceGrotesk.className}`}>{viewingSpecies.averageLifespan || '-'}</p>
                 </div>
 
                 <div>
-                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
-                    isDark ? 'text-neutral-500' : 'text-neutral-400'
-                  }`}>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
                     Total Animals
                   </label>
                   <p className={`${spaceGrotesk.className} text-2xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-                    {viewingSpecies.totalAnimals}
+                    {viewingSpecies.totalAnimals || 0}
                   </p>
                 </div>
 
                 <div>
-                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
-                    isDark ? 'text-neutral-500' : 'text-neutral-400'
-                  }`}>
+                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
                     Healthy Count
                   </label>
                   <p className={`${spaceGrotesk.className} text-2xl font-bold ${isDark ? 'text-green-400' : 'text-green-600'}`}>
-                    {viewingSpecies.healthyCount}
+                    {viewingSpecies.healthyCount || 0}
                   </p>
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${
-                    isDark ? 'text-neutral-500' : 'text-neutral-400'
-                  }`}>
-                    Key Characteristics
-                  </label>
-                  <p className="text-sm font-medium">{viewingSpecies.characteristics}</p>
-                </div>
+                {viewingSpecies.characteristics && (
+                  <div className="md:col-span-2">
+                    <label className={`block text-[9px] font-mono font-bold uppercase tracking-[0.25em] mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                      Key Characteristics
+                    </label>
+                    <p className="text-sm font-medium">{viewingSpecies.characteristics}</p>
+                  </div>
+                )}
               </div>
 
               {/* Action Buttons */}

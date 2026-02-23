@@ -2,7 +2,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import axios from 'axios';
 import Cookies from 'js-cookie';
 import { 
   Sun, Moon, Bell, LogOut, Upload, Trash2,
@@ -10,9 +9,11 @@ import {
   Activity, ChevronRight, ChevronDown, ChevronLeft, Zap
 } from 'lucide-react';
 import { Space_Grotesk } from "next/font/google";
+import axiosInstance from '@/utils/axios';
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 
+// ✅ API Base URL - only for file upload (needs FormData)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
 
 export default function Navbar({ 
@@ -35,19 +36,15 @@ export default function Navbar({
   const fileInputRef = useRef(null);
   const profileMenuRef = useRef(null);
 
-  // Helper to get headers with token
+  // Helper to get headers with token (only for file upload)
   const getHeaders = () => ({
     Authorization: `Bearer ${Cookies.get('accessToken')}`
   });
 
-  // Fetch user profile from backend
+  // Fetch user profile from backend using axiosInstance
   const fetchUserProfile = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/user/me`, {
-        withCredentials: true,
-        headers: getHeaders()
-      });
-      
+      const response = await axiosInstance.get('/user/me');
       if (response.data?.success) {
         setUser({
           name: response.data.data.name || 'User',
@@ -97,17 +94,13 @@ export default function Navbar({
     formData.append('photo', file);
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/user/upload-photo`,
-        formData,
-        {
-          withCredentials: true,
-          headers: {
-            ...getHeaders(),
-            'Content-Type': 'multipart/form-data'
-          }
+      // ✅ File upload still needs axios with FormData
+      const response = await axiosInstance.post('/user/upload-photo', formData, {
+        headers: {
+          ...getHeaders(),
+          'Content-Type': 'multipart/form-data'
         }
-      );
+      });
 
       if (response.data?.success) {
         const photoUrl = response.data.data.profile_photo;
@@ -129,18 +122,23 @@ export default function Navbar({
     setShowProfileMenu(false);
   };
 
+  // Updated logout function using axiosInstance
   const handleLogout = async () => {
     try {
-      await axios.post(`${API_BASE_URL}/auth/logout`, {}, {
-        withCredentials: true
-      });
-      
+      const refreshToken = Cookies.get('refreshToken');
+      if (refreshToken) {
+        await axiosInstance.post('/auth/logout', { token: refreshToken });
+      }
       Cookies.remove('accessToken');
       Cookies.remove('refreshToken');
-      
+      localStorage.removeItem('user');
       window.location.href = '/login';
     } catch (error) {
       console.error("Logout error:", error);
+      Cookies.remove('accessToken');
+      Cookies.remove('refreshToken');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
     }
   };
 
@@ -156,7 +154,7 @@ export default function Navbar({
     { 
       section: 'OVERVIEW', 
       items: [
-        { name: 'Dashboard', icon: Home, route: '/' }
+        { name: 'Dashboard', icon: Home, route: '/dashboard' }
       ]
     },
     { 

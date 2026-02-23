@@ -1,35 +1,53 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
-import axios from 'axios';
-import Cookies from 'js-cookie';
 import { 
   Activity, Droplet, TrendingUp, Wallet, PiggyBank, 
-  ThermometerSun, ArrowUpRight, ArrowDownRight
+  ThermometerSun, ArrowUpRight, ArrowDownRight, Cloud, CloudRain, Sun, CloudLightning
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, AreaChart, Area 
 } from 'recharts';
 import { Space_Grotesk, Inter } from "next/font/google";
+import axiosInstance from '../../utils/axios';
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-// API Base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-const DASHBOARD_API = `${API_BASE_URL}/dashboard`;
+const STATS_ENDPOINT = '/dashboard/stats';
+const MILK_PRODUCTION_ENDPOINT = '/dashboard/milk-production';
+const FINANCE_ENDPOINT = '/dashboard/finance';
+const USER_PROFILE_ENDPOINT = '/user/me';
+const WEATHER_CURRENT_ENDPOINT = '/weather/current';
+const WEATHER_DEFAULT_ENDPOINT = '/weather/default';
 
-// Helper to get headers with token
-const getHeaders = () => ({
-  Authorization: `Bearer ${Cookies.get('accessToken')}`
-});
+// ✅ City name mapping for better display
+const cityMapping = {
+  'Ārya': 'Rawalpindi',
+  'Isb': 'Islamabad',
+  'Lhr': 'Lahore',
+  'Khi': 'Karachi',
+  // Add more as needed
+};
 
 export default function FarmDashboard() {
   const [isDark, setIsDark] = useState(false); 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState({ name: 'Farmer' }); // ✅ User state
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState(false);
+  const [user, setUser] = useState({ name: 'Farmer' });
+  
+  const [weather, setWeather] = useState({
+    temp: '--',
+    city: 'Detecting...',
+    country: '',
+    condition: '',
+    description: '',
+    icon: '01d'
+  });
+  
   const [stats, setStats] = useState({
     totalLivestock: 0,
     milkProductionToday: 0,
@@ -47,14 +65,9 @@ export default function FarmDashboard() {
   const [milkProductionData, setMilkProductionData] = useState([]);
   const [financeData, setFinanceData] = useState([]);
   
-  // ✅ Fetch user profile from backend
   const fetchUserProfile = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/user/me`, {
-        withCredentials: true,
-        headers: getHeaders()
-      });
-      
+      const response = await axiosInstance.get(USER_PROFILE_ENDPOINT);
       if (response.data?.success) {
         setUser({
           name: response.data.data.name || 'Farmer'
@@ -65,25 +78,97 @@ export default function FarmDashboard() {
     }
   };
   
-  // Fetch all dashboard data
+  const fetchWeatherByCoords = async (lat, lon) => {
+    try {
+      const response = await axiosInstance.get(WEATHER_CURRENT_ENDPOINT, {
+        params: { lat, lon }
+      });
+      
+      if (response.data?.success) {
+        setWeather(response.data.data);
+        setWeatherError(false);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error fetching weather by coordinates:", error);
+      return false;
+    }
+  };
+
+  const fetchDefaultWeather = async () => {
+    try {
+      const response = await axiosInstance.get(WEATHER_DEFAULT_ENDPOINT);
+      
+      if (response.data?.success) {
+        setWeather(response.data.data);
+        setWeatherError(false);
+      } else {
+        throw new Error("Failed to fetch default weather");
+      }
+    } catch (error) {
+      console.error("Error fetching default weather:", error);
+      setWeatherError(true);
+      setWeather({
+        temp: '--',
+        city: 'Unavailable',
+        country: '',
+        condition: 'ERROR',
+        description: 'Weather unavailable',
+        icon: '01d'
+      });
+    }
+  };
+  
+  const fetchWeatherData = async () => {
+    try {
+      setWeatherLoading(true);
+      setWeatherError(false);
+      
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const { latitude, longitude } = position.coords;
+            const success = await fetchWeatherByCoords(latitude, longitude);
+            if (!success) {
+              await fetchDefaultWeather();
+            }
+          },
+          async (error) => {
+            console.log("Geolocation error:", error.message);
+            await fetchDefaultWeather();
+          }
+        );
+      } else {
+        console.log("Geolocation not supported");
+        await fetchDefaultWeather();
+      }
+    } catch (error) {
+      console.error("Weather fetch error:", error);
+      await fetchDefaultWeather();
+    } finally {
+      setWeatherLoading(false);
+    }
+  };
+  
+  const getWeatherIcon = (condition) => {
+    if (weatherError) return <Cloud className="w-4 h-4" />;
+    const cond = condition?.toLowerCase() || '';
+    if (cond.includes('rain')) return <CloudRain className="w-4 h-4" />;
+    if (cond.includes('cloud')) return <Cloud className="w-4 h-4" />;
+    if (cond.includes('clear')) return <Sun className="w-4 h-4" />;
+    if (cond.includes('thunder')) return <CloudLightning className="w-4 h-4" />;
+    return <Sun className="w-4 h-4" />;
+  };
+  
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
       
-      // Fetch all data in parallel
       const [statsRes, milkRes, financeRes] = await Promise.all([
-        axios.get(`${DASHBOARD_API}/stats`, {
-          withCredentials: true,
-          headers: getHeaders()
-        }),
-        axios.get(`${DASHBOARD_API}/milk-production`, {
-          withCredentials: true,
-          headers: getHeaders()
-        }),
-        axios.get(`${DASHBOARD_API}/finance`, {
-          withCredentials: true,
-          headers: getHeaders()
-        })
+        axiosInstance.get(STATS_ENDPOINT),
+        axiosInstance.get(MILK_PRODUCTION_ENDPOINT),
+        axiosInstance.get(FINANCE_ENDPOINT)
       ]);
       
       if (statsRes.data?.success) {
@@ -105,13 +190,15 @@ export default function FarmDashboard() {
     }
   };
   
-  // ✅ Initial data fetch
   useEffect(() => {
-    fetchUserProfile();    // Pehle user profile fetch karo
-    fetchDashboardData();  // Phir dashboard data fetch karo
+    fetchUserProfile();
+    fetchDashboardData();
+    fetchWeatherData();
+    
+    const weatherInterval = setInterval(fetchWeatherData, 30 * 60 * 1000);
+    return () => clearInterval(weatherInterval);
   }, []);
 
-  // Format stats for display
   const formattedStats = [
     { 
       title: 'Total Livestock', 
@@ -194,7 +281,6 @@ export default function FarmDashboard() {
       isDark ? 'bg-neutral-950 text-white' : 'bg-neutral-50 text-neutral-900'
     }`}>
       
-      {/* ENHANCED BACKGROUND TEXTURE */}
       <div className="fixed inset-0 pointer-events-none z-0">
           {isDark ? (
             <>
@@ -209,7 +295,6 @@ export default function FarmDashboard() {
           )}
       </div>
 
-      {/* NAVBAR WITH SIDEBAR */}
       <Navbar 
         isDark={isDark} 
         setIsDark={setIsDark} 
@@ -218,11 +303,9 @@ export default function FarmDashboard() {
         searchPlaceholder="Search orders..."
       />
 
-      {/* MAIN CONTENT WRAPPER */}
       <div className={`${sidebarOpen ? 'ml-72' : 'ml-20'} transition-all duration-300 relative z-10`}>
         <main className="p-6 lg:p-10 max-w-[1600px] mx-auto space-y-8">
           
-          {/* MODERNIZED WELCOME HERO - With Real User Name */}
           <div className={`relative overflow-hidden border group ${
             isDark 
               ? 'border-white/10 bg-neutral-900/30' 
@@ -234,7 +317,6 @@ export default function FarmDashboard() {
                  : 'bg-gradient-to-br from-green-50/50 via-transparent to-transparent'
              }`} />
              
-             {/* Scan line effect */}
              <div className={`absolute top-0 left-0 w-full h-[2px] bg-green-500/30 ${
                isDark ? 'shadow-[0_0_15px_rgba(34,197,94,0.5)]' : ''
              }`} 
@@ -256,7 +338,6 @@ export default function FarmDashboard() {
                     
                     <h1 className={`${spaceGrotesk.className} text-4xl md:text-6xl font-bold uppercase tracking-tighter leading-[0.9] mb-4`}>
                       Good Morning, <br/>
-                      {/* ✅ Real user name show hoga, agar nahi to 'Farmer' show hoga */}
                       <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-600">
                         {user.name}
                       </span>
@@ -269,7 +350,7 @@ export default function FarmDashboard() {
                     </p>
                 </div>
                 
-                {/* Weather Widget */}
+                {/* ✅ WEATHER WIDGET with city name mapping */}
                 <div className={`relative cursor-pointer overflow-hidden border backdrop-blur-md group/weather ${
                   isDark 
                     ? 'bg-neutral-900/50 border-white/10' 
@@ -291,19 +372,29 @@ export default function FarmDashboard() {
                         }`}>
                           WEATHER
                         </span>
+                        {weatherLoading && (
+                          <span className="text-[8px] text-green-500 animate-pulse">LOCATING...</span>
+                        )}
+                        {weatherError && !weatherLoading && (
+                          <span className="text-[8px] text-red-500">⚠️ OFFLINE</span>
+                        )}
                       </div>
                       
                       <div className="flex items-baseline gap-2 mb-2">
-                        <span className={`text-5xl font-bold ${spaceGrotesk.className} tracking-tighter`}>24°</span>
+                        <span className={`text-5xl font-bold ${spaceGrotesk.className} tracking-tighter`}>
+                          {weather.temp}°
+                        </span>
                         <span className={`text-lg font-bold ${spaceGrotesk.className} ${
                           isDark ? 'text-neutral-600' : 'text-neutral-400'
                         }`}>C</span>
                       </div>
                       
+                      {/* ✅ Display mapped city name or original */}
                       <div className={`text-xs font-bold mb-1 ${
                         isDark ? 'text-neutral-400' : 'text-neutral-600'
                       }`}>
-                        Islamabad, PK
+                        {cityMapping[weather.city] || weather.city}
+                        {weather.country ? `, ${weather.country}` : ''}
                       </div>
                       
                       <div className={`flex items-center gap-2 text-[9px] font-mono font-bold ${
@@ -313,14 +404,22 @@ export default function FarmDashboard() {
                           <div className={`w-1.5 h-1.5 rounded-full ${
                             isDark ? 'bg-amber-400' : 'bg-amber-500'
                           }`} />
-                          <span>CLEAR</span>
+                          <span className="capitalize">
+                            {weatherError ? 'Unavailable' : weather.description}
+                          </span>
                         </div>
-                        <span className={isDark ? 'text-neutral-700' : 'text-neutral-300'}>|</span>
-                        <span>UV: 5</span>
+                        {!weatherError && weather.condition && (
+                          <>
+                            <span className={isDark ? 'text-neutral-700' : 'text-neutral-300'}>|</span>
+                            <span className="flex items-center gap-1">
+                              {getWeatherIcon(weather.condition)}
+                              {weather.condition}
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                     
-                    {/* Corner brackets */}
                     <div className={`absolute top-0 left-0 w-3 h-3 border-l border-t transition-all ${
                       isDark ? 'border-amber-500/20 group-hover/weather:border-amber-500/40' : 'border-amber-500/30 group-hover/weather:border-amber-500/50'
                     }`} />
@@ -332,7 +431,7 @@ export default function FarmDashboard() {
              <CornerBrackets />
           </div>
 
-          {/* ENHANCED STATS GRID */}
+          {/* STATS GRID (unchanged) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5">
             {formattedStats.map((stat, idx) => (
               <div key={idx} className={`relative p-6 border transition-all hover:-translate-y-1 overflow-hidden group/card ${
@@ -340,7 +439,6 @@ export default function FarmDashboard() {
                   ? 'bg-neutral-900/50 border-white/5 hover:border-green-500/20' 
                   : 'bg-white border-neutral-300 hover:border-green-500/30 shadow-sm'
               }`}>
-                {/* Animated border glow on hover */}
                 <div className={`absolute inset-0 opacity-0 group-hover/card:opacity-100 transition-opacity duration-500 ${
                   isDark 
                     ? 'bg-gradient-to-br from-green-500/5 via-transparent to-transparent' 
@@ -391,28 +489,23 @@ export default function FarmDashboard() {
                   </div>
                 </div>
                 
-                {/* Bottom accent line */}
                 <div className={`absolute bottom-0 left-0 h-[2px] w-0 group-hover/card:w-full transition-all duration-500 ease-out ${
                   isDark ? 'bg-green-500' : 'bg-green-600'
                 }`} />
                 
-                {/* Corner brackets on hover */}
                 <div className={`absolute top-0 left-0 w-2 h-2 border-l border-t border-green-500/0 group-hover/card:border-green-500/50 transition-all duration-300`} />
                 <div className={`absolute bottom-0 right-0 w-2 h-2 border-r border-b border-green-500/0 group-hover/card:border-green-500/50 transition-all duration-300`} />
               </div>
             ))}
           </div>
 
-          {/* MODERNIZED CHARTS */}
+          {/* CHARTS SECTION (unchanged) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            
-            {/* Milk Production Chart */}
             <div className={`border p-8 relative overflow-hidden group/chart ${
               isDark 
                 ? 'bg-neutral-900/30 border-white/5' 
                 : 'bg-white border-neutral-300 shadow-sm'
             }`}>
-                {/* Header */}
                 <div className="flex items-start justify-between mb-8">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -497,13 +590,11 @@ export default function FarmDashboard() {
                 <CornerBrackets />
             </div>
 
-            {/* Finance Chart */}
             <div className={`border p-8 relative overflow-hidden group/chart ${
               isDark 
                 ? 'bg-neutral-900/30 border-white/5' 
                 : 'bg-white border-neutral-300 shadow-sm'
             }`}>
-                {/* Header */}
                 <div className="flex items-start justify-between mb-8">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
@@ -520,7 +611,6 @@ export default function FarmDashboard() {
                     </p>
                   </div>
                   
-                  {/* Legend */}
                   <div className="flex gap-4 text-[9px] font-mono font-bold">
                     <div className="flex items-center gap-1.5">
                       <div className="w-3 h-[2px] bg-green-500" />
@@ -597,7 +687,6 @@ export default function FarmDashboard() {
         </main>
       </div>
 
-      {/* Scan line animation */}
       <style jsx global>{`
         @keyframes scanLine {
           0%, 100% { transform: translateY(0); opacity: 0; }

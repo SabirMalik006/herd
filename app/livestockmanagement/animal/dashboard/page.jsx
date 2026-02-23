@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import axiosInstance from '../../../../utils/axios';
 import {
   Activity, HeartPulse, ThermometerSun, Skull, TrendingUp
 } from 'lucide-react';
@@ -14,8 +13,7 @@ import { usePathname } from 'next/navigation';
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-// API Base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
+// ...existing code...
 
 export default function LivestockOverview() {
   const [isDark, setIsDark] = useState(false);
@@ -44,33 +42,18 @@ export default function LivestockOverview() {
     otherSales: 0
   });
 
-  // Helper to get headers with token
-  const getHeaders = () => ({
-    Authorization: `Bearer ${Cookies.get("accessToken")}`
-  });
+  // ...existing code...
 
   // Fetch Overview Data
   const fetchOverviewData = async () => {
     try {
       setLoading(true);
       setError(null);
-
       const [populationRes, healthRes, salesRes] = await Promise.all([
-        axios.get(`${API_BASE_URL}/overview/population`, { 
-          withCredentials: true, 
-          headers: getHeaders() 
-        }),
-        axios.get(`${API_BASE_URL}/overview/health`, { 
-          withCredentials: true, 
-          headers: getHeaders() 
-        }),
-        axios.get(`${API_BASE_URL}/overview/sales`, { 
-          withCredentials: true, 
-          headers: getHeaders() 
-        }),
+        axiosInstance.get('/overview/population'),
+        axiosInstance.get('/overview/health'),
+        axiosInstance.get('/overview/sales'),
       ]);
-
-      // 👇 Set data with proper defaults
       setPopulationData(populationRes.data?.data || {
         cows: 0,
         heifers: 0,
@@ -78,20 +61,17 @@ export default function LivestockOverview() {
         weaners: 0,
         calves: 0
       });
-      
       setHealthData(healthRes.data?.data || {
         healthy: 0,
         sick: 0,
         treatment: 0,
         deceased: 0
       });
-      
       setSalesData(salesRes.data?.data || {
         milkSales: 0,
         meatSales: 0,
         otherSales: 0
       });
-
     } catch (error) {
       console.error("❌ Overview API Error:", error);
       setError(error.message || 'Failed to fetch overview data');

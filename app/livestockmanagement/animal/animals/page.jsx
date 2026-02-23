@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import axiosInstance from '../../../../utils/axios';
 import { 
   Search, Filter, Plus, Eye, Edit, Trash2, ChevronDown, X, Download,
   Activity, AlertCircle, FileText
@@ -15,9 +14,7 @@ import { usePathname } from 'next/navigation';
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-// API Base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
-const API_URL = `${API_BASE_URL}/animals`;
+const API_URL = '/animals';
 
 export default function AnimalsManagement() {
   const [isDark, setIsDark] = useState(false); 
@@ -52,10 +49,7 @@ export default function AnimalsManagement() {
   // --- ANIMALS DATA ---
   const [animals, setAnimals] = useState([]);
 
-  // Helper to get headers with token
-  const getHeaders = () => ({
-    Authorization: `Bearer ${Cookies.get('accessToken')}`
-  });
+  // ...existing code...
 
   // Normalize animal to handle different field names
   const normalizeAnimal = (animal) => {
@@ -76,15 +70,10 @@ export default function AnimalsManagement() {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(API_URL, {
-        withCredentials: true,
-        headers: getHeaders()
-      });
-      
+      const response = await axiosInstance.get(API_URL);
       if (response.data && response.data.success) {
         const fetchedAnimals = (response.data.data || []).map(normalizeAnimal);
         setAnimals(fetchedAnimals);
-        // Save to localStorage as backup
         localStorage.setItem('livestockAnimals', JSON.stringify(fetchedAnimals));
       } else if (Array.isArray(response.data)) {
         const fetchedAnimals = response.data.map(normalizeAnimal);
@@ -92,13 +81,11 @@ export default function AnimalsManagement() {
         localStorage.setItem('livestockAnimals', JSON.stringify(fetchedAnimals));
       } else {
         console.warn("Unexpected API response format:", response.data);
-        // Fallback to localStorage
         loadFromLocalStorage();
       }
     } catch (error) {
       console.error("❌ Error fetching animals:", error);
       setError('Failed to fetch animals');
-      // Fallback to localStorage
       loadFromLocalStorage();
     } finally {
       setLoading(false);
@@ -190,14 +177,11 @@ export default function AnimalsManagement() {
   // Submit Handler - API Integration
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
     if (!formData.name || !formData.dateOfBirth || !formData.breed) {
       return;
     }
-    
     setSubmitting(true);
     setError(null);
-    
     const apiData = {
       animalName: formData.name,
       dob: formData.dateOfBirth,
@@ -207,18 +191,12 @@ export default function AnimalsManagement() {
       healthStatus: formData.healthStatus,
       breed: formData.breed
     };
-    
     try {
       if (editingAnimal) {
         // Update existing animal
-        const response = await axios.patch(`${API_URL}/${editingAnimal.id}`, apiData, {
-          withCredentials: true,
-          headers: getHeaders()
-        });
-        
+        const response = await axiosInstance.patch(`${API_URL}/${editingAnimal.id}`, apiData);
         if (response.data && response.data.success) {
           await fetchAnimals();
-          // Reset all filters and search
           setSearchTerm('');
           setSelectedType('all');
           setSelectedSpecies('all');
@@ -227,14 +205,9 @@ export default function AnimalsManagement() {
         }
       } else {
         // Add new animal
-        const response = await axios.post(API_URL, apiData, {
-          withCredentials: true,
-          headers: getHeaders()
-        });
-        
+        const response = await axiosInstance.post(API_URL, apiData);
         if (response.data && response.data.success) {
           await fetchAnimals();
-          // Reset all filters and search
           setSearchTerm('');
           setSelectedType('all');
           setSelectedSpecies('all');
@@ -242,13 +215,9 @@ export default function AnimalsManagement() {
           setSelectedStatus('all');
         }
       }
-      
       handleCloseForm();
-      
     } catch (error) {
       console.error("❌ API Error, saving locally:", error);
-      
-      // Fallback to localStorage if API fails
       const newAnimal = {
         id: editingAnimal ? editingAnimal.id : (animals.length > 0 ? Math.max(...animals.map(a => a.id)) + 1 : 1),
         name: formData.name,
@@ -259,25 +228,20 @@ export default function AnimalsManagement() {
         healthStatus: formData.healthStatus,
         breed: formData.breed
       };
-      
       let updatedAnimals;
       if (editingAnimal) {
         updatedAnimals = animals.map(a => a.id === editingAnimal.id ? newAnimal : a);
       } else {
         updatedAnimals = [newAnimal, ...animals];
       }
-      
       setAnimals(updatedAnimals);
       localStorage.setItem('livestockAnimals', JSON.stringify(updatedAnimals));
-      
-      // Reset all filters and search
       setSearchTerm('');
       setSelectedType('all');
       setSelectedSpecies('all');
       setSelectedHealth('all');
       setSelectedStatus('all');
       handleCloseForm();
-      
     } finally {
       setSubmitting(false);
     }
@@ -287,10 +251,7 @@ export default function AnimalsManagement() {
   const handleDelete = async (id) => {
     try {
       setSubmitting(true);
-      await axios.delete(`${API_URL}/${id}`, {
-        withCredentials: true,
-        headers: getHeaders()
-      });
+      await axiosInstance.delete(`${API_URL}/${id}`);
       await fetchAnimals();
       setDeleteConfirm(null);
     } catch (error) {

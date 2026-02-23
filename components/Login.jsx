@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import axios from "axios";
+// ✅ Remove axios import, we'll use axiosInstance
 import Cookies from "js-cookie";
 import Link from "next/link";
 import {
@@ -18,11 +18,13 @@ import {
 import { Space_Grotesk, Inter } from "next/font/google";
 import { useTheme } from "@/context/ThemeContext";
 import Image from "next/image";
+// ✅ Import axiosInstance
+import axiosInstance from "@/utils/axios";
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["400", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "600"] });
 
-// API Base URL from env
+// ✅ API Base URL - only used for auth endpoints (login/register)
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
 
 const Login = () => {
@@ -40,29 +42,34 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(
-        `${API_BASE_URL}/auth/login`,
-        formData
-      );
+      // ✅ Use axiosInstance for the request
+      const response = await axiosInstance.post("/auth/login", formData);
 
       console.log("LOGIN_SUCCESS:", response.data);
       setSuccess("Login successful! Redirecting...");
       
-      // Store tokens in cookies
+      // ✅ Store tokens in cookies with proper expiry
       if (response.data.accessToken) {
         Cookies.set("accessToken", response.data.accessToken, {
-          expires: 7,
+          expires: 7, // 7 days
           secure: true,
-          sameSite: "Strict"
+          sameSite: "Strict",
+          path: "/"
         });
       }
       
       if (response.data.refreshToken) {
         Cookies.set("refreshToken", response.data.refreshToken, {
-          expires: 30,
+          expires: 30, // 30 days
           secure: true,
-          sameSite: "Strict"
+          sameSite: "Strict",
+          path: "/"
         });
+      }
+      
+      // ✅ Store user data in localStorage
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
       }
       
       // Redirect to home page after 1.5 seconds
@@ -112,7 +119,7 @@ const Login = () => {
             : "bg-white border-neutral-200 shadow-2xl"
         }`}>
           
-          {/* LEFT SIDE - SYSTEM STATUS */}
+          {/* LEFT SIDE - SYSTEM STATUS (unchanged) */}
           <div className={`relative p-12 lg:p-16 flex flex-col justify-between min-h-[700px] border-r ${
             isDark ? "bg-neutral-950/80 border-white/5" : "bg-neutral-50 border-neutral-200"
           }`}>

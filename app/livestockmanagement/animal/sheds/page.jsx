@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Navbar from '@/components/dashboard/Navbar';
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import axiosInstance from '../../../../utils/axios';
 import {
   Home, Search, Filter, Plus, Eye, Edit, Trash2, ChevronDown, X
 } from 'lucide-react';
@@ -14,9 +13,7 @@ import { usePathname } from 'next/navigation';
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"], weight: ["300", "500", "700"] });
 const inter = Inter({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
-// API Base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api';
-const API_URL = `${API_BASE_URL}/sheds`;
+const API_URL = '/sheds';
 
 export default function ShedsManagement() {
   const [isDark, setIsDark] = useState(false);
@@ -44,10 +41,7 @@ export default function ShedsManagement() {
   // ============================
   const [sheds, setSheds] = useState([]);
 
-  // Helper to get headers with token
-  const getHeaders = () => ({
-    Authorization: `Bearer ${Cookies.get('accessToken')}`
-  });
+  // ...existing code...
 
   // Normalize shed data
   const normalizeShed = (shed) => {
@@ -67,11 +61,7 @@ export default function ShedsManagement() {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(API_URL, {
-        withCredentials: true,
-        headers: getHeaders()
-      });
-
+      const response = await axiosInstance.get(API_URL);
       if (response.data && response.data.success) {
         const fetchedSheds = (response.data.data || []).map(normalizeShed);
         setSheds(fetchedSheds);
@@ -164,28 +154,20 @@ export default function ShedsManagement() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!formData.name || !formData.capacity) {
       return;
     }
-
     setSubmitting(true);
     setError(null);
-
     const payload = {
       shedName: formData.name,
       capacity: parseInt(formData.capacity),
       status: formData.status
     };
-
     try {
       if (editingShed) {
         // Update existing shed
-        const response = await axios.patch(`${API_URL}/${editingShed.id}`, payload, {
-          withCredentials: true,
-          headers: getHeaders()
-        });
-
+        const response = await axiosInstance.patch(`${API_URL}/${editingShed.id}`, payload);
         if (response.data && response.data.success) {
           await fetchSheds();
           setSearchTerm('');
@@ -193,24 +175,16 @@ export default function ShedsManagement() {
         }
       } else {
         // Add new shed
-        const response = await axios.post(API_URL, payload, {
-          withCredentials: true,
-          headers: getHeaders()
-        });
-
+        const response = await axiosInstance.post(API_URL, payload);
         if (response.data && response.data.success) {
           await fetchSheds();
           setSearchTerm('');
           setSelectedStatus('all');
         }
       }
-
       handleCloseForm();
-
     } catch (error) {
       console.error("❌ API Error, saving locally:", error);
-
-      // Fallback to localStorage if API fails
       const newShed = {
         id: editingShed ? editingShed.id : (sheds.length > 0 ? Math.max(...sheds.map(s => s.id)) + 1 : 1),
         shedName: formData.name,
@@ -220,20 +194,17 @@ export default function ShedsManagement() {
         createdDate: new Date().toLocaleDateString(),
         createdAt: new Date().toISOString()
       };
-
       let updatedSheds;
       if (editingShed) {
         updatedSheds = sheds.map(s => s.id === editingShed.id ? newShed : s);
       } else {
         updatedSheds = [newShed, ...sheds];
       }
-
       setSheds(updatedSheds);
       localStorage.setItem('livestockSheds', JSON.stringify(updatedSheds));
       setSearchTerm('');
       setSelectedStatus('all');
       handleCloseForm();
-
     } finally {
       setSubmitting(false);
     }
@@ -242,10 +213,7 @@ export default function ShedsManagement() {
   const handleDelete = async (id) => {
     try {
       setSubmitting(true);
-      await axios.delete(`${API_URL}/${id}`, {
-        withCredentials: true,
-        headers: getHeaders()
-      });
+      await axiosInstance.delete(`${API_URL}/${id}`);
       await fetchSheds();
       setDeleteConfirm(null);
     } catch (error) {
